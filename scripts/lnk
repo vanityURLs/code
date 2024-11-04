@@ -84,9 +84,9 @@ case "$#" in
 esac
 
 # If the long URL is already being redirected, notify the user
-if grep -q -P "$LONG_URL( |$)" $STATIC_FILE; then
+if grep -q -F "$LONG_URL" "$STATIC_FILE"; then
   echo "This URL is already being redirected:"
-  grep -P "$LONG_URL( |$)" $STATIC_FILE
+  grep -F "$LONG_URL" "$STATIC_FILE"
   exit 1
 fi
 
