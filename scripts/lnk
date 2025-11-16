@@ -98,13 +98,40 @@ fi
 
 
 
+# Ask the user for a description to include as a comment above the link
+echo "Please enter a short description for this link (optional):"
+read -r -p "> " DESCRIPTION
+
+# Prepare a trimmed version of the description for commit messages
+DESC_FOR_COMMIT="$DESCRIPTION"
+if [ -n "$DESC_FOR_COMMIT" ] && [ ${#DESC_FOR_COMMIT} -gt 100 ]; then
+  DESC_FOR_COMMIT="${DESC_FOR_COMMIT:0:100}..."
+fi
+
 if [ "$DRY_RUN" = true ]; then
   echo "Dry run, files will not be modified."
+  if [ -n "$DESCRIPTION" ]; then
+    echo "Would append to $STATIC_FILE:"
+    echo "# $DESCRIPTION"
+    echo "/$SHORTCODE $LONG_URL"
+    echo "Would run: git commit -m \"add redirect /$SHORTCODE --> $LONG_URL (desc: $DESC_FOR_COMMIT)\""
+  else
+    echo "Would append to $STATIC_FILE:"
+    echo "/$SHORTCODE $LONG_URL"
+    echo "Would run: git commit -m \"add redirect /$SHORTCODE --> $LONG_URL\""
+  fi
 else
   git fetch; git pull origin $(git branch --show-current)
-  echo "/$SHORTCODE $LONG_URL" >> $STATIC_FILE
+  if [ -n "$DESCRIPTION" ]; then
+    printf "# %s\n" "$DESCRIPTION" >> $STATIC_FILE
+  fi
+  printf "/%s %s\n" "$SHORTCODE" "$LONG_URL" >> $STATIC_FILE
   git add $STATIC_FILE
-  git commit -m "add redirect /$SHORTCODE --> $LONG_URL"
+  if [ -n "$DESCRIPTION" ]; then
+    git commit -m "add redirect /$SHORTCODE --> $LONG_URL (desc: $DESC_FOR_COMMIT)"
+  else
+    git commit -m "add redirect /$SHORTCODE --> $LONG_URL"
+  fi
   git push origin main
 fi
 
