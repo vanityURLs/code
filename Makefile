@@ -38,7 +38,7 @@ setup: ## Setup the environment
 	echo "/github/* https://github.com/bhdicaire/:splat" > dynamic.lnk
 
 	rm static.lnk 2> /dev/null || true
-	echo "/ https://bhdicaire.com/" > static.lnk
+	echo "/bhd https://bhdicaire.com/" > static.lnk
 	echo "/linkedin https://linkedin.com/in/bhdicaire/" >> static.lnk
 	echo "/x https://twitter.com/BHDicaire/" >> static.lnk
 	echo "/github https://github.com/bhdicaire/" >> static.lnk
