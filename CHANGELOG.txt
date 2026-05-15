@@ -1,0 +1,31 @@
+# Changelog
+
+## [1.9.0](https://github.com/vanityURLs/vanityURLs/compare/v1.8.0...v1.9.0) (2026-05-15)
+
+
+### Features
+
+* add redrect app on / ([d417d56](https://github.com/vanityURLs/vanityURLs/commit/d417d5632d7aafeeeae6e19e7917abf99b45f0c9))
+* add redrect app on / ([cfe8b49](https://github.com/vanityURLs/vanityURLs/commit/cfe8b49642e7821c373e4fde62766c0d3a9df690))
+* **bin/lnk:** verify that shortcodes aren't already used in static.lnk ([50f4326](https://github.com/vanityURLs/vanityURLs/commit/50f43264a8e9e59b6dfee15ebeec9abfb1620e83))
+* **scripts/lnk:** Ask for option description of the link ([ca16916](https://github.com/vanityURLs/vanityURLs/commit/ca16916a17da4a1558bbe33979e463b77fb30b61))
+* **scripts/lnk:** Ask for option description of the link provided to document in static.lnk ([5e29a46](https://github.com/vanityURLs/vanityURLs/commit/5e29a466ef8a5a8190f8cdc992fe14326b92d37d))
+* **scripts/lnk:** notify user if long url already redirected, and pull branch ([5fa1907](https://github.com/vanityURLs/vanityURLs/commit/5fa1907122e8017993cb70381ded20763a2a27b3))
+* **scripts/lnk:** notify user if long url already redirected. pull branch before adding to static file ([a18989c](https://github.com/vanityURLs/vanityURLs/commit/a18989c0b2a053e010136d7a5f3243d76022105c))
+* **scripts/lnk:** Print attempted shortcodes when DRY_RUN=true ([3427f86](https://github.com/vanityURLs/vanityURLs/commit/3427f865dd41fe40e8e0e1b9479040209a55a8e6))
+
+
+### Bug Fixes
+
+* **bin:** rename cfPage --&gt; build ([24cdbfb](https://github.com/vanityURLs/vanityURLs/commit/24cdbfb2536b7393bdf00a6de6d9ff5e5bb42658))
+* **makefile:** fix lowercase 's' in vanityURLs.conf. add '|| true' to rm commands ([081299b](https://github.com/vanityURLs/vanityURLs/commit/081299bfa42904e3db0d32f70e0c47315694275b))
+* **makefile:** fix lowercase 's' in vanityURLs.conf. add '|| true' to… ([91f3793](https://github.com/vanityURLs/vanityURLs/commit/91f379364a8ebbf2d5cd811411dbc79c6308eed6))
+* **scripts/lnk:** /bin --&gt; ./scripts, renamed folder ([723d14b](https://github.com/vanityURLs/vanityURLs/commit/723d14b87160097aedc6eef8f3937b2226c11b24))
+* **scripts/lnk:** A logic error in generate_shortcode didn't generate a new random string on different attempts ([fe4ece8](https://github.com/vanityURLs/vanityURLs/commit/fe4ece8c65c2cc711179af9b3a0edba6bff641ee))
+* **scripts/lnk:** A logic error in generate_shortcode didn't generate… ([7b06fe8](https://github.com/vanityURLs/vanityURLs/commit/7b06fe8b5b96c62494518b2379fd9eccddd951d4))
+* **scripts/lnk:** add a missing variable expansion for `index` ([3153135](https://github.com/vanityURLs/vanityURLs/commit/3153135d31405889ae64f8b01f00a6e6ae1f34f6))
+* **scripts/lnk:** add a missing variable expansion for `index` ([1ee0565](https://github.com/vanityURLs/vanityURLs/commit/1ee0565cf381f4c35fbf9c3126b6786e74a9b2d6))
+* **scripts/lnk:** add space after shortcode when grepping to avoid am… ([6d8a2c7](https://github.com/vanityURLs/vanityURLs/commit/6d8a2c742d1f7424ad60ee4bbb3653e6da4bf677))
+* **scripts/lnk:** add space after shortcode when grepping to avoid ambiguous matches ([39a1062](https://github.com/vanityURLs/vanityURLs/commit/39a1062294a294127a1f1ac7202697fd96f3de3b))
+* **scripts/lnk:** modify grep command to better search for existing urls ([fdca4bf](https://github.com/vanityURLs/vanityURLs/commit/fdca4bf20c8cf4fcc8336d51df10b4d00b2515c2))
+* **scripts/lnk:** modify grep command to better search for existing urls ([fb358c7](https://github.com/vanityURLs/vanityURLs/commit/fb358c77b56b2558738299d5a40af007f7c25a81))
