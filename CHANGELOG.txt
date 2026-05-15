@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.0.0](https://github.com/vanityURLs/vanityURLs/compare/v1.9.0...v2.0.0) (2026-05-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* ship Cloudflare redirect worker
+
+### Features
+
+* ship Cloudflare redirect worker ([9ebab6a](https://github.com/vanityURLs/vanityURLs/commit/9ebab6a4e1759f1bf184426767e99d9abe0d6a04))
+
+
+### Miscellaneous Chores
+
+* prepare 2.0.0 release ([77f2dd2](https://github.com/vanityURLs/vanityURLs/commit/77f2dd2fd482f34b5cfc3faddef79234f06675b2))
+
 ## [1.9.0](https://github.com/vanityURLs/vanityURLs/compare/v1.8.0...v1.9.0) (2026-05-15)
 
 
