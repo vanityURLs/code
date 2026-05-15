@@ -11,6 +11,9 @@ Features:
  * URL redirection (301, 302, 303, 307 and 308)
  * Advanced redirection with splats (e.g., /news/*  &#8594; /blog/:splat )
  * Continuous integration managed by Cloudflare Page Engine
+ * Configurable destination blocklists with `blocked_keywords` in `v8s-blocklist.json`
+ * Exact-match destination previews through `/expand/` and the `v8s --print <slug>` CLI helper
+ * Link expiration dates with the `expires_at` field in `v8s-links.txt`
 
 My objective is to work at the command line and automate it. So feel free to fork, and customize.
 
@@ -31,6 +34,22 @@ As long as you secure your Github and Cloudflare accounts with robust authentica
 3. Add the _tiny_ internet domain name to [Cloudflare DNS](https://dash.cloudflare.com/)
 4. [Follow the instructions](https://vanityurls.link/en/docs/getting-started/) to fork the GitHub repository and customize your setup
 5. Use the [`lnk` bash script](https://vanityurls.link/en/docs/guide/advanced/cli/) to shorten, personalize, and share fully branded short URLs with continuous integration on Cloudflare
+
+## Implemented request references
+
+The 2.x runtime includes a few requested capabilities that are easy to
+miss because they are implemented through configuration or helper scripts:
+
+* Short URL blocklists are handled through `blocked_keywords` in
+  `defaults/v8s-blocklist.json` or an instance-specific
+  `custom/v8s-blocklist.json`.
+* Looking up a destination from a short name is available in two places:
+  `/expand/` previews exact-match short links in the deployed Worker, and
+  `v8s --print <slug>` prints a destination from the generated local
+  registry after `npm run build`.
+* Expiration dates are stored with the `expires_at` field in
+  `v8s-links.txt`; `./scripts/lnk --expires-at DATE ...` writes that
+  value, and the Worker treats expired links as expired at runtime.
 
 ## Limitations
 
