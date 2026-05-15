@@ -1,0 +1,11 @@
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,they will
+# be requested for review when someone opens a pull request.
+*       @bhdicaire
+
+# In this example, @bhdicaire owns any file in the `/docs`
+# directory and any of its subdirectories.
+/docs/ @bhdicaire

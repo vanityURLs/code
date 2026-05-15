@@ -1,0 +1,254 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-05-04",
+  "defaults": {
+    "block_private_networks": true,
+    "block_localhost": true,
+    "block_auth_in_url": true,
+    "allowed_protocols": ["http:", "https:"],
+    "blocked_file_extensions": [".exe", ".scr", ".bat", ".cmd", ".com", ".msi", ".ps1", ".vbs", ".js", ".jar"]
+  },
+  "generated_sources": {
+    "urlhaus_malware": {
+      "enabled": true,
+      "category": "malware",
+      "severity": "high",
+      "url": "https://urlhaus.abuse.ch/downloads/hostfile/"
+    },
+    "url_shorteners": {
+      "enabled": true,
+      "category": "shortener-loop",
+      "severity": "medium",
+      "url": "https://raw.githubusercontent.com/PeterDaveHello/url-shorteners/master/list"
+    }
+  },
+  "allow_domains": [
+    {
+      "domain": "example.com",
+      "reason": "Example allowlist override for an owner-controlled domain",
+      "source": "example",
+      "added_at": "2026-05-05",
+      "enabled": false
+    }
+  ],
+  "blocked_keywords": [
+    {
+      "keyword": "free-crypto-airdrop",
+      "category": "phishing",
+      "severity": "medium",
+      "reason": "Extremely common crypto scam lure phrase",
+      "source": "local-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "wallet-verify-seed",
+      "category": "phishing",
+      "severity": "high",
+      "reason": "Seed phrase verification lure pattern",
+      "source": "local-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "claim-airdrop-wallet",
+      "category": "phishing",
+      "severity": "medium",
+      "reason": "Common wallet-draining airdrop lure phrase",
+      "source": "local-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "/.env",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common secret-file scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "/.git",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common exposed repository scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "wp-admin",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common WordPress scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "/wp-",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common WordPress scanner probe prefix",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-07"
+    },
+    {
+      "keyword": "/wp-content/",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common WordPress content directory scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-07"
+    },
+    {
+      "keyword": "/wp-includes/",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common WordPress includes directory scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-07"
+    },
+    {
+      "keyword": "wp-login.php",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common WordPress login scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "xmlrpc.php",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common WordPress XML-RPC scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "phpmyadmin",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common database admin scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": ".php",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Generic PHP endpoint scanner probe on a non-PHP service",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-07"
+    },
+    {
+      "keyword": "phpinfo",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common PHP information disclosure scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-07"
+    },
+    {
+      "keyword": "/vendor/",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common dependency directory scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-07"
+    },
+    {
+      "keyword": "vendor/phpunit",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common PHP unit test exploit scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "cgi-bin",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common CGI scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "boaform",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common embedded device scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "actuator",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common Spring Boot actuator scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "solr/admin",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common Solr admin scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "owa/auth",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common Exchange OWA scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    },
+    {
+      "keyword": "autodiscover",
+      "category": "scanner-probe",
+      "severity": "low",
+      "reason": "Common Exchange autodiscover scanner probe",
+      "source": "runtime-scanner-policy",
+      "added_at": "2026-05-05"
+    }
+  ],
+  "block_domains": [
+    {
+      "domain": "accounts-google.com",
+      "category": "phishing",
+      "severity": "high",
+      "reason": "Common fake Google login lure pattern",
+      "source": "local-policy",
+      "added_at": "2026-05-04"
+    },
+    {
+      "domain": "paypal-security.top",
+      "category": "phishing",
+      "severity": "high",
+      "reason": "Common fake PayPal security lure pattern",
+      "source": "local-policy",
+      "added_at": "2026-05-04"
+    },
+    {
+      "domain": "steam-community.xyz",
+      "category": "phishing",
+      "severity": "high",
+      "reason": "Common fake Steam community lure pattern",
+      "source": "local-policy",
+      "added_at": "2026-05-04"
+    },
+    {
+      "domain": "anonfiles.com",
+      "category": "temporary-file-host",
+      "severity": "medium",
+      "reason": "Temporary file host with elevated abuse risk",
+      "source": "local-policy",
+      "added_at": "2026-05-04"
+    },
+    {
+      "domain": "temp-mail.org",
+      "category": "disposable",
+      "severity": "low",
+      "reason": "Disposable service with elevated abuse risk",
+      "source": "local-policy",
+      "added_at": "2026-05-04"
+    }
+  ]
+}

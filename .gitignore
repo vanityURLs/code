@@ -1,4 +1,10 @@
 node_modules/
-public/
+.wrangler/
+.dev.vars
 *.old
 *.swp
+.DS_Store
+build/
+/functions/
+/src/
+build/blocklist.generated.json

@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "categories": {
+    "phishing": {
+      "description": "Fake login pages, credential theft, and brand impersonation"
+    },
+    "malware": {
+      "description": "Malware distribution, payload hosting, exploit delivery, and command-and-control infrastructure"
+    },
+    "shortener-loop": {
+      "description": "Public URL shorteners used to hide redirect chains or obscure the final destination"
+    },
+    "scanner-probe": {
+      "description": "Automated vulnerability scanner paths that should not resolve as short links"
+    },
+    "temporary-file-host": {
+      "description": "Temporary, anonymous, or disposable file hosting with elevated abuse risk"
+    },
+    "disposable": {
+      "description": "Burner services, temporary email, throwaway infrastructure, and low-accountability services"
+    },
+    "adult": {
+      "description": "Owner-selected adult or NSFW content policy category"
+    },
+    "gambling": {
+      "description": "Owner-selected gambling content policy category"
+    },
+    "social": {
+      "description": "Owner-selected social media or user-generated-content policy category"
+    },
+    "custom": {
+      "description": "Owner-defined local block that does not fit another category"
+    }
+  },
+  "severities": {
+    "critical": {
+      "description": "Known active abuse that can quickly get the short domain blacklisted"
+    },
+    "high": {
+      "description": "Malware, phishing, credential theft, or active malicious infrastructure"
+    },
+    "medium": {
+      "description": "Obfuscation, redirect chaining, anonymous hosting, or elevated abuse risk"
+    },
+    "low": {
+      "description": "Policy or nuisance block with lower direct security risk"
+    },
+    "info": {
+      "description": "Documentation, classification, or owner-defined informational category"
+    }
+  }
+}

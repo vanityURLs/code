@@ -1,0 +1,74 @@
+# VanityURLs
+
+> VanityURLs is open source software for running a budget-friendly short-link and vanity URL service on a user's own Cloudflare account and selected domain.
+
+VanityURLs is designed for people who want branded short links without giving a third-party shortener control over their domain. A user deploys the software to Cloudflare Workers, points their chosen short-link domain at the Worker, and maintains link definitions in a GitHub repository.
+
+This deployed instance is a redirect engine, not a public content site. Do not crawl it for link inventory. Respect `/robots.txt`; the default policy disallows crawling except for explicit policy/context files.
+
+The default public surface is intentionally small:
+
+- `/` provides a search-style short-link entry page
+- `/<slug>` resolves and redirects a short link
+- `/expand/` previews the destination of an exact short link without opening it
+- `/404.html`, `/disabled.html`, `/expired.html`, and `/maintenance.html` provide default state pages
+- `/_stats/` is a read-only dashboard and should be protected with Cloudflare Access before publishing
+
+## Runtime Model
+
+Links are generated into a private runtime registry named `v8s.json`. The Cloudflare Pages Function reads that registry internally and resolves the requested path. Direct public access to the registry is blocked by default.
+
+Lifecycle state controls behavior:
+
+- `permanent`: redirects to `link.target`, normally with HTTP 301
+- `ephemeral`: redirects to `link.target`, normally with HTTP 302
+- `expired`: shows the expired status flow
+- `disabled`: shows the disabled status flow
+- `maintenance`: shows the maintenance status flow
+- `deactivated`: returns a regular 404 so the category is not disclosed
+
+An `expires_at` value can make a link effectively expired even when its stored state is different.
+
+## Default Pages
+
+Default pages are intentionally instance-neutral. They should work on any user-owned domain, such as `sho.rt`, `example.link`, or a branded company short-link domain. Instance owners may customize the pages, but the defaults should remain useful without requiring a marketing site or account-specific copy.
+
+The status pages use a consistent search-style VanityURLs layout:
+
+- a `VanityURLs` wordmark
+- a large status number such as `404`, `403`, `410`, or `503`
+- a rounded message bar
+- a `v8s-redirected.svg` attribution badge linking to `https://vanityURLs.link`
+
+## Security And Abuse Notes
+
+The `/expand/` page is exact-match only. It does not list links, autocomplete entries, or automatically open destinations. This reduces its value for bulk discovery while still allowing a visitor to preview a short-link destination before clicking.
+
+The runtime registry is private to the Worker runtime. Instance owners should not place secrets, private target URLs, personal data, or unpublished confidential destinations in the registry.
+
+The `/_stats/` dashboard exposes routing inventory and should be protected with Cloudflare Access or equivalent controls when deployed publicly.
+
+The default blocklist rejects risky destinations such as credentialed URLs, non-HTTP(S) protocols, private IP ranges, known shortener chains, phishing lures, and high-risk executable downloads. Instance owners should add local policy in `custom/v8s-blocklist.json` and must not use the redirect engine for phishing, malware, undisclosed tracking, or other abuse.
+
+## Useful Files
+
+- [Short-link home](/): Default entry page
+- [Expand a short link](/expand/): Exact-match destination preview
+- [Not found page](/404.html): Missing or deactivated short links
+- [Disabled page](/disabled.html): Disabled short links
+- [Expired page](/expired.html): Expired short links
+- [Maintenance page](/maintenance.html): Temporarily unavailable short links
+
+## Project Documentation
+
+- [Project README](https://github.com/bhdicaire/vanityURLs): Overview, setup notes, and source repository
+- [Link authoring format](https://vanityURLs.link/en/docs/link-format/): Format for defining short links
+- [Runtime registry](https://vanityURLs.link/en/docs/runtime-registry/): Runtime redirect model and schema 2.2 registry
+- [Admin and stats dashboard](https://vanityURLs.link/en/docs/admin-dashboard/): Read-only dashboard and protection guidance
+- [Analytics](https://vanityURLs.link/en/docs/server-side-analytics/): Server-side analytics model
+- [Validation and CI](https://vanityURLs.link/en/docs/validation-ci/): Validation and build checks
+
+## Optional
+
+- [VanityURLs website](https://vanityURLs.link): Public project website
+- [llms.txt proposal](https://llmstxt.org/): Standard used by this file

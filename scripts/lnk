@@ -1,141 +1,492 @@
-#!/bin/bash
-LOCAL_CONFIG="$HOME/.vanityURLs.conf"
-STATIC_FILE="static.lnk"
-MAX_ATTEMPTS=100
-SHORTCODE=""
+#!/usr/bin/env node
 
-function print_usage() {
-  echo "There are two valid ways to call this script:"
-  echo -e "1) A random shortcode will be generated automatically:\n\t./scripts/lnk [LONG_URL]"
-  echo -e "2) Specify the shortcode you want:\n\t./scripts/lnk [LONG_URL] [SHORTCODE]"
-  echo
-  echo -e "You may call this script with DRY_RUN=true for testing purposes."
-  exit 1
+import crypto from "node:crypto";
+import fs from "node:fs";
+import { spawnSync } from "node:child_process";
+
+const DEFAULT_OWNER = process.env.LNK_OWNER || "bhd";
+const LINKS_FILE = resolveLinksFile();
+const VALID_STATES = new Set([
+  "permanent",
+  "ephemeral",
+  "expired",
+  "disabled",
+  "maintenance",
+  "deactivated"
+]);
+
+function usage() {
+  console.log(`Usage:
+  ./scripts/lnk [LONG_URL] [SLUG]
+  ./scripts/lnk --splat [LONG_URL_WITH_:splat] [SLUG]
+  ./scripts/lnk schedule add SLUG TARGET --label LABEL --days mon,tue --from HH:MM --to HH:MM [--timezone TZ]
+  ./scripts/lnk schedule default SLUG TARGET [--timezone TZ]
+  ./scripts/lnk schedule list [SLUG]
+  ./scripts/lnk block categories
+  ./scripts/lnk block add DOMAIN --category CATEGORY --severity SEVERITY --reason TEXT
+  ./scripts/lnk block allow DOMAIN --reason TEXT
+
+Options:
+  --state STATE          permanent | ephemeral | expired | disabled | maintenance | deactivated
+  --title TEXT           Human-readable title
+  --description TEXT     Human-readable description
+  --tags TAGS            Comma-separated tags
+  --owner OWNER          Owner/accountability label
+  --expires-at DATE      ISO date or timestamp
+  --notes TEXT           Internal notes
+  --splat                Create a splat link; SLUG is stored as SLUG/* in the links file
+  --help                 Show this help
+
+Nested aliases:
+  Slugs may contain / to create API-like paths.
+
+Examples:
+  ./scripts/lnk https://github.com/vanityURLs github
+  ./scripts/lnk https://x.com/vanityURLs social/x
+  ./scripts/lnk https://www.linkedin.com/company/example social/linkedin
+  ./scripts/lnk --splat https://docs.example.com/:splat docs
+  ./scripts/lnk --state ephemeral --title "Launch" https://example.com campaign/launch
+  ./scripts/lnk schedule add hangout https://zoom.us/j/work --label work --days mon,tue,wed,thu,fri --from 09:00 --to 17:00 --timezone America/Toronto
+  ./scripts/lnk schedule default hangout https://discord.gg/personal
+
+Use DRY_RUN=true to print the line without writing, committing, or pushing.`);
 }
 
-# Function to generate a random character from a given set
-function random_char() {
-  # Potentially ambiguous characters (e.g. '1', 'I', and 'l') are
-  # ignored.
-  local characters="34789abcdefghijmnpqrstwxyABCDEFHJLMNPQRTUVWXY"
-  local N_CHARS=${#characters}
-  local index=$((RANDOM % $N_CHARS))
-  echo -n "${characters:$index:1}"
+function resolveLinksFile() {
+  if (process.env.V8S_LINKS_FILE) return process.env.V8S_LINKS_FILE;
+  if (process.env.LNK_FILE) return process.env.LNK_FILE;
+  if (fs.existsSync("custom/v8s-links.txt")) return "custom/v8s-links.txt";
+  return "defaults/v8s-links.txt";
 }
 
-function generate_shortcode() {
-  counter=0  # Initialize the counter
-  while [ "$counter" -le $MAX_ATTEMPTS ]; do
-    # Generate a random string
-    random_string=""
-    for i in $(seq 1 $SHORTCODE_LENGTH); do
-      random_string="${random_string}$(random_char)"
-    done
-    if [ "$DRY_RUN" = true ]; then
-      echo "Attempt $counter: $random_string"
-    fi
+function run(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: process.cwd(),
+    stdio: "inherit",
+    shell: process.platform === "win32"
+  });
 
-    # Check if "/$random_string is already in the file
-    if grep -q "^/$random_string " "$STATIC_FILE"; then
-      ((counter++))
-    else
-      SHORTCODE=$random_string
-      break
-    fi
-  done
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
 }
 
-if [ -f "$LOCAL_CONFIG" ]; then
-  source $LOCAL_CONFIG
-else
-  echo "Error: $LOCAL_CONFIG not found."
-  echo "Hint: Did you do \`cp $(basename $LOCAL_CONFIG) $HOME\` and set your values?"
-  exit 1
-fi
+function parseArgs(argv) {
+  const options = {
+    state: "permanent",
+    splat: false,
+    title: "",
+    description: "",
+    tags: "",
+    owner: DEFAULT_OWNER,
+    expiresAt: "",
+    notes: ""
+  };
+  const positionals = [];
 
-# Expand REPO_DIR in case it starts with '~/'
-eval REPO_DIR=$REPO_DIR
-cd $REPO_DIR
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
 
-case "$#" in
-  0)
-    print_usage
-    ;;
-  1)
-    LONG_URL="$1"
-    generate_shortcode  # This sets SHORTCODE
-    if [ "$SHORTCODE" = "" ]; then
-      echo "Error: $MAX_ATTEMPTS attempts were made to find a unique random string for your URL in $STATIC_FILE, but no success.
-      Aborting. Consider raising the value of SHORTCODE_LENGTH in '$LOCAL_CONFIG'."
-      exit 1
-    fi
-    ;;
-  2)
-    LONG_URL="$1"
-    SHORTCODE="$2"
-    if grep -q "^/$SHORTCODE " "$STATIC_FILE"; then
-      echo "Error: /$SHORTCODE is already taken in $STATIC_FILE."
-      exit 1
-    fi
-    ;;
-  *)
-    print_usage
-    ;;
-esac
+    if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else if (arg === "--splat") {
+      options.splat = true;
+    } else if (arg === "--state") {
+      options.state = readOptionValue(argv, index, arg);
+      index += 1;
+    } else if (arg === "--title") {
+      options.title = readOptionValue(argv, index, arg);
+      index += 1;
+    } else if (arg === "--description") {
+      options.description = readOptionValue(argv, index, arg);
+      index += 1;
+    } else if (arg === "--tags") {
+      options.tags = readOptionValue(argv, index, arg);
+      index += 1;
+    } else if (arg === "--owner") {
+      options.owner = readOptionValue(argv, index, arg);
+      index += 1;
+    } else if (arg === "--expires-at") {
+      options.expiresAt = readOptionValue(argv, index, arg);
+      index += 1;
+    } else if (arg === "--notes") {
+      options.notes = readOptionValue(argv, index, arg);
+      index += 1;
+    } else if (arg.startsWith("--")) {
+      throw new Error(`Unknown option: ${arg}`);
+    } else {
+      positionals.push(arg);
+    }
+  }
 
-# If the long URL is already being redirected, notify the user
-if grep -q -F "$LONG_URL" "$STATIC_FILE"; then
-  echo "This URL is already being redirected:"
-  grep -F "$LONG_URL" "$STATIC_FILE"
-  exit 1
-fi
+  return {
+    options,
+    positionals
+  };
+}
 
-# Validate long URL given by user
-$REPO_DIR/scripts/validateURL $LONG_URL
-if [ "$?" -ne 0 ]; then
-  exit 1
-fi
+function readOptionValue(argv, index, name) {
+  const value = argv[index + 1];
+  if (value === undefined) {
+    throw new Error(`Missing value for ${name}`);
+  }
+  return value;
+}
 
+function normalizeSlug(value) {
+  let slug = String(value || "").trim();
+  slug = slug.replace(/^\/+/, "").replace(/\/+$/, "");
 
+  while (slug.includes("//")) {
+    slug = slug.replaceAll("//", "/");
+  }
 
-# Ask the user for a description to include as a comment above the link
-echo "Please enter a short description for this link (optional):"
-read -r -p "> " DESCRIPTION
+  return slug;
+}
 
-# Prepare a trimmed version of the description for commit messages
-DESC_FOR_COMMIT="$DESCRIPTION"
-if [ -n "$DESC_FOR_COMMIT" ] && [ ${#DESC_FOR_COMMIT} -gt 100 ]; then
-  DESC_FOR_COMMIT="${DESC_FOR_COMMIT:0:100}..."
-fi
+function validateSlug(slug) {
+  if (!slug) {
+    throw new Error("Slug is required.");
+  }
 
-if [ "$DRY_RUN" = true ]; then
-  echo "Dry run, files will not be modified."
-  if [ -n "$DESCRIPTION" ]; then
-    echo "Would append to $STATIC_FILE:"
-    echo "# $DESCRIPTION"
-    echo "/$SHORTCODE $LONG_URL"
-    echo "Would run: git commit -m \"add redirect /$SHORTCODE --> $LONG_URL (desc: $DESC_FOR_COMMIT)\""
-  else
-    echo "Would append to $STATIC_FILE:"
-    echo "/$SHORTCODE $LONG_URL"
-    echo "Would run: git commit -m \"add redirect /$SHORTCODE --> $LONG_URL\""
-  fi
-else
-  git fetch; git pull origin $(git branch --show-current)
-  if [ -n "$DESCRIPTION" ]; then
-    printf "# %s\n" "$DESCRIPTION" >> $STATIC_FILE
-  fi
-  printf "/%s %s\n" "$SHORTCODE" "$LONG_URL" >> $STATIC_FILE
-  git add $STATIC_FILE
-  if [ -n "$DESCRIPTION" ]; then
-    git commit -m "add redirect /$SHORTCODE --> $LONG_URL (desc: $DESC_FOR_COMMIT)"
-  else
-    git commit -m "add redirect /$SHORTCODE --> $LONG_URL"
-  fi
-  git push origin main
-fi
+  if (slug.startsWith("/") || slug.endsWith("/")) {
+    throw new Error("Slug must not start or end with /.");
+  }
 
-echo "Your shortened URL is https://$MY_DOMAIN/$SHORTCODE"
-echo "Please give ~15 seconds for your link to become valid"
+  if (slug.includes("//") || slug.includes("?") || slug.includes("#")) {
+    throw new Error("Slug must not contain //, ?, or #.");
+  }
 
-cd - > /dev/null
+  for (const part of slug.split("/")) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._~-]*$/.test(part)) {
+      throw new Error(`Invalid slug segment: ${part}\nUse URL-safe segments starting with a letter or digit.`);
+    }
+  }
+}
+
+function assertNoPipe(values) {
+  if (values.some((value) => String(value).includes("|"))) {
+    throw new Error("The pipe character | is reserved by the v8s links format.");
+  }
+}
+
+function slugExists(filePath, slug) {
+  if (!fs.existsSync(filePath)) return false;
+
+  const rows = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+  return rows.some((row) => row.split("|")[0] === slug);
+}
+
+function randomSlug() {
+  return crypto.randomBytes(3).toString("hex");
+}
+
+function appendLine(filePath, line) {
+  fs.mkdirSync(dirname(filePath), {
+    recursive: true
+  });
+  fs.appendFileSync(filePath, `${line}\n`);
+}
+
+function dirname(filePath) {
+  const index = Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\"));
+  if (index < 0) return ".";
+  return filePath.slice(0, index) || ".";
+}
+
+function readJson(filePath, fallback) {
+  if (!fs.existsSync(filePath)) return fallback;
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function writeJson(filePath, value) {
+  fs.mkdirSync(dirname(filePath), {
+    recursive: true
+  });
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function parseGenericArgs(argv) {
+  const options = {};
+  const positionals = [];
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--dry-run") {
+      options.dryRun = true;
+    } else if (arg === "--help" || arg === "-h") {
+      options.help = true;
+    } else if (arg.startsWith("--")) {
+      const key = arg.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      options[key] = readOptionValue(argv, index, arg);
+      index += 1;
+    } else {
+      positionals.push(arg);
+    }
+  }
+
+  return {
+    options,
+    positionals
+  };
+}
+
+function scheduleUsage() {
+  console.log(`Usage:
+  ./scripts/lnk schedule add SLUG TARGET --label LABEL --days mon,tue --from HH:MM --to HH:MM [--timezone TZ]
+  ./scripts/lnk schedule default SLUG TARGET [--timezone TZ]
+  ./scripts/lnk schedule list [SLUG]
+
+Options:
+  --file FILE            Schedule JSON path, defaults to custom/v8s-schedules.json
+  --label LABEL          Rule label shown in analytics, required for add
+  --timezone TZ          IANA timezone, defaults to UTC
+  --days DAYS            Comma-separated weekdays, for example mon,tue,wed,thu,fri
+  --from HH:MM           Start time, inclusive
+  --to HH:MM             End time, exclusive
+  --default TARGET       Optional fallback target to set while adding a rule
+  --dry-run              Print updated JSON without writing
+  --help                 Show this help`);
+}
+
+function schedulePath(options) {
+  return options.file || process.env.V8S_SCHEDULES_FILE || "custom/v8s-schedules.json";
+}
+
+function normalizeTarget(value) {
+  const target = String(value || "").trim();
+  if (!target) return "";
+  if (/^https?:\/\//i.test(target)) return target;
+  return `https://${target}`;
+}
+
+function normalizeDays(value) {
+  const valid = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+  const days = String(value || "")
+    .split(",")
+    .map((day) => day.trim().slice(0, 3).toLowerCase())
+    .filter(Boolean);
+
+  if (!days.length) {
+    throw new Error("--days is required");
+  }
+
+  for (const day of days) {
+    if (!valid.has(day)) {
+      throw new Error(`Invalid day: ${day}`);
+    }
+  }
+
+  return [...new Set(days)];
+}
+
+function validateTime(value, optionName) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || ""))) {
+    throw new Error(`${optionName} must use HH:MM`);
+  }
+  return value;
+}
+
+function ensureSchedule(config, slug, timezone) {
+  config[slug] ||= {};
+  config[slug].timezone ||= timezone || "UTC";
+  config[slug].rules ||= [];
+  return config[slug];
+}
+
+function saveScheduleConfig(filePath, config, dryRun, slug) {
+  if (dryRun || process.env.DRY_RUN === "true") {
+    console.log(JSON.stringify(config, null, 2));
+    return;
+  }
+
+  writeJson(filePath, config);
+  run("git", ["add", filePath]);
+  run("git", ["commit", "-m", `feat(schedules): update ${slug}`]);
+  run("git", ["push"]);
+}
+
+function listSchedules(config, requestedSlug) {
+  const entries = Object.entries(config)
+    .filter(([slug]) => !requestedSlug || slug === requestedSlug);
+
+  if (!entries.length) {
+    console.log(requestedSlug ? `No schedule found for ${requestedSlug}` : "No schedules configured");
+    return;
+  }
+
+  for (const [slug, schedule] of entries) {
+    console.log(slug);
+    if (schedule.default) console.log(`  default -> ${schedule.default}`);
+    for (const rule of schedule.rules || []) {
+      console.log(`  ${rule.label}: ${rule.days.join(",")} ${rule.from}-${rule.to} ${rule.timezone} -> ${rule.target}`);
+    }
+  }
+}
+
+function handleSchedule(argv) {
+  const subcommand = argv[0] || "";
+  const { options, positionals } = parseGenericArgs(argv.slice(1));
+  const filePath = schedulePath(options);
+  const config = readJson(filePath, {});
+
+  if (!subcommand || options.help || subcommand === "--help" || subcommand === "-h") {
+    scheduleUsage();
+    return;
+  }
+
+  if (subcommand === "list") {
+    const requestedSlug = positionals[0] ? normalizeSlug(positionals[0]) : "";
+    listSchedules(config, requestedSlug);
+    return;
+  }
+
+  const slug = normalizeSlug(positionals[0] || "");
+  const target = normalizeTarget(positionals[1] || "");
+  validateSlug(slug);
+
+  if (!target) {
+    throw new Error("Target is required.");
+  }
+
+  if (subcommand === "default") {
+    if (!Array.isArray(config[slug]?.rules) || config[slug].rules.length === 0) {
+      throw new Error(`Schedule for ${slug} must have at least one rule before setting a default target.`);
+    }
+
+    const schedule = ensureSchedule(config, slug, options.timezone || "UTC");
+    schedule.default = target;
+    if (options.timezone) schedule.timezone = options.timezone;
+    saveScheduleConfig(filePath, config, options.dryRun, slug);
+    return;
+  }
+
+  if (subcommand === "add") {
+    if (!options.label) throw new Error("--label is required");
+
+    const timezone = options.timezone || "UTC";
+    const schedule = ensureSchedule(config, slug, timezone);
+    if (options.timezone) schedule.timezone = timezone;
+
+    const rule = {
+      label: options.label,
+      timezone,
+      days: normalizeDays(options.days),
+      from: validateTime(options.from, "--from"),
+      to: validateTime(options.to, "--to"),
+      target
+    };
+
+    const existingIndex = schedule.rules.findIndex((item) => item.label === rule.label);
+    if (existingIndex >= 0) {
+      schedule.rules[existingIndex] = {
+        ...schedule.rules[existingIndex],
+        ...rule
+      };
+    } else {
+      schedule.rules.push(rule);
+    }
+
+    if (options.default) {
+      schedule.default = normalizeTarget(options.default);
+    }
+
+    saveScheduleConfig(filePath, config, options.dryRun, slug);
+    return;
+  }
+
+  throw new Error(`Unknown schedule command: ${subcommand}`);
+}
+
+function main() {
+  const argv = process.argv.slice(2);
+
+  if (argv[0] === "block") {
+    run(process.execPath, ["scripts/blocklist-cli.mjs", ...argv.slice(1)]);
+    return;
+  }
+
+  if (argv[0] === "schedule") {
+    handleSchedule(argv.slice(1));
+    return;
+  }
+
+  const { options, positionals } = parseArgs(argv);
+
+  if (options.help) {
+    usage();
+    return;
+  }
+
+  const target = positionals[0] || "";
+  let slug = positionals[1] || "";
+
+  if (!target) {
+    usage();
+    process.exit(1);
+  }
+
+  if (!slug) {
+    slug = randomSlug();
+  }
+
+  if (options.state === "hidden") {
+    throw new Error("State 'hidden' is deprecated. Use 'deactivated'.");
+  }
+
+  if (!VALID_STATES.has(options.state)) {
+    throw new Error(`Invalid state: ${options.state}`);
+  }
+
+  slug = normalizeSlug(slug);
+  validateSlug(slug);
+
+  if (options.splat) {
+    if (!target.includes(":splat")) {
+      throw new Error("Splat target must include :splat");
+    }
+    slug = `${slug.replace(/\/+$/, "")}/*`;
+  }
+
+  const fields = [
+    slug,
+    target,
+    options.state,
+    options.title,
+    options.description,
+    options.tags,
+    options.owner,
+    options.expiresAt,
+    options.notes
+  ];
+  assertNoPipe(fields);
+
+  const line = fields.join("|");
+
+  if (process.env.DRY_RUN === "true") {
+    console.log(line);
+    return;
+  }
+
+  if (slugExists(LINKS_FILE, slug)) {
+    throw new Error(`Slug already exists in ${LINKS_FILE}: ${slug}`);
+  }
+
+  appendLine(LINKS_FILE, line);
+
+  run("git", ["add", LINKS_FILE]);
+  run("git", ["commit", "-m", `feat(links): add ${slug}`]);
+  run("git", ["push"]);
+}
+
+try {
+  main();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}

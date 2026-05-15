@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard</title>
+  <style>
+    @font-face {
+      font-family: "InterVariable";
+      font-style: normal;
+      font-weight: 100 900;
+      font-display: swap;
+      src: url("/fonts/intervariable.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      font-style: normal;
+      font-weight: 100 800;
+      font-display: swap;
+      src: url("/fonts/jetbrainsmono.woff2") format("woff2");
+    }
+    :root {
+      color-scheme: light;
+      --bg: #f9fafb;
+      --panel: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --soft: #f3f4f6;
+      --brand: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: "InterVariable", Inter, system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
+    main { width: min(1200px, calc(100vw - 2rem)); margin: 3rem auto; }
+    header { display: flex; justify-content: space-between; gap: 1rem; align-items: start; margin-bottom: 2rem; }
+    h1 { margin: 0 0 .35rem; font-size: clamp(2rem, 4vw, 3rem); line-height: 1; }
+    .brand-mark { display: inline-flex; width: 96px; flex: 0 0 auto; }
+    .brand-mark img { display: block; width: 100%; height: auto; }
+    .muted { color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .card { border: 1px solid var(--border); border-radius: .5rem; padding: 1rem; background: var(--panel); }
+    .metric { font-size: 2rem; font-weight: 750; }
+    input { width: 100%; padding: .8rem 1rem; border-radius: .5rem; border: 1px solid var(--border); background: var(--panel); color: var(--text); font: inherit; margin: 1rem 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: .8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-size: .85rem; font-weight: 650; }
+    code { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+    .tag { display: inline-block; padding: .15rem .5rem; border-radius: 999px; background: var(--soft); margin: .1rem; font-size: .8rem; }
+    .state { font-weight: 700; text-transform: capitalize; }
+    .ok { color: #067a36; }
+    .warn { color: #9a4f00; }
+    .bad { color: #b42318; }
+    a { color: inherit; }
+    footer { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; margin-top: 2rem; color: var(--muted); font-size: .9rem; }
+    .download-link { color: var(--brand); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Dashboard</h1>
+      </div>
+      <a class="brand-mark" href="https://vanityURLs.link" target="_blank" rel="noreferrer" aria-label="VanityURLs">
+        <img src="/v8s-logo.svg" alt="V8S">
+      </a>
+    </header>
+
+    <section class="grid" id="metrics"></section>
+
+    <input id="search" type="search" placeholder="Search path, target, title, description, owner, tags…">
+
+    <table>
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>State</th>
+          <th>Title</th>
+          <th>Target</th>
+          <th>Owner</th>
+          <th>Tags</th>
+          <th>Expires</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+
+    <footer>
+      <span id="generated"></span>
+      <a class="download-link" href="/_stats/api/v8s.json" download="v8s.json">Download v8s.json</a>
+    </footer>
+  </main>
+
+  <script>
+    const rowsEl = document.getElementById("rows");
+    const metricsEl = document.getElementById("metrics");
+    const searchEl = document.getElementById("search");
+    const generatedEl = document.getElementById("generated");
+
+    let allLinks = [];
+    let registry = null;
+
+    main().catch((error) => {
+      rowsEl.innerHTML = `<tr><td colspan="7">Failed to load registry: ${escapeHtml(error.message)}</td></tr>`;
+    });
+
+    async function main() {
+      const response = await fetch("/_stats/api/v8s.json", { cache: "no-store" });
+      registry = await response.json();
+      allLinks = flattenRegistry(registry);
+      generatedEl.textContent = formatGeneratedFooter(registry.generated_at);
+      renderMetrics(allLinks);
+      renderRows(allLinks);
+    }
+
+    searchEl.addEventListener("input", () => {
+      const q = searchEl.value.trim().toLowerCase();
+      const filtered = !q ? allLinks : allLinks.filter((link) => JSON.stringify(link).toLowerCase().includes(q));
+      renderRows(filtered);
+    });
+
+    function flattenRegistry(registry) {
+      const root = registry.routes && typeof registry.routes === "object" ? registry.routes : registry;
+      const result = [];
+
+      function walk(node, parts) {
+        if (!node || typeof node !== "object") return;
+
+        if (typeof node.target === "string") {
+          result.push({ path: parts.join("/"), ...node });
+          return;
+        }
+
+        for (const [key, child] of Object.entries(node)) {
+          if (["schema_version", "generated_at", "default_state", "routing", "routes"].includes(key)) continue;
+          walk(child, [...parts, key]);
+        }
+      }
+
+      walk(root, []);
+      return result.sort((a, b) => a.path.localeCompare(b.path));
+    }
+
+    function effectiveState(link) {
+      if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) return "expired";
+      return link.state || registry?.default_state || "permanent";
+    }
+
+    function renderMetrics(links) {
+      const counts = { total: links.length };
+      for (const link of links) {
+        const state = effectiveState(link);
+        counts[state] = (counts[state] || 0) + 1;
+      }
+
+      const items = ["total", "permanent", "ephemeral", "expired", "disabled", "maintenance", "deactivated"];
+      metricsEl.innerHTML = items.map((key) => `
+        <div class="card">
+          <div class="metric">${counts[key] || 0}</div>
+          <div class="muted">${label(key)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderRows(links) {
+      if (!links.length) {
+        rowsEl.innerHTML = `<tr><td colspan="7" class="muted">No matching routes.</td></tr>`;
+        return;
+      }
+
+      rowsEl.innerHTML = links.map((link) => {
+        const state = effectiveState(link);
+        return `
+          <tr>
+            <td><code>/${escapeHtml(link.path)}</code></td>
+            <td><span class="state ${stateClass(state)}">${escapeHtml(state)}</span></td>
+            <td><strong>${escapeHtml(link.title || "—")}</strong><br><span class="muted">${escapeHtml(link.description || "")}</span></td>
+            <td><a href="${escapeAttr(link.target)}" target="_blank" rel="noreferrer">${escapeHtml(link.target)}</a></td>
+            <td>${escapeHtml(link.owner || "—")}</td>
+            <td>${Array.isArray(link.tags) ? link.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join("") : "—"}</td>
+            <td>${escapeHtml(link.expires_at || "—")}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function label(value) {
+      return value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+    }
+
+    function formatGeneratedFooter(value) {
+      if (!value) return "View of links";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "View of links";
+
+      return `View of links, generated ${date.toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short"
+      })}`;
+    }
+
+    function stateClass(state) {
+      if (["permanent", "ephemeral"].includes(state)) return "ok";
+      if (["expired", "disabled", "maintenance"].includes(state)) return "warn";
+      return "bad";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value);
+    }
+  </script>
+</body>
+</html>

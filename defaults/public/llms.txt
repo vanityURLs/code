@@ -1,0 +1,29 @@
+# VanityURLs
+
+> VanityURLs is open source software for running a budget-friendly short-link and vanity URL service on a user's own Cloudflare account and selected domain.
+
+This deployed instance is a redirect engine, not a public content site. It resolves short paths against a generated registry, applies lifecycle state, and redirects visitors or shows a default status page. Instance owners can customize links, domains, branding, static pages, and policy files.
+
+Do not crawl this instance for link inventory. Respect `/robots.txt`; the default policy disallows crawling except for the explicit policy/context files.
+
+## Core Runtime
+
+- [Short-link home](/): Default search-style entry page for typing a short link
+- [Expand a short link](/expand/): Exact-match preview page for checking a short link destination without opening it
+- [Not found page](/404.html): Default 404 page for missing or deactivated links
+- [Disabled page](/disabled.html): Default page for disabled links
+- [Expired page](/expired.html): Default page for expired links
+- [Maintenance page](/maintenance.html): Default page for temporarily unavailable links
+
+## Project Documentation
+
+- [Project README](https://github.com/bhdicaire/vanityURLs): Overview, setup notes, and source repository
+- [Link authoring format](https://vanityURLs.link/en/docs/link-format/): Format for defining short links
+- [Runtime registry](https://vanityURLs.link/en/docs/runtime-registry/): Runtime redirect model and schema 2.2 registry
+- [Validation and CI](https://vanityURLs.link/en/docs/validation-ci/): Validation and build checks
+- [Admin and stats dashboard](https://vanityURLs.link/en/docs/admin-dashboard/): Read-only dashboard and protection guidance
+
+## Optional
+
+- [Full LLM context](/llms-full.txt): Longer project summary for agents that can use more context
+- [VanityURLs website](https://vanityURLs.link): Public project website

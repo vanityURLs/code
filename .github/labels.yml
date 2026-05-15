@@ -1,0 +1,122 @@
+labels:
+  # --- Core "type" labels -----------------------------------------------------
+  - name: "type: bug 🐛"
+    description: "Something isn't working as expected"
+    color: "d73a4a"
+    aliases: ["bug"]
+    from_name: "bug"
+
+  - name: "type: feature ✨"
+    description: "New functionality"
+    color: "a2eeef"
+    aliases: ["enhancement"]
+    from_name: "enhancement"
+
+  - name: "type: docs 📝"
+    description: "Documentation, README, guides"
+    color: "0075ca"
+
+  - name: "type: chore 🧹"
+    description: "Build, tooling, dependencies, refactors"
+    color: "cfd3d7"
+
+  - name: "type: perf 🚀"
+    description: "Performance improvements"
+    color: "ff7f50"
+
+  - name: "type: security 🔐"
+    description: "Security-related work"
+    color: "b60205"
+
+  # --- Status/triage ----------------------------------------------------------
+  - name: "status: needs triage"
+    description: "New issue—needs review and label"
+    color: "ededed"
+    aliases: ["needs triage"]
+
+  - name: "status: blocked ⛔"
+    description: "Cannot proceed—blocked by external or upstream"
+    color: "bdbdbd"
+
+  - name: "status: in progress ⏳"
+    description: "Being actively worked on"
+    color: "fbca04"
+
+  - name: "status: needs repro"
+    description: "Awaiting minimal reproduction steps"
+    color: "f9d0c4"
+
+  - name: "status: needs design 🎨"
+    description: "Requires UX/UI or product design input"
+    color: "fec1c1"
+
+  - name: "status: needs decision 🧭"
+    description: "Requires a product/engineering decision"
+    color: "e4e669"
+
+  - name: "status: ready ✅"
+    description: "Groomed and ready to pick up"
+    color: "0e8a16"
+
+  # --- Priority ---------------------------------------------------------------
+  - name: "priority: P0 🔥"
+    description: "Critical—urgent attention required"
+    color: "b60205"
+
+  - name: "priority: P1"
+    description: "High priority"
+    color: "d93f0b"
+
+  - name: "priority: P2"
+    description: "Medium priority"
+    color: "fbca04"
+
+  - name: "priority: P3"
+    description: "Low priority / nice to have"
+    color: "c2e0c6"
+
+  # --- Scope / area -----------------------------------------------------------
+  - name: "area: backend"
+    description: "Server, services, APIs"
+    color: "5319e7"
+
+  - name: "area: frontend"
+    description: "UI, UX, web app"
+    color: "1d76db"
+
+  - name: "area: infra"
+    description: "Infrastructure, CI/CD, DevOps"
+    color: "0b7261"
+
+  - name: "area: docs"
+    description: "Documentation site or content"
+    color: "0366d6"
+
+  # --- Community / help wanted ------------------------------------------------
+  - name: "good first issue"
+    description: "Great for first-time contributors"
+    color: "7057ff"
+
+  - name: "help wanted"
+    description: "Extra attention appreciated"
+    color: "008672"
+
+  # --- Housekeeping / meta ----------------------------------------------------
+  - name: "invalid"
+    description: "This doesn’t seem right or is missing information"
+    color: "e4e669"
+
+  - name: "duplicate"
+    description: "Already reported elsewhere"
+    color: "cccccc"
+
+  - name: "wontfix"
+    description: "This will not be worked on"
+    color: "ffffff"
+
+  - name: "question ❓"
+    description: "Further information is requested"
+    color: "d4c5f9"
+    aliases: ["question"]
+
+# Optional: enforce deletion of labels not declared here via workflow (skip-delete: false)

@@ -1,0 +1,41 @@
+/*
+  X-Robots-Tag: noindex, nofollow
+  X-Content-Type-Options: nosniff
+
+/
+  Cache-Control: no-store
+
+/index.html
+  Cache-Control: no-store
+
+/style.css
+  Cache-Control: no-store
+
+/llms.txt
+  Cache-Control: no-store
+  Content-Type: text/markdown; charset=utf-8
+
+/llms-full.txt
+  Cache-Control: no-store
+  Content-Type: text/markdown; charset=utf-8
+
+/expand/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+/_stats/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+  X-Content-Type-Options: nosniff
+
+/_stats/api/*
+  Cache-Control: no-store
+  Content-Type: application/json
+
+/v8s.json
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+/redirect-targets.json
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
