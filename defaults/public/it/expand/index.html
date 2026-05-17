@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="fr-CA">
+<html lang="it">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Aperçu d'un lien court | dicai.re</title>
-  <meta name="description" content="Voir la destination d'un lien court dicai.re avant de l'ouvrir">
+  <title>Espandi link breve | dicai.re</title>
+  <meta name="description" content="Visualizza la destinazione di un link breve dicai.re prima di aprirlo">
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -67,13 +67,13 @@
       </a>
 
       <form class="redirect-form" id="expandForm">
-        <label class="sr-only" for="expandKey">Lien court</label>
+        <label class="sr-only" for="expandKey">Link breve</label>
         <div class="search-box">
           <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
           </svg>
-          <input id="expandKey" type="text" maxlength="99" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="Saisir un lien court pour voir sa destination" required>
-          <button type="submit" aria-label="Voir la destination">
+          <input id="expandKey" type="text" maxlength="99" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="Inserisci un link breve per visualizzarne la destinazione" required>
+          <button type="submit" aria-label="Espandi link breve">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M5 12h12M13 6l6 6-6 6" />
             </svg>
@@ -85,8 +85,8 @@
 
       <a class="redirected-badge" href="https://vanityURLs.link" target="_blank" rel="noreferrer" aria-label="VanityURLs">
         <picture>
-          <source srcset="/v8s-redirige-dark.svg" media="(prefers-color-scheme: dark)">
-          <img src="/v8s-redirige.svg" alt="V8S redirigé par VanityURLs">
+          <source srcset="/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)">
+          <img src="/v8s-redirected.svg" alt="V8S reindirizzato da VanityURLs">
         </picture>
       </a>
     </section>
@@ -97,12 +97,12 @@
     const input = document.getElementById("expandKey");
     const result = document.getElementById("expandResult");
     const labels = {
-      empty: "Saisissez un lien court pour voir sa destination",
-      miss: "Aucun lien court correspondant n'a été trouvé",
-      notRedirecting: "Ce lien court ne redirige pas actuellement",
-      error: "Impossible de charger les données des liens courts",
-      preview: "Aperçu",
-      destination: "Destination"
+      empty: "Inserisci un link breve per visualizzarne la destinazione",
+      miss: "Non è stato trovato alcun link breve corrispondente",
+      notRedirecting: "Questo link breve al momento non reindirizza",
+      error: "Impossibile caricare i dati dei link brevi",
+      preview: "Anteprima",
+      destination: "Destinazione"
     };
 
     let registryPromise = null;

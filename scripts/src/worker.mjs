@@ -21,7 +21,7 @@ const WEEKDAY_ALIASES = {
 let runtimeBlocklistPromise;
 const accessJwksPromises = new Map();
 
-const LOCALIZED_HTML_LANGUAGES = ["fr"];
+const LOCALIZED_HTML_LANGUAGES = ["fr", "es", "it", "de"];
 
 const BOT_PATTERNS = [
   { re: /googlebot/i, name: "Googlebot" },
@@ -777,8 +777,20 @@ function statusLabel(request, key) {
       reference: "Reference"
     },
     fr: {
-      requestedSlug: "Lien demande",
-      reference: "Reference"
+      requestedSlug: "Lien demandé",
+      reference: "Référence"
+    },
+    es: {
+      requestedSlug: "Enlace solicitado",
+      reference: "Referencia"
+    },
+    it: {
+      requestedSlug: "Link richiesto",
+      reference: "Riferimento"
+    },
+    de: {
+      requestedSlug: "Angeforderter Kurzlink",
+      reference: "Referenz"
     }
   };
 

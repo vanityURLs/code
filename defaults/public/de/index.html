@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="fr-CA">
+<html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Liens courts VanityURLs</title>
+  <title>VanityURLs-Kurzlinks</title>
   <script>
     (function () {
       var pathname = window.location.pathname || "/";
@@ -26,12 +26,12 @@
       </a>
 
       <form class="redirect-form" onsubmit="redirect(event)">
-        <label class="sr-only" for="redirectKey">Lien court</label>
+        <label class="sr-only" for="redirectKey">Kurzlink</label>
         <div class="search-box">
           <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
           </svg>
-          <input id="redirectKey" type="text" maxlength="99" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="Saisir un lien court, redirigé par le moteur VanityURLs" required>
+          <input id="redirectKey" type="text" maxlength="99" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="Kurzlink eingeben, weitergeleitet durch die VanityURLs-Engine" required>
           <script>
             (function () {
               var initialInvalidKey = window.__initialInvalidRedirectKey;
@@ -44,7 +44,7 @@
               if (form) form.classList.add("has-value");
             })();
           </script>
-          <button type="submit" aria-label="Ouvrir le lien court">
+          <button type="submit" aria-label="Kurzlink öffnen">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M5 12h12M13 6l6 6-6 6" />
             </svg>
@@ -54,16 +54,16 @@
 
       <a class="redirected-badge" href="https://vanityURLs.link" target="_blank" rel="noreferrer" aria-label="VanityURLs">
         <picture>
-          <source srcset="/v8s-redirige-dark.svg" media="(prefers-color-scheme: dark)">
-          <img src="/v8s-redirige.svg" alt="V8S redirigé par VanityURLs">
+          <source srcset="/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)">
+          <img src="/v8s-redirected.svg" alt="V8S weitergeleitet von VanityURLs">
         </picture>
       </a>
     </section>
   </main>
 
   <noscript>
-    <p>JavaScript est désactivé</p>
-    <p><span>Ouvrir le lien courts directly in the address bar, for example:</span> <a href="/test">/test</a></p>
+    <p>JavaScript ist deaktiviert</p>
+    <p><span>Kurzlink öffnens directly in the address bar, for example:</span> <a href="/test">/test</a></p>
   </noscript>
 
   <script src="/script.js"></script>

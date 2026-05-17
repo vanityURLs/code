@@ -111,6 +111,21 @@ const assets = {
   })
 };
 
+for (const language of ["es", "it", "de"]) {
+  Object.assign(assets, {
+    [`/${language}/index.html`]: html(`<main>home ${language}</main>`),
+    [`/${language}/privacy.html`]: html(`<main>privacy ${language}</main>`),
+    [`/${language}/terms.html`]: html(`<main>terms ${language}</main>`),
+    [`/${language}/abuse.html`]: html(`<main>abuse ${language}</main>`),
+    [`/${language}/security.html`]: html(`<main>security ${language}</main>`),
+    [`/${language}/expand/index.html`]: html(`<main>expand ${language}</main>`),
+    [`/${language}/disabled.html`]: html(`<main>disabled ${language}</main>`),
+    [`/${language}/expired.html`]: html(`<main>expired ${language}</main>`),
+    [`/${language}/maintenance.html`]: html(`<main>maintenance ${language}</main>`),
+    [`/${language}/404.html`]: html(`<main>${language} {{SLUG_MESSAGE}}{{REFERENCE_LINE}}</main>`)
+  });
+}
+
 function html(body) {
   return new Response(body, {
     headers: { "content-type": "text/html; charset=utf-8" }
@@ -333,6 +348,19 @@ await run("serves localized status pages from Accept-Language", async () => {
   assert(body.includes("fr"), "localized body");
   assert(response.headers.get("content-language") === "fr", "content language");
   assert((response.headers.get("vary") || "").includes("Accept-Language"), "vary header");
+});
+
+await run("serves Spanish, Italian, and German pages from Accept-Language", async () => {
+  for (const language of ["es", "it", "de"]) {
+    const ctx = mockCtx();
+    const response = await worker.fetch(request("/", {
+      headers: { "accept-language": `${language};q=1,en;q=0.5` }
+    }), env(), ctx);
+    assert(response.status === 200, `${language} status`);
+    assert((await response.text()).includes(`home ${language}`), `${language} localized body`);
+    assert(response.headers.get("content-language") === language, `${language} content language`);
+    await ctx.flush();
+  }
 });
 
 await run("serves extensionless policy page aliases", async () => {
