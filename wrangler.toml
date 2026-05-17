@@ -25,7 +25,9 @@ run_worker_first = [
 ]
 
 [vars]
+ANALYTICS_PROVIDER = "umami"
 UMAMI_ENDPOINT = "https://cloud.umami.is/api/send"
+UMAMI_GEO_IP_MODE = "full"
 
 [[routes]]
 # pattern = "your-short-domain.com"

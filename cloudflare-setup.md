@@ -11,7 +11,9 @@
   1. Select `Website Workers`
   2. Select `Settings`tab
   3. Go to to the `Variables and Secrets`section
-    * Add `UMAMI_WEBSITE_ID`Secret based from the `Website ID` of `www.vanityURLs.link` in [Umami](umami.is) account
+    * Add `UMAMI_WEBSITE_ID` Secret based on the `Website ID` of `www.vanityURLs.link` in the [Umami](https://umami.is) account
+    * Add `CF_ACCESS_TEAM_DOMAIN` based on the `Team domain` identified in Cloudflare's Main Menu --> Zero Trust --> Settings
+    * Add `CF_ACCESS_AUD` Secret based on the `Application Audience (AUD) tag` for the Cloudflare Access application protecting `/_stats` and `/_tests`
+
 3. Load [VanityURLs.link](VanityURLs.link) in your primary browser and [Umami](umami.is) in another browser, let's explain why we need two browsers during AI review
   * Load several web pages from the website and check if you see them in Umami
-
