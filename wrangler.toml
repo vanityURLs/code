@@ -25,11 +25,12 @@ run_worker_first = [
 ]
 
 [vars]
-
+UMAMI_ENDPOINT = "https://cloud.umami.is/api/send"
 
 [[routes]]
 # pattern = "your-short-domain.com"
-#custom_domain = true
+pattern = "vanityurls.link"
+custom_domain = true
 
 [observability]
 [observability.logs]
