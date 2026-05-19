@@ -219,6 +219,8 @@ function copyPublic(siteConfig) {
   } else {
     copyLocalizedBadgeFallbacks(siteConfig);
   }
+
+  pruneUnsupportedLanguageDirs(BUILD_DIR, siteConfig);
 }
 
 function loadSiteConfig() {
@@ -252,6 +254,18 @@ function supportedLanguages(siteConfig) {
   return [...new Set(languages)].includes("en") ? [...new Set(languages)] : ["en", ...new Set(languages)];
 }
 
+function pruneUnsupportedLanguageDirs(publicDir, siteConfig) {
+  const supported = new Set(supportedLanguages(siteConfig));
+  for (const language of Object.keys(LANGUAGE_METADATA)) {
+    if (language === "en" || supported.has(language)) continue;
+
+    fs.rmSync(path.join(publicDir, language), {
+      recursive: true,
+      force: true
+    });
+  }
+}
+
 function writeSiteConfig(siteConfig) {
   fs.writeFileSync(RUNTIME_SITE_CONFIG_PATH, `${JSON.stringify(siteConfig, null, 2)}\n`);
 }
@@ -259,6 +273,7 @@ function writeSiteConfig(siteConfig) {
 function buildTestsPage(siteConfig) {
   const languages = supportedLanguages(siteConfig);
   const panels = languages.map((language) => renderTestsPanel(language)).join("\n\n");
+  const wordmark = renderConfiguredWordmark(siteConfig);
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -271,7 +286,7 @@ function buildTestsPage(siteConfig) {
 <body>
   <main class="home-shell qa-shell">
     <header class="home-card qa-header">
-      <h1 class="instance-brand-title"><span>Vanity</span><span>URLs</span></h1>
+      <h1 class="instance-brand-title">${wordmark}</h1>
       <p class="lede">Instance pages and localized variants for quick checks after custom template changes</p>
     </header>
 
@@ -286,6 +301,15 @@ ${panels}
   const testsPath = path.join(BUILD_DIR, "_tests", "index.html");
   fs.mkdirSync(path.dirname(testsPath), { recursive: true });
   fs.writeFileSync(testsPath, html);
+}
+
+function renderConfiguredWordmark(siteConfig) {
+  const wordmark = siteConfig?.branding?.wordmark;
+  if (!wordmark?.black && !wordmark?.green) {
+    return "<span>Vanity</span><span>URLs</span>";
+  }
+
+  return `<span>${escapeHtml(wordmark.black || "")}</span><span>${escapeHtml(wordmark.green || "")}</span>`;
 }
 
 function renderTestsPanel(language) {
