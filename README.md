@@ -58,6 +58,13 @@ Use `./scripts/lnk --help` as the local quick reference for link,
 schedule, and block policy edits. The detailed product documentation lives
 at <https://www.VanityURLs.link/en/docs>.
 
+Run `npm run local-install` to create or update
+`custom/v8s-local-config.json`, install the shell helper, install the
+`lnk` CLI, and write the local repository path used by workstation helpers.
+Run `npm run local-publish` after manual local edits; it runs
+`npm run check`, then commits and pushes the configured local paths with the
+commit message from `v8s-local-config.json`.
+
 The CLI intentionally documents only the user-facing environment flags:
 
 * `DRY_RUN=true` prints the planned change without writing, committing, or

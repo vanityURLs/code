@@ -5,8 +5,14 @@
     "install_path": "$XDG_CONFIG_HOME/zsh/v8s.sh",
     "rc_file": "$XDG_CONFIG_HOME/zsh/.zshrc"
   },
-  "link_cli": {
+  "lnk_cli": {
     "install_path": "$XDG_CONFIG_HOME/bin/lnk"
+  },
+  "local_publish": {
+    "commit_message": "chore: update local vanityURLs configuration",
+    "paths": [
+      "custom"
+    ]
   },
   "registry": {
     "local_path": "~/.v8s.json"

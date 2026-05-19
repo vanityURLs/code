@@ -43,7 +43,7 @@ function parseArgs(argv) {
 function printHelp() {
   console.log(`Usage: npm run local-install -- [options]
 
-Configure the local V8S shell helper for this workstation.
+Configure the local V8S shell helper and lnk CLI for this workstation.
 
 Options:
   --yes       Accept defaults without prompting
@@ -93,9 +93,13 @@ function mergeConfig(base, local) {
       ...(base.shell_helper || {}),
       ...(local.shell_helper || {})
     },
-    link_cli: {
-      ...(base.link_cli || {}),
-      ...(local.link_cli || {})
+    lnk_cli: {
+      ...(base.lnk_cli || {}),
+      ...(local.lnk_cli || {})
+    },
+    local_publish: {
+      ...(base.local_publish || {}),
+      ...(local.local_publish || {})
     },
     registry: {
       ...(base.registry || {}),
@@ -124,8 +128,11 @@ async function promptConfig(config, args) {
         ...config.repository,
         path: config.repository?.path || ROOT
       },
-      link_cli: {
-        ...config.link_cli
+      lnk_cli: {
+        ...config.lnk_cli
+      },
+      local_publish: {
+        ...config.local_publish
       }
     };
   }
@@ -139,8 +146,11 @@ async function promptConfig(config, args) {
         ...config.shell_helper,
         enabled
       },
-      link_cli: {
-        ...config.link_cli
+      lnk_cli: {
+        ...config.lnk_cli
+      },
+      local_publish: {
+        ...config.local_publish
       },
       registry: {
         ...config.registry
@@ -153,7 +163,8 @@ async function promptConfig(config, args) {
     if (!enabled) return next;
 
     next.shell_helper.install_path = await question(rl, "Shell helper install path", next.shell_helper.install_path);
-    next.link_cli.install_path = await question(rl, "lnk CLI install path", next.link_cli.install_path);
+    next.lnk_cli.install_path = await question(rl, "lnk CLI install path", next.lnk_cli.install_path);
+    next.local_publish.commit_message = await question(rl, "Local publish commit message", next.local_publish.commit_message);
     next.shell_helper.rc_file = await question(rl, "Shell rc file to update", next.shell_helper.rc_file);
     next.registry.local_path = await question(rl, "Local registry path", next.registry.local_path);
     next.repository.path = await question(rl, "Local repository path", next.repository.path || ROOT);
@@ -200,7 +211,7 @@ function installHelper(config, args) {
   }
 
   const helperTarget = expandLocalPath(config.shell_helper.install_path);
-  const lnkTarget = expandLocalPath(config.link_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
+  const lnkTarget = expandLocalPath(config.lnk_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
   const rcFile = expandLocalPath(config.shell_helper.rc_file);
   const registryPath = expandLocalPath(config.registry?.local_path || "~/.v8s.json");
   const repoPath = expandLocalPath(config.repository?.path || ROOT);
@@ -239,7 +250,7 @@ function installHelper(config, args) {
 }
 
 function installLnkCli(config, args) {
-  const lnkTarget = expandLocalPath(config.link_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
+  const lnkTarget = expandLocalPath(config.lnk_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
 
   if (args.dryRun) {
     console.log(`[dry-run] would copy scripts/lnk to ${lnkTarget}`);
