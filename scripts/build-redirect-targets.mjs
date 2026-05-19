@@ -82,6 +82,10 @@ function readJsonFile(filePath) {
 }
 
 function loadScheduleConfig() {
+  if (inputPath.replaceAll("\\", "/").includes("custom/v8s-links.txt")) {
+    return readJsonFile("custom/v8s-schedules.json");
+  }
+
   return {
     ...readJsonFile("defaults/v8s-schedules.json"),
     ...readJsonFile("custom/v8s-schedules.json")

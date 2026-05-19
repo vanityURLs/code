@@ -10,6 +10,7 @@ amazon/wish|https://amazon.com/wishlist||Amazon Wishlist|Personal shopping list|
 bank|https://chase.com||Primary Bank|Banking portal|finance|bhd||
 blacklist-source|https://github.com/StevenBlack/hosts||Ad/Malware Blocklist|Source for domain blocking|security,infra|bhd||
 check-link|https://www.virustotal.com/gui/home/url||VirusTotal URL Scan|Safety checker for links|security|bhd||
+contact|https://youtu.be/watch?v=dQw4w9WgXcQ|permanent|Scheduled contact example|Demonstrates weekday business-hour routing with a fallback target|example,schedule|owner||
 course|https://udemy.com/my-courses||Udemy Active Course|Online learning platform|edu|bhd||
 crypto|https://etherscan.io||Wallet Explorer|Blockchain explorer|finance|bhd||
 db|https://supabase.com||Database Console|Database management|infra|bhd||

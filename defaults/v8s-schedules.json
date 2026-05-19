@@ -1,1 +1,7 @@
-{}
+{
+  "contact": {
+    "timezone": "America/New_York",
+    "default": "https://youtu.be/watch?v=dQw4w9WgXcQ",
+    "9to5": "https://youtu.be/watch?v=UbxUSsFXYo4"
+  }
+}

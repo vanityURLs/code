@@ -15,7 +15,7 @@
     "local-install": "node scripts/local-install.mjs",
     "setup": "node scripts/install.mjs",
     "smoke:analytics": "npm run build && node scripts/smoke-analytics.mjs",
-    "test": "node scripts/src/worker.test.mjs",
+    "test": "node scripts/workers/worker.test.mjs",
     "upgrade": "node scripts/upgrade.mjs",
     "update": "npm run upgrade",
     "validate": "node scripts/validate-registry.mjs build/v8s.json",

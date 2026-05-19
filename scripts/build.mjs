@@ -13,7 +13,7 @@ const RUNTIME_SITE_CONFIG_PATH = path.join(BUILD_DIR, "v8s-site-config.json");
 const DEFAULTS_DIR = path.join(ROOT, "defaults");
 const CUSTOM_DIR = path.join(ROOT, "custom");
 const LOCAL_CONFIG_PATH = path.join(CUSTOM_DIR, "v8s-local-config.json");
-const WORKER_SOURCE_DIR = path.join(ROOT, "scripts", "src");
+const WORKER_SOURCE_DIR = path.join(ROOT, "scripts", "workers");
 const RUNTIME_SOURCE_DIR = path.join(ROOT, "src");
 const LANGUAGE_METADATA = {
   en: {
@@ -149,7 +149,7 @@ function cleanBuild() {
 }
 
 function copyRuntimeSource() {
-  log("Copying scripts/src/ to src/");
+  log("Copying scripts/workers/ to src/");
 
   fs.rmSync(RUNTIME_SOURCE_DIR, {
     recursive: true,

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import worker from "./src/worker.mjs";
+import worker from "./workers/worker.mjs";
 
 const ROOT = new URL("..", import.meta.url);
 const BUILD_DIR = new URL("../build", import.meta.url);
