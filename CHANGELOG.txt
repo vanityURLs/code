@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.1.0](https://github.com/vanityURLs/code/compare/v2.0.0...v2.1.0) (2026-05-19)
+
+
+### Features
+
+* add _tests page ([6d35db9](https://github.com/vanityURLs/code/commit/6d35db9bfa601881e930fd84170b0398b4f69164))
+* add lnk list command ([f50598b](https://github.com/vanityURLs/code/commit/f50598b1b6886b5079de83f9fe44218fc5335aa4))
+* add local config and policy files ([30256dd](https://github.com/vanityURLs/code/commit/30256ddcc231275497ec6eca09222e009fe0409b))
+* add local publish workflow ([6768d22](https://github.com/vanityURLs/code/commit/6768d2269dec4b9a413238f0f3458a4bac51a4a1))
+* add multilingual redirector pages ([a4534e8](https://github.com/vanityURLs/code/commit/a4534e8e6f9d63b08502d2ba14b0385e090a0912))
+* configure supported site languages ([d8c53e0](https://github.com/vanityURLs/code/commit/d8c53e0bb7f5826ec748cfa953db5e4c20f7b340))
+* install repo-aware lnk cli ([81e049f](https://github.com/vanityURLs/code/commit/81e049f49efe67b5518c239f15cefcad63b6b135))
+* localize public assets and schedule defaults ([eac0b34](https://github.com/vanityURLs/code/commit/eac0b34807052f4c663355bcb0069340b4440375))
+* move worker sources and add schedule example ([514ddfc](https://github.com/vanityURLs/code/commit/514ddfceb58ad95d07051394929c99f484f40b12))
+
+
+### Bug Fixes
+
+* make custom policies authoritative ([693d6d8](https://github.com/vanityURLs/code/commit/693d6d8219e1b746c3128c4b23dca3f3e0138ae0))
+
 ## [2.0.0](https://github.com/vanityURLs/vanityURLs/compare/v1.9.0...v2.0.0) (2026-05-15)
 
 
