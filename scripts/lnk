@@ -24,6 +24,7 @@ function usage() {
 Usage:
   ./scripts/lnk LONG_URL [SLUG]
   ./scripts/lnk --splat LONG_URL_WITH_:splat SLUG
+  ./scripts/lnk list [SLUG]
 
 Schedules:
   ./scripts/lnk schedule add SLUG TARGET --label LABEL --days mon,tue --from HH:MM --to HH:MM [--timezone TZ]
@@ -37,6 +38,7 @@ Block policies:
   ./scripts/lnk block allow DOMAIN --reason TEXT
 
 Options:
+  --format FORMAT        table | json for list output
   --state STATE          permanent | ephemeral | expired | disabled | maintenance | deactivated
   --title TEXT           Human-readable title
   --description TEXT     Human-readable description
@@ -66,6 +68,8 @@ Notes:
   Successful write operations run npm run check, then commit and push automatically.
 
 Examples:
+  ./scripts/lnk list
+  ./scripts/lnk list social/x
   ./scripts/lnk https://github.com/vanityURLs github
   ./scripts/lnk https://x.com/vanityURLs social/x
   ./scripts/lnk https://www.linkedin.com/company/example social/linkedin
@@ -101,6 +105,7 @@ function run(command, args) {
 
 function parseArgs(argv) {
   const options = {
+    format: "table",
     state: "permanent",
     splat: false,
     title: "",
@@ -117,6 +122,9 @@ function parseArgs(argv) {
 
     if (arg === "--help" || arg === "-h") {
       options.help = true;
+    } else if (arg === "--format") {
+      options.format = readOptionValue(argv, index, arg);
+      index += 1;
     } else if (arg === "--splat") {
       options.splat = true;
     } else if (arg === "--state") {
@@ -230,6 +238,70 @@ function dirname(filePath) {
 function readJson(filePath, fallback) {
   if (!fs.existsSync(filePath)) return fallback;
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function ensureRegistry() {
+  const registryPath = "build/v8s.json";
+  if (!fs.existsSync(registryPath)) {
+    run("npm", ["run", "build"]);
+  }
+
+  return readJson(registryPath, { links: [] });
+}
+
+function listLinks(requestedSlug, options) {
+  const registry = ensureRegistry();
+  const slug = requestedSlug ? normalizeSlug(requestedSlug) : "";
+  const links = (registry.links || [])
+    .filter((link) => !slug || link.slug === slug)
+    .sort((a, b) => a.slug.localeCompare(b.slug));
+
+  if (options.format === "json") {
+    console.log(JSON.stringify(links, null, 2));
+    return;
+  }
+
+  if (options.format !== "table") {
+    throw new Error("--format must be table or json");
+  }
+
+  if (!links.length) {
+    console.log(slug ? `No link found for ${slug}` : "No links configured");
+    return;
+  }
+
+  printTable(links.map((link) => {
+    return [
+      link.slug,
+      link.state || "permanent",
+      link.owner || "",
+      link.title || "",
+      link.target || ""
+    ];
+  }), ["Slug", "State", "Owner", "Title", "Target"]);
+}
+
+function printTable(rows, headers) {
+  const widths = headers.map((header, index) => {
+    return Math.min(40, Math.max(header.length, ...rows.map((row) => String(row[index] || "").length)));
+  });
+
+  console.log(headers.map((header, index) => padCell(header, widths[index])).join("  "));
+  console.log(widths.map((width) => "-".repeat(width)).join("  "));
+
+  for (const row of rows) {
+    console.log(row.map((cell, index) => padCell(truncateCell(cell, widths[index]), widths[index])).join("  "));
+  }
+}
+
+function truncateCell(value, width) {
+  const text = String(value || "");
+  if (text.length <= width) return text;
+  return `${text.slice(0, Math.max(0, width - 1))}…`;
+}
+
+function padCell(value, width) {
+  return String(value || "").padEnd(width, " ");
 }
 
 function writeJson(filePath, value) {
@@ -449,6 +521,11 @@ function main() {
 
   if (options.help) {
     usage();
+    return;
+  }
+
+  if (positionals[0] === "list") {
+    listLinks(positionals[1] || "", options);
     return;
   }
 
