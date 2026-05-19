@@ -11,6 +11,7 @@ const RUNTIME_BLOCKLIST_PATH = path.join(BUILD_DIR, "v8s-blocklist.json");
 const RUNTIME_REGISTRY_PATH = path.join(BUILD_DIR, "v8s.json");
 const DEFAULTS_DIR = path.join(ROOT, "defaults");
 const CUSTOM_DIR = path.join(ROOT, "custom");
+const LOCAL_CONFIG_PATH = path.join(CUSTOM_DIR, "v8s-local-config.json");
 const WORKER_SOURCE_DIR = path.join(ROOT, "scripts", "src");
 const RUNTIME_SOURCE_DIR = path.join(ROOT, "src");
 
@@ -95,8 +96,14 @@ function copyPublic() {
 function copyRuntimeBlocklist() {
   log("Building v8s-blocklist.json");
 
-  const defaultPath = path.join(DEFAULTS_DIR, "v8s-blocklist.json");
-  const customPath = path.join(CUSTOM_DIR, "v8s-blocklist.json");
+  const defaultPath = firstExistingPath(
+    path.join(DEFAULTS_DIR, "v8s-policies.json"),
+    path.join(DEFAULTS_DIR, "v8s-blocklist.json")
+  );
+  const customPath = firstExistingPath(
+    path.join(CUSTOM_DIR, "v8s-policies.json"),
+    path.join(CUSTOM_DIR, "v8s-blocklist.json")
+  );
   const base = readJsonFile(defaultPath);
   const custom = readJsonFile(customPath);
   const merged = mergeRuntimeBlocklist(base, custom);
@@ -105,8 +112,12 @@ function copyRuntimeBlocklist() {
 }
 
 function readJsonFile(filePath) {
-  if (!fs.existsSync(filePath)) return {};
+  if (!filePath || !fs.existsSync(filePath)) return {};
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function firstExistingPath(...paths) {
+  return paths.find((filePath) => fs.existsSync(filePath)) || paths[0];
 }
 
 function mergeRuntimeBlocklist(base, custom) {
@@ -198,6 +209,11 @@ function assertNestedSlugSupport() {
 }
 
 function shouldSyncHomeRegistry() {
+  const localConfig = loadLocalConfig();
+  if (localConfig) {
+    return localConfig.shell_helper?.enabled === true;
+  }
+
   if (process.env.V8S_SYNC_HOME === "0" || process.env.V8S_SYNC_HOME === "false") {
     return false;
   }
@@ -206,22 +222,20 @@ function shouldSyncHomeRegistry() {
     return true;
   }
 
-  return Boolean(process.env.HOME)
-    && !process.env.CI
-    && !process.env.CF_PAGES
-    && !process.env.CLOUDFLARE_ACCOUNT_ID
-    && process.platform === "darwin";
+  return false;
 }
 
 function syncHomeRegistry() {
+  const localConfig = loadLocalConfig();
   if (!shouldSyncHomeRegistry()) {
     log("Skipping workstation registry sync");
     return;
   }
 
-  const homeRegistryPath = path.join(process.env.HOME, ".v8s.json");
+  const homeRegistryPath = expandLocalPath(localConfig?.registry?.local_path || "~/.v8s.json");
 
   try {
+    fs.mkdirSync(path.dirname(homeRegistryPath), { recursive: true });
     fs.copyFileSync(RUNTIME_REGISTRY_PATH, homeRegistryPath);
     log(`Copied v8s.json to ${homeRegistryPath}`);
   } catch (error) {
@@ -231,6 +245,21 @@ function syncHomeRegistry() {
 
     console.warn(`[build] Unable to copy v8s.json to ${homeRegistryPath}: ${error.message}`);
   }
+}
+
+function loadLocalConfig() {
+  if (!fs.existsSync(LOCAL_CONFIG_PATH)) return null;
+  return readJsonFile(LOCAL_CONFIG_PATH);
+}
+
+function expandLocalPath(value) {
+  const fallbackXdgConfig = path.join(process.env.HOME || "", ".config");
+  return String(value || "")
+    .replace(/^~(?=$|\/)/, process.env.HOME || "")
+    .replaceAll("$HOME", process.env.HOME || "")
+    .replaceAll("${HOME}", process.env.HOME || "")
+    .replaceAll("$XDG_CONFIG_HOME", process.env.XDG_CONFIG_HOME || fallbackXdgConfig)
+    .replaceAll("${XDG_CONFIG_HOME}", process.env.XDG_CONFIG_HOME || fallbackXdgConfig);
 }
 
 function main() {

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "shell_helper": {
+    "enabled": false,
+    "install_path": "$XDG_CONFIG_HOME/zsh/v8s.sh",
+    "rc_file": "$XDG_CONFIG_HOME/zsh/.zshrc"
+  },
+  "registry": {
+    "local_path": "~/.v8s.json"
+  },
+  "repository": {
+    "path": ""
+  }
+}

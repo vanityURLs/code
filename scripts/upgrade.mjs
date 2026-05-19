@@ -6,7 +6,7 @@ import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 
 const ROOT = process.cwd();
-const DEFAULT_REMOTE = "https://github.com/dicaire/dicai-re.git";
+const DEFAULT_REMOTE = "https://github.com/vanityURLs/code.git";
 const DEFAULT_REF = "main";
 const DEFAULT_PATHS = ["defaults", "scripts"];
 const PROTECTED_PATHS = ["custom", "wrangler.toml", ".dev.vars"];

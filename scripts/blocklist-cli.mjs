@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const POLICY_PATH = process.env.BLOCKLIST_FILE || "custom/v8s-blocklist.json";
+const POLICY_PATH = process.env.V8S_POLICY_FILE || process.env.BLOCKLIST_FILE || "custom/v8s-policies.json";
 const CATEGORIES_PATH = "defaults/v8s-blocklist-categories.json";
 
 function usage() {

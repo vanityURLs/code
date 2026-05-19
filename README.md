@@ -11,7 +11,7 @@ Features:
  * URL redirection (301, 302, 303, 307 and 308)
  * Advanced redirection with splats (e.g., /news/*  &#8594; /blog/:splat )
  * Continuous integration managed by Cloudflare Page Engine
- * Configurable destination blocklists with `blocked_keywords` in `v8s-blocklist.json`
+ * Configurable destination policies with `blocked_keywords` in `v8s-policies.json`
  * Exact-match destination previews through `/expand/` and the `v8s --print <slug>` CLI helper
  * Link expiration dates with the `expires_at` field in `v8s-links.txt`
 
@@ -40,13 +40,14 @@ As long as you secure your Github and Cloudflare accounts with robust authentica
 The 2.x runtime includes a few requested capabilities that are easy to
 miss because they are implemented through configuration or helper scripts:
 
-* Short URL blocklists are handled through `blocked_keywords` in
-  `defaults/v8s-blocklist.json` or an instance-specific
-  `custom/v8s-blocklist.json`.
+* Short URL policies are handled through `blocked_keywords` in
+  `defaults/v8s-policies.json` or an instance-specific
+  `custom/v8s-policies.json`.
 * Looking up a destination from a short name is available in two places:
   `/expand/` previews exact-match short links in the deployed Worker, and
   `v8s --print <slug>` prints a destination from the generated local
-  registry after `npm run build`.
+  registry after `npm run build`. Run `npm run local-install` once to
+  install the Bash/Zsh helper and opt in to local registry syncing.
 * Expiration dates are stored with the `expires_at` field in
   `v8s-links.txt`; `./scripts/lnk --expires-at DATE ...` writes that
   value, and the Worker treats expired links as expired at runtime.

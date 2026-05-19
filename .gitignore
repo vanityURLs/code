@@ -1,6 +1,7 @@
 node_modules/
 .wrangler/
 .dev.vars
+custom/v8s-local-config.json
 *.old
 *.swp
 .DS_Store

@@ -5,22 +5,22 @@
     "block_private_networks": true,
     "block_localhost": true,
     "block_auth_in_url": true,
-    "allowed_protocols": ["http:", "https:"],
-    "blocked_file_extensions": [".exe", ".scr", ".bat", ".cmd", ".com", ".msi", ".ps1", ".vbs", ".js", ".jar"]
-  },
-  "generated_sources": {
-    "urlhaus_malware": {
-      "enabled": true,
-      "category": "malware",
-      "severity": "high",
-      "url": "https://urlhaus.abuse.ch/downloads/hostfile/"
-    },
-    "url_shorteners": {
-      "enabled": true,
-      "category": "shortener-loop",
-      "severity": "medium",
-      "url": "https://raw.githubusercontent.com/PeterDaveHello/url-shorteners/master/list"
-    }
+    "allowed_protocols": [
+      "http:",
+      "https:"
+    ],
+    "blocked_file_extensions": [
+      ".exe",
+      ".scr",
+      ".bat",
+      ".cmd",
+      ".com",
+      ".msi",
+      ".ps1",
+      ".vbs",
+      ".js",
+      ".jar"
+    ]
   },
   "allow_domains": [
     {
@@ -69,46 +69,6 @@
       "category": "scanner-probe",
       "severity": "low",
       "reason": "Common exposed repository scanner probe",
-      "source": "runtime-scanner-policy",
-      "added_at": "2026-05-05"
-    },
-    {
-      "keyword": "wp-admin",
-      "category": "scanner-probe",
-      "severity": "low",
-      "reason": "Common WordPress scanner probe",
-      "source": "runtime-scanner-policy",
-      "added_at": "2026-05-05"
-    },
-    {
-      "keyword": "/wp-",
-      "category": "scanner-probe",
-      "severity": "low",
-      "reason": "Common WordPress scanner probe prefix",
-      "source": "runtime-scanner-policy",
-      "added_at": "2026-05-07"
-    },
-    {
-      "keyword": "/wp-content/",
-      "category": "scanner-probe",
-      "severity": "low",
-      "reason": "Common WordPress content directory scanner probe",
-      "source": "runtime-scanner-policy",
-      "added_at": "2026-05-07"
-    },
-    {
-      "keyword": "/wp-includes/",
-      "category": "scanner-probe",
-      "severity": "low",
-      "reason": "Common WordPress includes directory scanner probe",
-      "source": "runtime-scanner-policy",
-      "added_at": "2026-05-07"
-    },
-    {
-      "keyword": "wp-login.php",
-      "category": "scanner-probe",
-      "severity": "low",
-      "reason": "Common WordPress login scanner probe",
       "source": "runtime-scanner-policy",
       "added_at": "2026-05-05"
     },

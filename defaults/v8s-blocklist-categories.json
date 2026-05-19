@@ -5,10 +5,16 @@
       "description": "Fake login pages, credential theft, and brand impersonation"
     },
     "malware": {
-      "description": "Malware distribution, payload hosting, exploit delivery, and command-and-control infrastructure"
+      "description": "Malware distribution, payload hosting, exploit delivery, and command-and-control infrastructure",
+      "default_sources": [
+        "urlhaus_malware"
+      ]
     },
     "shortener-loop": {
-      "description": "Public URL shorteners used to hide redirect chains or obscure the final destination"
+      "description": "Public URL shorteners used to hide redirect chains or obscure the final destination",
+      "default_sources": [
+        "url_shorteners"
+      ]
     },
     "scanner-probe": {
       "description": "Automated vulnerability scanner paths that should not resolve as short links"
@@ -47,6 +53,20 @@
     },
     "info": {
       "description": "Documentation, classification, or owner-defined informational category"
+    }
+  },
+  "sources": {
+    "urlhaus_malware": {
+      "enabled": true,
+      "category": "malware",
+      "severity": "high",
+      "url": "https://urlhaus.abuse.ch/downloads/hostfile/"
+    },
+    "url_shorteners": {
+      "enabled": true,
+      "category": "shortener-loop",
+      "severity": "medium",
+      "url": "https://raw.githubusercontent.com/PeterDaveHello/url-shorteners/master/list"
     }
   }
 }

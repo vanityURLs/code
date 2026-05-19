@@ -4,22 +4,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 const OUTPUT_PATH = process.argv[2] || "build/blocklist.generated.json";
-const POLICY_PATH = "defaults/v8s-blocklist.json";
-const CUSTOM_POLICY_PATH = "custom/v8s-blocklist.json";
-const DEFAULT_SOURCES = {
-  urlhaus_malware: {
-    enabled: true,
-    category: "malware",
-    severity: "high",
-    url: "https://urlhaus.abuse.ch/downloads/hostfile/"
-  },
-  url_shorteners: {
-    enabled: true,
-    category: "shortener-loop",
-    severity: "medium",
-    url: "https://raw.githubusercontent.com/PeterDaveHello/url-shorteners/master/list"
-  }
-};
+const POLICY_PATH = "defaults/v8s-policies.json";
+const LEGACY_POLICY_PATH = "defaults/v8s-blocklist.json";
+const CUSTOM_POLICY_PATH = "custom/v8s-policies.json";
+const LEGACY_CUSTOM_POLICY_PATH = "custom/v8s-blocklist.json";
+const CATEGORIES_PATH = "defaults/v8s-blocklist-categories.json";
+const CUSTOM_CATEGORIES_PATH = "custom/v8s-blocklist-categories.json";
 const MAX_DOMAINS = 50000;
 const MAX_FORCE_NOTICES = 25;
 
@@ -52,12 +42,14 @@ function parseDomainLines(text) {
 
 function loadGeneratedSources() {
   const policy = loadPolicy();
+  const categories = loadCategories();
   const configuredSources = policy.generated_sources || {};
+  const categorySources = categories.sources || {};
   const mergedSources = {};
 
-  for (const name of new Set([...Object.keys(DEFAULT_SOURCES), ...Object.keys(configuredSources)])) {
+  for (const name of new Set([...Object.keys(categorySources), ...Object.keys(configuredSources)])) {
     mergedSources[name] = {
-      ...(DEFAULT_SOURCES[name] || {}),
+      ...(categorySources[name] || {}),
       ...(configuredSources[name] || {})
     };
   }
@@ -66,10 +58,34 @@ function loadGeneratedSources() {
 }
 
 function loadPolicy() {
-  const basePolicy = fs.existsSync(POLICY_PATH) ? JSON.parse(fs.readFileSync(POLICY_PATH, "utf8")) : {};
-  const customPolicy = fs.existsSync(CUSTOM_POLICY_PATH) ? JSON.parse(fs.readFileSync(CUSTOM_POLICY_PATH, "utf8")) : {};
+  const basePolicy = readJsonFile(resolvePath(POLICY_PATH, LEGACY_POLICY_PATH));
+  const customPolicy = readJsonFile(resolvePath(CUSTOM_POLICY_PATH, LEGACY_CUSTOM_POLICY_PATH));
 
   return mergePolicy(customPolicy, basePolicy);
+}
+
+function loadCategories() {
+  const base = readJsonFile(CATEGORIES_PATH);
+  const custom = readJsonFile(CUSTOM_CATEGORIES_PATH);
+
+  return {
+    ...base,
+    ...custom,
+    categories: mergeObject(base.categories, custom.categories),
+    severities: mergeObject(base.severities, custom.severities),
+    sources: mergeObject(base.sources, custom.sources)
+  };
+}
+
+function readJsonFile(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return {};
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function resolvePath(primary, legacy) {
+  if (fs.existsSync(primary)) return primary;
+  if (legacy && fs.existsSync(legacy)) return legacy;
+  return primary;
 }
 
 function mergePolicy(localPolicy, basePolicy) {

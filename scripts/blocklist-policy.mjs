@@ -1,21 +1,32 @@
 import fs from "node:fs";
 import net from "node:net";
 
-const DEFAULT_POLICY_PATH = "defaults/v8s-blocklist.json";
-const DEFAULT_CUSTOM_POLICY_PATH = "custom/v8s-blocklist.json";
+const DEFAULT_POLICY_PATH = "defaults/v8s-policies.json";
+const LEGACY_POLICY_PATH = "defaults/v8s-blocklist.json";
+const DEFAULT_CUSTOM_POLICY_PATH = "custom/v8s-policies.json";
+const LEGACY_CUSTOM_POLICY_PATH = "custom/v8s-blocklist.json";
 const DEFAULT_GENERATED_POLICY_PATH = "build/blocklist.generated.json";
 
 export function loadBlocklistPolicy(path = DEFAULT_POLICY_PATH) {
-  const raw = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : {};
-  const custom = path === DEFAULT_POLICY_PATH && fs.existsSync(DEFAULT_CUSTOM_POLICY_PATH)
-    ? JSON.parse(fs.readFileSync(DEFAULT_CUSTOM_POLICY_PATH, "utf8"))
+  const resolvedPath = resolvePolicyPath(path, LEGACY_POLICY_PATH);
+  const raw = fs.existsSync(resolvedPath) ? JSON.parse(fs.readFileSync(resolvedPath, "utf8")) : {};
+  const isDefaultPolicy = path === DEFAULT_POLICY_PATH || path === LEGACY_POLICY_PATH;
+  const customPath = resolvePolicyPath(DEFAULT_CUSTOM_POLICY_PATH, LEGACY_CUSTOM_POLICY_PATH);
+  const custom = isDefaultPolicy && fs.existsSync(customPath)
+    ? JSON.parse(fs.readFileSync(customPath, "utf8"))
     : {};
-  const generated = path === DEFAULT_POLICY_PATH && fs.existsSync(DEFAULT_GENERATED_POLICY_PATH)
+  const generated = isDefaultPolicy && fs.existsSync(DEFAULT_GENERATED_POLICY_PATH)
     ? JSON.parse(fs.readFileSync(DEFAULT_GENERATED_POLICY_PATH, "utf8"))
     : {};
-  const ownerPolicy = path === DEFAULT_POLICY_PATH ? mergePolicy(custom, raw) : raw;
+  const ownerPolicy = isDefaultPolicy ? mergePolicy(custom, raw) : raw;
 
   return normalizePolicy(mergePolicy(ownerPolicy, generated));
+}
+
+function resolvePolicyPath(primary, legacy) {
+  if (fs.existsSync(primary)) return primary;
+  if (legacy && fs.existsSync(legacy)) return legacy;
+  return primary;
 }
 
 export function checkTargetUrl(target, policy = loadBlocklistPolicy()) {
