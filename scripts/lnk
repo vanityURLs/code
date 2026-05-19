@@ -16,14 +16,21 @@ const VALID_STATES = new Set([
 ]);
 
 function usage() {
-  console.log(`Usage:
-  ./scripts/lnk [LONG_URL] [SLUG]
-  ./scripts/lnk --splat [LONG_URL_WITH_:splat] [SLUG]
+  console.log(`LNK - create and manage VanityURLs links, schedules, and block policies.
+
+Usage:
+  ./scripts/lnk LONG_URL [SLUG]
+  ./scripts/lnk --splat LONG_URL_WITH_:splat SLUG
+
+Schedules:
   ./scripts/lnk schedule add SLUG TARGET --label LABEL --days mon,tue --from HH:MM --to HH:MM [--timezone TZ]
   ./scripts/lnk schedule default SLUG TARGET [--timezone TZ]
   ./scripts/lnk schedule list [SLUG]
+
+Block policies:
   ./scripts/lnk block categories
   ./scripts/lnk block add DOMAIN --category CATEGORY --severity SEVERITY --reason TEXT
+  ./scripts/lnk block keyword KEYWORD --category CATEGORY --severity SEVERITY --reason TEXT
   ./scripts/lnk block allow DOMAIN --reason TEXT
 
 Options:
@@ -37,8 +44,22 @@ Options:
   --splat                Create a splat link; SLUG is stored as SLUG/* in the links file
   --help                 Show this help
 
-Nested aliases:
+Files:
+  Links are written to custom/v8s-links.txt when it exists, otherwise defaults/v8s-links.txt.
+  Schedules are written to custom/v8s-schedules.json.
+  Block policies are written to custom/v8s-policies.json.
+
+Environment:
+  DRY_RUN=true           Print the planned change without writing, committing, or pushing
+  LNK_OWNER=OWNER        Default owner value for new links
+  V8S_LINKS_FILE=FILE    Override the links file; LNK_FILE is supported as a legacy alias
+  V8S_SCHEDULES_FILE=FILE
+                         Override the schedule file
+  V8S_POLICY_FILE=FILE   Override the block policy file; BLOCKLIST_FILE is a legacy alias
+
+Notes:
   Slugs may contain / to create API-like paths.
+  Successful write operations commit and push automatically.
 
 Examples:
   ./scripts/lnk https://github.com/vanityURLs github
@@ -49,7 +70,8 @@ Examples:
   ./scripts/lnk schedule add hangout https://zoom.us/j/work --label work --days mon,tue,wed,thu,fri --from 09:00 --to 17:00 --timezone America/Toronto
   ./scripts/lnk schedule default hangout https://discord.gg/personal
 
-Use DRY_RUN=true to print the line without writing, committing, or pushing.`);
+Docs:
+  https://www.VanityURLs.link/en/docs`);
 }
 
 function resolveLinksFile() {
@@ -237,7 +259,9 @@ function parseGenericArgs(argv) {
 }
 
 function scheduleUsage() {
-  console.log(`Usage:
+  console.log(`LNK schedules - manage time-based targets.
+
+Usage:
   ./scripts/lnk schedule add SLUG TARGET --label LABEL --days mon,tue --from HH:MM --to HH:MM [--timezone TZ]
   ./scripts/lnk schedule default SLUG TARGET [--timezone TZ]
   ./scripts/lnk schedule list [SLUG]

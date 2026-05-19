@@ -7,7 +7,9 @@ const POLICY_PATH = process.env.V8S_POLICY_FILE || process.env.BLOCKLIST_FILE ||
 const CATEGORIES_PATH = "defaults/v8s-blocklist-categories.json";
 
 function usage() {
-  console.log(`Usage:
+  console.log(`LNK block policies - manage blocked and allowed destinations.
+
+Usage:
   ./scripts/lnk block categories
   ./scripts/lnk block add DOMAIN --category CATEGORY --severity SEVERITY --reason TEXT
   ./scripts/lnk block keyword KEYWORD --category CATEGORY --severity SEVERITY --reason TEXT
@@ -16,7 +18,14 @@ function usage() {
 Options:
   --source SOURCE        Source label, defaults to local-policy
   --dry-run             Print the updated JSON without writing
-  --help                Show this help`);
+  --help                Show this help
+
+Environment:
+  V8S_POLICY_FILE=FILE   Override the block policy file
+  BLOCKLIST_FILE=FILE    Legacy alias for V8S_POLICY_FILE
+
+Docs:
+  https://www.VanityURLs.link/en/docs`);
 }
 
 function readJson(path, fallback) {

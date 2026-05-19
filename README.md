@@ -52,6 +52,26 @@ miss because they are implemented through configuration or helper scripts:
   `v8s-links.txt`; `./scripts/lnk --expires-at DATE ...` writes that
   value, and the Worker treats expired links as expired at runtime.
 
+## Developer CLI reference
+
+Use `./scripts/lnk --help` as the local quick reference for link,
+schedule, and block policy edits. The detailed product documentation lives
+at <https://www.VanityURLs.link/en/docs>.
+
+The CLI intentionally documents only the user-facing environment flags:
+
+* `DRY_RUN=true` prints the planned change without writing, committing, or
+  pushing.
+* `LNK_OWNER=OWNER` changes the default owner field for new links.
+* `V8S_LINKS_FILE=FILE` overrides the links file. `LNK_FILE` is supported
+  as a legacy alias.
+* `V8S_SCHEDULES_FILE=FILE` overrides the schedule file.
+* `V8S_POLICY_FILE=FILE` overrides the block policy file. `BLOCKLIST_FILE`
+  is supported as a legacy alias.
+
+Successful write operations commit and push automatically so Cloudflare can
+deploy the generated site.
+
 ## Limitations
 
 As this code is deployed on Cloudflare Pages, there are some product limits to be aware of:
