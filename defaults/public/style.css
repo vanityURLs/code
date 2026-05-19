@@ -559,3 +559,79 @@ body.redirect-return .redirected-badge {
     opacity: 1;
   }
 }
+
+.page-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.page-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.page-links a:hover,
+.page-links a:focus-visible {
+  color: var(--brand);
+  outline: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 72px 20px;
+}
+
+.legal-content {
+  display: grid;
+  width: min(760px, 100%);
+  gap: 18px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.legal-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.25rem);
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.legal-note,
+.legal-content p,
+.legal-content li {
+  margin: 0;
+  color: var(--muted);
+}
+
+.legal-content h3 {
+  margin: 18px 0 -8px;
+  font-size: 1.1rem;
+  letter-spacing: 0;
+}
+
+.legal-content a {
+  color: var(--brand);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.legal-content a:hover,
+.legal-content a:focus-visible {
+  outline: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-content .redirected-badge {
+  justify-self: center;
+  margin-top: 10px;
+}
