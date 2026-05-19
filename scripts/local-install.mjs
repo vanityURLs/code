@@ -11,6 +11,7 @@ const ROOT = process.cwd();
 const DEFAULT_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-local-config.json");
 const CUSTOM_CONFIG_PATH = path.join(ROOT, "custom", "v8s-local-config.json");
 const HELPER_SOURCE_PATH = path.join(ROOT, "scripts", "v8s.sh");
+const LNK_SOURCE_PATH = path.join(ROOT, "scripts", "lnk");
 const START_MARKER = "# >>> V8S >>>";
 const END_MARKER = "# <<< V8S <<<";
 
@@ -92,6 +93,10 @@ function mergeConfig(base, local) {
       ...(base.shell_helper || {}),
       ...(local.shell_helper || {})
     },
+    link_cli: {
+      ...(base.link_cli || {}),
+      ...(local.link_cli || {})
+    },
     registry: {
       ...(base.registry || {}),
       ...(local.registry || {})
@@ -118,6 +123,9 @@ async function promptConfig(config, args) {
       repository: {
         ...config.repository,
         path: config.repository?.path || ROOT
+      },
+      link_cli: {
+        ...config.link_cli
       }
     };
   }
@@ -131,6 +139,9 @@ async function promptConfig(config, args) {
         ...config.shell_helper,
         enabled
       },
+      link_cli: {
+        ...config.link_cli
+      },
       registry: {
         ...config.registry
       },
@@ -142,6 +153,7 @@ async function promptConfig(config, args) {
     if (!enabled) return next;
 
     next.shell_helper.install_path = await question(rl, "Shell helper install path", next.shell_helper.install_path);
+    next.link_cli.install_path = await question(rl, "lnk CLI install path", next.link_cli.install_path);
     next.shell_helper.rc_file = await question(rl, "Shell rc file to update", next.shell_helper.rc_file);
     next.registry.local_path = await question(rl, "Local registry path", next.registry.local_path);
     next.repository.path = await question(rl, "Local repository path", next.repository.path || ROOT);
@@ -182,23 +194,27 @@ function shellQuote(value) {
 
 function installHelper(config, args) {
   if (config.shell_helper?.enabled !== true) {
-    console.log("Shell helper disabled; local config written only.");
+    console.log("Shell helper disabled; installing lnk CLI only.");
+    installLnkCli(config, args);
     return;
   }
 
   const helperTarget = expandLocalPath(config.shell_helper.install_path);
+  const lnkTarget = expandLocalPath(config.link_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
   const rcFile = expandLocalPath(config.shell_helper.rc_file);
   const registryPath = expandLocalPath(config.registry?.local_path || "~/.v8s.json");
   const repoPath = expandLocalPath(config.repository?.path || ROOT);
 
   if (args.dryRun) {
     console.log(`[dry-run] would copy scripts/v8s.sh to ${helperTarget}`);
+    console.log(`[dry-run] would copy scripts/lnk to ${lnkTarget}`);
     console.log(`[dry-run] would update ${rcFile}`);
     return;
   }
 
   fs.mkdirSync(path.dirname(helperTarget), { recursive: true });
   fs.copyFileSync(HELPER_SOURCE_PATH, helperTarget);
+  copyExecutable(LNK_SOURCE_PATH, lnkTarget);
 
   const block = [
     START_MARKER,
@@ -218,7 +234,26 @@ function installHelper(config, args) {
 
   fs.writeFileSync(rcFile, next);
   console.log(`Installed V8S shell helper to ${helperTarget}`);
+  console.log(`Installed lnk CLI to ${lnkTarget}`);
   console.log(`Updated ${rcFile}`);
+}
+
+function installLnkCli(config, args) {
+  const lnkTarget = expandLocalPath(config.link_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
+
+  if (args.dryRun) {
+    console.log(`[dry-run] would copy scripts/lnk to ${lnkTarget}`);
+    return;
+  }
+
+  copyExecutable(LNK_SOURCE_PATH, lnkTarget);
+  console.log(`Installed lnk CLI to ${lnkTarget}`);
+}
+
+function copyExecutable(sourcePath, targetPath) {
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.copyFileSync(sourcePath, targetPath);
+  fs.chmodSync(targetPath, 0o755);
 }
 
 function escapeRegExp(value) {

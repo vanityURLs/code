@@ -62,15 +62,14 @@ The CLI intentionally documents only the user-facing environment flags:
 
 * `DRY_RUN=true` prints the planned change without writing, committing, or
   pushing.
-* `LNK_OWNER=OWNER` changes the default owner field for new links.
-* `V8S_LINKS_FILE=FILE` overrides the links file. `LNK_FILE` is supported
-  as a legacy alias.
+* `V8S_REPO=PATH` points copied local helpers at the local repository path.
+* `V8S_LINKS_OWNER=OWNER` changes the default owner field for new links.
+* `V8S_LINKS_FILE=FILE` overrides the links file.
 * `V8S_SCHEDULES_FILE=FILE` overrides the schedule file.
-* `V8S_POLICY_FILE=FILE` overrides the block policy file. `BLOCKLIST_FILE`
-  is supported as a legacy alias.
+* `V8S_POLICY_FILE=FILE` overrides the block policy file.
 
-Successful write operations commit and push automatically so Cloudflare can
-deploy the generated site.
+Successful write operations run `npm run check`, then commit and push
+automatically so Cloudflare can deploy the generated site.
 
 ## Limitations
 

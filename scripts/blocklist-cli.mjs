@@ -2,8 +2,12 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
-const POLICY_PATH = process.env.V8S_POLICY_FILE || process.env.BLOCKLIST_FILE || "custom/v8s-policies.json";
+const ROOT = process.env.V8S_REPO || process.cwd();
+process.chdir(ROOT);
+
+const POLICY_PATH = process.env.V8S_POLICY_FILE || "custom/v8s-policies.json";
 const CATEGORIES_PATH = "defaults/v8s-blocklist-categories.json";
 
 function usage() {
@@ -21,8 +25,8 @@ Options:
   --help                Show this help
 
 Environment:
+  V8S_REPO=PATH          Local vanityURLs/code repository path
   V8S_POLICY_FILE=FILE   Override the block policy file
-  BLOCKLIST_FILE=FILE    Legacy alias for V8S_POLICY_FILE
 
 Docs:
   https://www.VanityURLs.link/en/docs`);
@@ -38,6 +42,17 @@ function writeJson(path, value) {
     recursive: true
   });
   fs.writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function run(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: ROOT,
+    stdio: "inherit",
+    shell: process.platform === "win32"
+  });
+
+  if (result.error) throw result.error;
+  if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
 function pathModuleDirname(filePath) {
@@ -126,13 +141,17 @@ function ensurePolicyShape(policy) {
   return policy;
 }
 
-function savePolicy(policy, dryRun) {
-  if (dryRun) {
+function savePolicy(policy, dryRun, message) {
+  if (dryRun || process.env.DRY_RUN === "true") {
     console.log(JSON.stringify(policy, null, 2));
     return;
   }
 
   writeJson(POLICY_PATH, policy);
+  run("npm", ["run", "check"]);
+  run("git", ["add", POLICY_PATH]);
+  run("git", ["commit", "-m", message]);
+  run("git", ["push"]);
 }
 
 function addBlock(domainInput, options) {
@@ -170,7 +189,7 @@ function addBlock(domainInput, options) {
   }
 
   policy.block_domains.sort((a, b) => a.domain.localeCompare(b.domain));
-  savePolicy(policy, options.dryRun);
+  savePolicy(policy, options.dryRun, `feat(policies): block ${domain}`);
 
   if (!options.dryRun) {
     console.log(`Blocked ${domain} as ${category}/${severity}`);
@@ -224,7 +243,7 @@ function addKeyword(keywordInput, options) {
     return aKeyword.localeCompare(bKeyword);
   });
 
-  savePolicy(policy, options.dryRun);
+  savePolicy(policy, options.dryRun, `feat(policies): block keyword ${keyword}`);
 
   if (!options.dryRun) {
     console.log(`Blocked keyword ${keyword} as ${category}/${severity}`);
@@ -259,7 +278,7 @@ function addAllow(domainInput, options) {
   policy.allow_domains = [...allowDomains.values()].sort((a, b) => a.domain.localeCompare(b.domain));
   policy.block_domains = policy.block_domains.filter((entry) => normalizeHostname(entry.domain) !== domain);
 
-  savePolicy(policy, options.dryRun);
+  savePolicy(policy, options.dryRun, `feat(policies): allow ${domain}`);
 
   if (!options.dryRun) {
     const suffix = options.reason ? ` (${options.reason})` : "";

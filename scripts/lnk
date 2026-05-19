@@ -4,7 +4,10 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 
-const DEFAULT_OWNER = process.env.LNK_OWNER || "bhd";
+const ROOT = process.env.V8S_REPO || process.cwd();
+process.chdir(ROOT);
+
+const DEFAULT_OWNER = process.env.V8S_LINKS_OWNER || "bhd";
 const LINKS_FILE = resolveLinksFile();
 const VALID_STATES = new Set([
   "permanent",
@@ -45,21 +48,22 @@ Options:
   --help                 Show this help
 
 Files:
-  Links are written to custom/v8s-links.txt when it exists, otherwise defaults/v8s-links.txt.
+  Links are written to custom/v8s-links.txt unless V8S_LINKS_FILE overrides the path.
   Schedules are written to custom/v8s-schedules.json.
   Block policies are written to custom/v8s-policies.json.
 
 Environment:
   DRY_RUN=true           Print the planned change without writing, committing, or pushing
-  LNK_OWNER=OWNER        Default owner value for new links
-  V8S_LINKS_FILE=FILE    Override the links file; LNK_FILE is supported as a legacy alias
+  V8S_REPO=PATH          Local vanityURLs/code repository path
+  V8S_LINKS_OWNER=OWNER  Default owner value for new links
+  V8S_LINKS_FILE=FILE    Override the links file
   V8S_SCHEDULES_FILE=FILE
                          Override the schedule file
-  V8S_POLICY_FILE=FILE   Override the block policy file; BLOCKLIST_FILE is a legacy alias
+  V8S_POLICY_FILE=FILE   Override the block policy file
 
 Notes:
   Slugs may contain / to create API-like paths.
-  Successful write operations commit and push automatically.
+  Successful write operations run npm run check, then commit and push automatically.
 
 Examples:
   ./scripts/lnk https://github.com/vanityURLs github
@@ -76,9 +80,7 @@ Docs:
 
 function resolveLinksFile() {
   if (process.env.V8S_LINKS_FILE) return process.env.V8S_LINKS_FILE;
-  if (process.env.LNK_FILE) return process.env.LNK_FILE;
-  if (fs.existsSync("custom/v8s-links.txt")) return "custom/v8s-links.txt";
-  return "defaults/v8s-links.txt";
+  return "custom/v8s-links.txt";
 }
 
 function run(command, args) {
@@ -211,6 +213,11 @@ function appendLine(filePath, line) {
   fs.mkdirSync(dirname(filePath), {
     recursive: true
   });
+
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, "# slug|target|state|title|description|tags|owner|expires_at|notes\n");
+  }
+
   fs.appendFileSync(filePath, `${line}\n`);
 }
 
@@ -330,9 +337,7 @@ function saveScheduleConfig(filePath, config, dryRun, slug) {
   }
 
   writeJson(filePath, config);
-  run("git", ["add", filePath]);
-  run("git", ["commit", "-m", `feat(schedules): update ${slug}`]);
-  run("git", ["push"]);
+  finalizeChange(filePath, `feat(schedules): update ${slug}`);
 }
 
 function listSchedules(config, requestedSlug) {
@@ -503,8 +508,13 @@ function main() {
 
   appendLine(LINKS_FILE, line);
 
-  run("git", ["add", LINKS_FILE]);
-  run("git", ["commit", "-m", `feat(links): add ${slug}`]);
+  finalizeChange(LINKS_FILE, `feat(links): add ${slug}`);
+}
+
+function finalizeChange(filePath, message) {
+  run("npm", ["run", "check"]);
+  run("git", ["add", filePath]);
+  run("git", ["commit", "-m", message]);
   run("git", ["push"]);
 }
 
