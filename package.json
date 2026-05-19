@@ -14,6 +14,7 @@
     "lint": "node scripts/lint.mjs",
     "local-install": "node scripts/local-install.mjs",
     "local-publish": "node scripts/local-publish.mjs",
+    "optimize:badges": "find defaults/public -name 'v8s-redirected*.svg' -print0 | xargs -0 svgo --config scripts/svgo.config.mjs",
     "setup": "node scripts/install.mjs",
     "smoke:analytics": "npm run build && node scripts/smoke-analytics.mjs",
     "test": "node scripts/workers/worker.test.mjs",
