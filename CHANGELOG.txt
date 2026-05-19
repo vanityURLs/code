@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.2.0](https://github.com/vanityURLs/code/compare/v2.1.0...v2.2.0) (2026-05-19)
+
+
+### Features
+
+* add default policy page footers ([74c4eae](https://github.com/vanityURLs/code/commit/74c4eaec21fa3177e795770b8f08bd140fa95ea3))
+* add lnk policy list commands ([d420dde](https://github.com/vanityURLs/code/commit/d420dde477be4b0901371443b366c92362d92ab1))
+* add localized redirected badges ([bf5d223](https://github.com/vanityURLs/code/commit/bf5d223784e9df9047e80690d53a3f34565fe888))
+* customize instance branding during install ([1641303](https://github.com/vanityURLs/code/commit/164130393fb3f06052aa3bb2e3f31b50edf5e8e5))
+
 ## [2.1.0](https://github.com/vanityURLs/code/compare/v2.0.0...v2.1.0) (2026-05-19)
 
 
