@@ -7,6 +7,8 @@ ai/hf|https://huggingface.co||Hugging Face|AI Community and Models|ai|bhd||
 amazon/orders|https://amazon.com/your-orders||Retail Orders|Purchase history|shopping|bhd||
 amazon/wish|https://amazon.com/wishlist||Amazon Wishlist|Personal shopping list|shopping|bhd||
 
+contact|https://youtu.be/watch?v=dQw4w9WgXcQ|permanent|Scheduled contact 
+
 bank|https://chase.com||Primary Bank|Banking portal|finance|bhd||
 blacklist-source|https://github.com/StevenBlack/hosts||Ad/Malware Blocklist|Source for domain blocking|security,infra|bhd||
 check-link|https://www.virustotal.com/gui/home/url||VirusTotal URL Scan|Safety checker for links|security|bhd||
