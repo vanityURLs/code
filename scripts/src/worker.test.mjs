@@ -394,6 +394,13 @@ await run("blocks raw runtime blocklist asset", async () => {
   assert(response.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
 });
 
+await run("blocks raw site config asset", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(request("/v8s-site-config.json"), env(), ctx);
+  assert(response.status === 404, "status");
+  assert(response.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
+});
+
 await run("requires Cloudflare Access config for protected paths", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/_tests"), env(), ctx);

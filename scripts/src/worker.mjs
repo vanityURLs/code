@@ -21,7 +21,7 @@ const WEEKDAY_ALIASES = {
 let runtimeBlocklistPromise;
 const accessJwksPromises = new Map();
 
-const LOCALIZED_HTML_LANGUAGES = ["fr", "es", "it", "de"];
+const LOCALIZED_HTML_LANGUAGES = ["fr", "es", "it", "de"]; // build replaces this list from v8s-site-config.json
 
 const BOT_PATTERNS = [
   { re: /googlebot/i, name: "Googlebot" },
@@ -287,7 +287,7 @@ function isTestsPath(slug) {
 }
 
 function isPrivateRuntimeAsset(slug) {
-  return slug === "v8s.json" || slug === "redirect-targets.json" || slug === "v8s-blocklist.json";
+  return slug === "v8s.json" || slug === "v8s-blocklist.json" || slug === "v8s-site-config.json";
 }
 
 async function loadRegistry(request, env) {
@@ -1026,7 +1026,7 @@ async function renderStatsRedirects(request, env) {
 
   const missingDescriptions = all.filter((redirect) => !redirect.description);
   const dynamicRoutes = all.filter((redirect) => redirect.type === "dynamic");
-  const reservedPrefixes = ["/_stats", "/api", "/_worker", "/v8s.json", "/redirect-targets.json"];
+  const reservedPrefixes = ["/_stats", "/api", "/_worker", "/v8s.json", "/v8s-blocklist.json", "/v8s-site-config.json"];
   const reservedViolations = all.filter((redirect) => {
     return reservedPrefixes.some((prefix) => redirect.source.startsWith(prefix));
   });

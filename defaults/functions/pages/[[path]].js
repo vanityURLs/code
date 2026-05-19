@@ -8,7 +8,7 @@ export async function onRequest(context) {
     return context.next();
   }
 
-  if (slug === "v8s.json" || slug === "redirect-targets.json") {
+  if (slug === "v8s.json" || slug === "v8s-blocklist.json" || slug === "v8s-site-config.json") {
     return new Response("Not found", {
       status: 404,
       headers: {
@@ -151,7 +151,7 @@ function shouldBypassToAssets(slug) {
   if (slug === "_stats" || slug.startsWith("_stats/")) return true;
   if (slug === "expand" || slug.startsWith("expand/")) return true;
 
-  if (slug === "v8s.json" || slug === "redirect-targets.json") return false;
+  if (slug === "v8s.json" || slug === "v8s-blocklist.json" || slug === "v8s-site-config.json") return false;
 
   return /\.(html|css|js|json|png|svg|ico|webmanifest|txt|xml)$/i.test(slug);
 }

@@ -9,7 +9,7 @@ const blocklistPolicy = loadBlocklistPolicy();
 
 const allowedStates = new Set(["permanent", "ephemeral", "expired", "disabled", "maintenance", "deactivated"]);
 const targetRedirectStates = new Set(["permanent", "ephemeral"]);
-const reservedTopLevel = new Set(["_stats", "assets", "expand", "404", "404.html", "v8s.json", "redirect-targets.json", "expired", "disabled", "maintenance", "deactivated"]);
+const reservedTopLevel = new Set(["_stats", "assets", "expand", "404", "404.html", "v8s.json", "v8s-blocklist.json", "v8s-site-config.json", "expired", "disabled", "maintenance", "deactivated"]);
 
 function fail(message) { errors.push(message); }
 function warn(message) { warnings.push(message); }

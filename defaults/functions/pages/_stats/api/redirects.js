@@ -57,7 +57,7 @@ export async function onRequest(context) {
   const dynamicRoutes = all.filter(r => r.type === 'dynamic');
 
   // Reserved path violations
-  const reservedPrefixes = ['/_stats', '/api', '/_worker', '/v8s.json', '/redirect-targets.json'];
+  const reservedPrefixes = ['/_stats', '/api', '/_worker', '/v8s.json', '/v8s-blocklist.json', '/v8s-site-config.json'];
   const reservedViolations = all.filter(r =>
     reservedPrefixes.some(prefix => r.source.startsWith(prefix))
   );

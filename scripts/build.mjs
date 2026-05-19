@@ -9,11 +9,92 @@ const BUILD_DIR = path.join(ROOT, "build");
 const GENERATED_BLOCKLIST_PATH = path.join(BUILD_DIR, "blocklist.generated.json");
 const RUNTIME_BLOCKLIST_PATH = path.join(BUILD_DIR, "v8s-blocklist.json");
 const RUNTIME_REGISTRY_PATH = path.join(BUILD_DIR, "v8s.json");
+const RUNTIME_SITE_CONFIG_PATH = path.join(BUILD_DIR, "v8s-site-config.json");
 const DEFAULTS_DIR = path.join(ROOT, "defaults");
 const CUSTOM_DIR = path.join(ROOT, "custom");
 const LOCAL_CONFIG_PATH = path.join(CUSTOM_DIR, "v8s-local-config.json");
 const WORKER_SOURCE_DIR = path.join(ROOT, "scripts", "src");
 const RUNTIME_SOURCE_DIR = path.join(ROOT, "src");
+const LANGUAGE_METADATA = {
+  en: {
+    name: "English",
+    pagesTitle: "Pages",
+    statusTitle: "Status Pages",
+    links: {
+      index: "Index",
+      expand: "Expand",
+      stats: "Stats",
+      privacy: "Privacy",
+      terms: "Terms",
+      abuse: "Abuse",
+      security: "Security",
+      notFound: "404",
+      expired: "Expired",
+      disabled: "Disabled",
+      maintenance: "Maintenance"
+    }
+  },
+  fr: {
+    name: "Français",
+    pagesTitle: "Pages",
+    statusTitle: "Pages d'état",
+    links: {
+      index: "Accueil",
+      expand: "Développer",
+      stats: "Stats",
+      privacy: "Confidentialité",
+      terms: "Conditions",
+      abuse: "Abus",
+      security: "Sécurité",
+      notFound: "404",
+      expired: "Expiré",
+      disabled: "Désactivé",
+      maintenance: "Maintenance"
+    }
+  },
+  es: {
+    name: "Español",
+    pagesTitle: "Páginas",
+    statusTitle: "Páginas de estado",
+    links: {
+      index: "Inicio",
+      expand: "Expandir",
+      stats: "Stats",
+      notFound: "404",
+      expired: "Caducado",
+      disabled: "Desactivado",
+      maintenance: "Mantenimiento"
+    }
+  },
+  it: {
+    name: "Italiano",
+    pagesTitle: "Pagine",
+    statusTitle: "Pagine di stato",
+    links: {
+      index: "Home",
+      expand: "Espandi",
+      stats: "Stats",
+      notFound: "404",
+      expired: "Scaduto",
+      disabled: "Disattivato",
+      maintenance: "Manutenzione"
+    }
+  },
+  de: {
+    name: "Deutsch",
+    pagesTitle: "Seiten",
+    statusTitle: "Statusseiten",
+    links: {
+      index: "Start",
+      expand: "Erweitern",
+      stats: "Stats",
+      notFound: "404",
+      expired: "Abgelaufen",
+      disabled: "Deaktiviert",
+      maintenance: "Wartung"
+    }
+  }
+};
 
 function log(message) {
   console.log(`[build] ${message}`);
@@ -82,6 +163,18 @@ function copyRuntimeSource() {
   copyDirectory(WORKER_SOURCE_DIR, RUNTIME_SOURCE_DIR);
 }
 
+function patchRuntimeLanguages(siteConfig) {
+  const workerPath = path.join(RUNTIME_SOURCE_DIR, "worker.mjs");
+  const localizedLanguages = supportedLanguages(siteConfig).filter((language) => language !== "en");
+  const text = fs.readFileSync(workerPath, "utf8");
+  const next = text.replace(
+    /const LOCALIZED_HTML_LANGUAGES = \[[^\]]*\];[^\n]*/,
+    `const LOCALIZED_HTML_LANGUAGES = ${JSON.stringify(localizedLanguages)}; // generated from v8s-site-config.json`
+  );
+
+  fs.writeFileSync(workerPath, next);
+}
+
 function copyPublic() {
   log("Copying defaults/public/");
   copyDirectory(path.join(DEFAULTS_DIR, "public"), BUILD_DIR);
@@ -91,6 +184,127 @@ function copyPublic() {
     log("Overlaying custom/public/");
     copyDirectory(customPublic, BUILD_DIR);
   }
+}
+
+function loadSiteConfig() {
+  const defaultConfig = readJsonFile(path.join(DEFAULTS_DIR, "v8s-site-config.json"));
+  const customConfigPath = path.join(CUSTOM_DIR, "v8s-site-config.json");
+  if (fs.existsSync(customConfigPath)) {
+    return mergeSiteConfig(defaultConfig, readJsonFile(customConfigPath));
+  }
+
+  return defaultConfig;
+}
+
+function mergeSiteConfig(base, custom) {
+  return {
+    ...base,
+    ...custom,
+    i18n: {
+      ...(base.i18n || {}),
+      ...(custom.i18n || {})
+    }
+  };
+}
+
+function supportedLanguages(siteConfig) {
+  const configured = Array.isArray(siteConfig?.i18n?.supported_languages)
+    ? siteConfig.i18n.supported_languages
+    : ["en"];
+  const languages = configured
+    .map((language) => String(language || "").trim().toLowerCase().split("-")[0])
+    .filter(Boolean);
+  return [...new Set(languages)].includes("en") ? [...new Set(languages)] : ["en", ...new Set(languages)];
+}
+
+function writeSiteConfig(siteConfig) {
+  fs.writeFileSync(RUNTIME_SITE_CONFIG_PATH, `${JSON.stringify(siteConfig, null, 2)}\n`);
+}
+
+function buildTestsPage(siteConfig) {
+  const languages = supportedLanguages(siteConfig);
+  const panels = languages.map((language) => renderTestsPanel(language)).join("\n\n");
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>VanityURLs QA Tests</title>
+  <link rel="stylesheet" href="/style.css?v=20260504">
+</head>
+<body>
+  <main class="home-shell qa-shell">
+    <header class="home-card qa-header">
+      <h1 class="instance-brand-title"><span>Vanity</span><span>URLs</span></h1>
+      <p class="lede">Instance pages and localized variants for quick checks after custom template changes</p>
+    </header>
+
+    <section class="qa-grid" aria-label="Page test links">
+${panels}
+    </section>
+  </main>
+</body>
+</html>
+`;
+
+  const testsPath = path.join(BUILD_DIR, "_tests", "index.html");
+  fs.mkdirSync(path.dirname(testsPath), { recursive: true });
+  fs.writeFileSync(testsPath, html);
+}
+
+function renderTestsPanel(language) {
+  const metadata = LANGUAGE_METADATA[language] || {
+    name: language,
+    pagesTitle: "Pages",
+    statusTitle: "Status Pages",
+    links: LANGUAGE_METADATA.en.links
+  };
+  const prefix = language === "en" ? "" : `/${language}`;
+  const extension = language === "en" ? "" : ".html";
+  const indexHref = language === "en" ? "/index" : `${prefix}/index.html`;
+  const expandHref = language === "en" ? "/expand" : `${prefix}/expand/index.html`;
+  const policyLinks = language === "en" || language === "fr"
+    ? [
+      ["privacy", metadata.links.privacy || "Privacy"],
+      ["terms", metadata.links.terms || "Terms"],
+      ["abuse", metadata.links.abuse || "Abuse"],
+      ["security", metadata.links.security || "Security"]
+    ]
+    : [];
+  const pageLinks = [
+    `            <li><a href="${escapeHtml(indexHref)}">${escapeHtml(metadata.links.index)}</a></li>`,
+    `            <li><a href="${escapeHtml(expandHref)}">${escapeHtml(metadata.links.expand)}</a></li>`,
+    `            <li><a href="/_stats/">${escapeHtml(metadata.links.stats)}</a></li>`,
+    ...policyLinks.map(([slug, label]) => `            <li><a href="${prefix}/${slug}${extension}">${escapeHtml(label)}</a></li>`)
+  ].join("\n");
+
+  return `      <article class="qa-panel"${language === "en" ? "" : ` lang="${escapeHtml(language)}"`}>
+        <h2>${escapeHtml(metadata.name)}</h2>
+        <section class="qa-section">
+          <h3>${escapeHtml(metadata.pagesTitle)}</h3>
+          <ul class="qa-links">
+${pageLinks}
+          </ul>
+        </section>
+        <section class="qa-section">
+          <h3>${escapeHtml(metadata.statusTitle)}</h3>
+          <ul class="qa-links">
+            <li><a href="${prefix}/404${extension}">${escapeHtml(metadata.links.notFound)}</a></li>
+            <li><a href="${prefix}/expired${extension}">${escapeHtml(metadata.links.expired)}</a></li>
+            <li><a href="${prefix}/disabled${extension}">${escapeHtml(metadata.links.disabled)}</a></li>
+            <li><a href="${prefix}/maintenance${extension}">${escapeHtml(metadata.links.maintenance)}</a></li>
+          </ul>
+        </section>
+      </article>`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function copyRuntimeBlocklist() {
@@ -211,9 +425,13 @@ function expandLocalPath(value) {
 }
 
 function main() {
+  const siteConfig = loadSiteConfig();
   copyRuntimeSource();
+  patchRuntimeLanguages(siteConfig);
   cleanBuild();
   copyPublic();
+  writeSiteConfig(siteConfig);
+  buildTestsPage(siteConfig);
   copyRuntimeBlocklist();
   buildRedirectTargets();
   validateRuntimeRegistry();
