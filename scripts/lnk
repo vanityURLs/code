@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 const ROOT = process.env.V8S_REPO || process.cwd();
 process.chdir(ROOT);
 
+const VERSION = readPackageVersion();
 const DEFAULT_OWNER = process.env.V8S_LINKS_OWNER || "bhd";
 const LINKS_FILE = resolveLinksFile();
 const VALID_STATES = new Set([
@@ -20,11 +21,17 @@ const VALID_STATES = new Set([
 
 function usage() {
   console.log(`LNK - create and manage VanityURLs links, schedules, and block policies.
+Version: ${VERSION}
 
 Usage:
   ./scripts/lnk LONG_URL [SLUG]
   ./scripts/lnk --splat LONG_URL_WITH_:splat SLUG
   ./scripts/lnk list [SLUG]
+  ./scripts/lnk list policy
+  ./scripts/lnk list categories
+  ./scripts/lnk list domain [block|allow]
+  ./scripts/lnk list keyword
+  ./scripts/lnk version
 
 Schedules:
   ./scripts/lnk schedule add SLUG TARGET --label LABEL --days mon,tue --from HH:MM --to HH:MM [--timezone TZ]
@@ -70,6 +77,8 @@ Notes:
 Examples:
   ./scripts/lnk list
   ./scripts/lnk list social/x
+  ./scripts/lnk list domain allow
+  ./scripts/lnk list keyword --format json
   ./scripts/lnk https://github.com/vanityURLs github
   ./scripts/lnk https://x.com/vanityURLs social/x
   ./scripts/lnk https://www.linkedin.com/company/example social/linkedin
@@ -80,6 +89,14 @@ Examples:
 
 Docs:
   https://www.VanityURLs.link/en/docs`);
+}
+
+function readPackageVersion() {
+  try {
+    return JSON.parse(fs.readFileSync("package.json", "utf8")).version || "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
 }
 
 function resolveLinksFile() {
@@ -507,6 +524,11 @@ function handleSchedule(argv) {
 function main() {
   const argv = process.argv.slice(2);
 
+  if (argv[0] === "version" || argv[0] === "--version" || argv[0] === "-v") {
+    console.log(VERSION);
+    return;
+  }
+
   if (argv[0] === "block") {
     run(process.execPath, ["scripts/blocklist-cli.mjs", ...argv.slice(1)]);
     return;
@@ -525,7 +547,13 @@ function main() {
   }
 
   if (positionals[0] === "list") {
-    listLinks(positionals[1] || "", options);
+    const listTarget = positionals[1] || "";
+    if (["policy", "policies", "categories", "domain", "domains", "keyword", "keywords"].includes(listTarget)) {
+      run(process.execPath, ["scripts/blocklist-cli.mjs", "list", ...positionals.slice(1), "--format", options.format]);
+      return;
+    }
+
+    listLinks(listTarget, options);
     return;
   }
 
