@@ -175,14 +175,49 @@ function patchRuntimeLanguages(siteConfig) {
   fs.writeFileSync(workerPath, next);
 }
 
-function copyPublic() {
+function copyEnglishPublicRoot() {
+  const englishPublic = path.join(DEFAULTS_DIR, "public", "en");
+  if (!hasCopyableFiles(englishPublic)) return;
+
+  log("Copying defaults/public/en/ to public root");
+  copyDirectory(englishPublic, BUILD_DIR);
+}
+
+function copyLocalizedBadgeFallbacks(siteConfig) {
+  const lightBadge = path.join(BUILD_DIR, "v8s-redirected.svg");
+  const darkBadge = path.join(BUILD_DIR, "v8s-redirected-dark.svg");
+  const badgeFiles = [
+    ["v8s-redirected.svg", lightBadge],
+    ["v8s-redirected-dark.svg", darkBadge]
+  ];
+
+  for (const language of supportedLanguages(siteConfig)) {
+    if (language === "en") continue;
+
+    const languageDir = path.join(BUILD_DIR, language);
+    fs.mkdirSync(languageDir, { recursive: true });
+
+    for (const [fileName, sourcePath] of badgeFiles) {
+      const targetPath = path.join(languageDir, fileName);
+      if (!fs.existsSync(targetPath) && fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, targetPath);
+      }
+    }
+  }
+}
+
+function copyPublic(siteConfig) {
   log("Copying defaults/public/");
   copyDirectory(path.join(DEFAULTS_DIR, "public"), BUILD_DIR);
+  copyEnglishPublicRoot();
 
   const customPublic = path.join(CUSTOM_DIR, "public");
-  if (hasCopyableFiles(customPublic)) {
+  const usingCustomPublic = hasCopyableFiles(customPublic);
+  if (usingCustomPublic) {
     log("Overlaying custom/public/");
     copyDirectory(customPublic, BUILD_DIR);
+  } else {
+    copyLocalizedBadgeFallbacks(siteConfig);
   }
 }
 
@@ -429,7 +464,7 @@ function main() {
   copyRuntimeSource();
   patchRuntimeLanguages(siteConfig);
   cleanBuild();
-  copyPublic();
+  copyPublic(siteConfig);
   writeSiteConfig(siteConfig);
   buildTestsPage(siteConfig);
   copyRuntimeBlocklist();

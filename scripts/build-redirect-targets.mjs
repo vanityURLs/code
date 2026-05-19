@@ -81,15 +81,24 @@ function readJsonFile(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function loadScheduleConfig() {
-  if (inputPath.replaceAll("\\", "/").includes("custom/v8s-links.txt")) {
-    return readJsonFile("custom/v8s-schedules.json");
+function loadScheduleEntries() {
+  const entries = new Map();
+
+  for (const [slug, config] of Object.entries(readJsonFile("defaults/v8s-schedules.json"))) {
+    entries.set(slug, {
+      config,
+      source: "defaults"
+    });
   }
 
-  return {
-    ...readJsonFile("defaults/v8s-schedules.json"),
-    ...readJsonFile("custom/v8s-schedules.json")
-  };
+  for (const [slug, config] of Object.entries(readJsonFile("custom/v8s-schedules.json"))) {
+    entries.set(slug, {
+      config,
+      source: "custom"
+    });
+  }
+
+  return entries;
 }
 
 function normalizeDay(value) {
@@ -161,15 +170,17 @@ function scheduleRulesFromConfig(slug, config, errors) {
 }
 
 function applyScheduleConfig(links, blocklistPolicy, errors) {
-  const scheduleConfig = loadScheduleConfig();
+  const scheduleEntries = loadScheduleEntries();
   const linksBySlug = new Map(links.map((link) => [link.slug, link]));
 
-  for (const [rawSlug, config] of Object.entries(scheduleConfig)) {
+  for (const [rawSlug, { config, source }] of scheduleEntries) {
     const slug = normalizeSlug(rawSlug);
     const link = linksBySlug.get(slug);
 
     if (!link) {
-      errors.push(`Schedule configured for unknown slug "${rawSlug}"`);
+      if (source === "custom") {
+        errors.push(`Schedule configured for unknown slug "${rawSlug}"`);
+      }
       continue;
     }
 
