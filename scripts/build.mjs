@@ -104,11 +104,10 @@ function copyRuntimeBlocklist() {
     path.join(CUSTOM_DIR, "v8s-policies.json"),
     path.join(CUSTOM_DIR, "v8s-blocklist.json")
   );
-  const base = readJsonFile(defaultPath);
-  const custom = readJsonFile(customPath);
-  const merged = mergeRuntimeBlocklist(base, custom);
+  const policyPath = fs.existsSync(customPath) ? customPath : defaultPath;
+  const policy = readJsonFile(policyPath);
 
-  fs.writeFileSync(RUNTIME_BLOCKLIST_PATH, `${JSON.stringify(merged, null, 2)}\n`);
+  fs.writeFileSync(RUNTIME_BLOCKLIST_PATH, `${JSON.stringify(policy, null, 2)}\n`);
 }
 
 function readJsonFile(filePath) {
@@ -118,57 +117,6 @@ function readJsonFile(filePath) {
 
 function firstExistingPath(...paths) {
   return paths.find((filePath) => fs.existsSync(filePath)) || paths[0];
-}
-
-function mergeRuntimeBlocklist(base, custom) {
-  return {
-    ...base,
-    ...custom,
-    defaults: {
-      ...(base.defaults || {}),
-      ...(custom.defaults || {}),
-      allowed_protocols: mergeArray(
-        base.defaults?.allowed_protocols,
-        custom.defaults?.allowed_protocols
-      ),
-      blocked_file_extensions: mergeArray(
-        base.defaults?.blocked_file_extensions,
-        custom.defaults?.blocked_file_extensions
-      )
-    },
-    generated_sources: {
-      ...(base.generated_sources || {}),
-      ...(custom.generated_sources || {})
-    },
-    allow_domains: mergeEntries(base.allow_domains, custom.allow_domains, "domain"),
-    blocked_keywords: mergeEntries(base.blocked_keywords, custom.blocked_keywords, "keyword"),
-    block_domains: mergeEntries(base.block_domains, custom.block_domains, "domain")
-  };
-}
-
-function mergeArray(first = [], second = []) {
-  return [...new Set([...asArray(first), ...asArray(second)])];
-}
-
-function mergeEntries(first = [], second = [], key) {
-  const merged = new Map();
-
-  for (const entry of [...asArray(first), ...asArray(second)]) {
-    if (!entry || typeof entry !== "object") continue;
-    const value = String(entry[key] || "").trim().toLowerCase();
-    if (!value) continue;
-
-    merged.set(value, {
-      ...entry,
-      [key]: value
-    });
-  }
-
-  return [...merged.values()];
-}
-
-function asArray(value) {
-  return Array.isArray(value) ? value : [];
 }
 
 function buildRedirectTargets() {

@@ -81,22 +81,6 @@
       "added_at": "2026-05-05"
     },
     {
-      "keyword": "/wp-",
-      "category": "scanner-probe",
-      "severity": "low",
-      "reason": "Common WordPress scanner probe prefix",
-      "source": "runtime-scanner-policy",
-      "added_at": "2026-05-07"
-    },
-    {
-      "keyword": "/wp-content/",
-      "category": "scanner-probe",
-      "severity": "low",
-      "reason": "Common WordPress content directory scanner probe",
-      "source": "runtime-scanner-policy",
-      "added_at": "2026-05-07"
-    },
-    {
       "keyword": "/wp-includes/",
       "category": "scanner-probe",
       "severity": "low",

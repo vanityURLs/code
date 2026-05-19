@@ -58,10 +58,12 @@ function loadGeneratedSources() {
 }
 
 function loadPolicy() {
-  const basePolicy = readJsonFile(resolvePath(POLICY_PATH, LEGACY_POLICY_PATH));
-  const customPolicy = readJsonFile(resolvePath(CUSTOM_POLICY_PATH, LEGACY_CUSTOM_POLICY_PATH));
+  const customPolicyPath = resolvePath(CUSTOM_POLICY_PATH, LEGACY_CUSTOM_POLICY_PATH);
+  if (fs.existsSync(customPolicyPath)) {
+    return readJsonFile(customPolicyPath);
+  }
 
-  return mergePolicy(customPolicy, basePolicy);
+  return readJsonFile(resolvePath(POLICY_PATH, LEGACY_POLICY_PATH));
 }
 
 function loadCategories() {
@@ -88,39 +90,11 @@ function resolvePath(primary, legacy) {
   return primary;
 }
 
-function mergePolicy(localPolicy, basePolicy) {
-  const localDefaults = localPolicy.defaults || {};
-  const baseDefaults = basePolicy.defaults || {};
-
-  return {
-    ...basePolicy,
-    ...localPolicy,
-    defaults: {
-      ...baseDefaults,
-      ...localDefaults,
-      allowed_protocols: mergeArray(baseDefaults.allowed_protocols, localDefaults.allowed_protocols),
-      blocked_file_extensions: mergeArray(baseDefaults.blocked_file_extensions, localDefaults.blocked_file_extensions)
-    },
-    generated_sources: mergeObject(basePolicy.generated_sources, localPolicy.generated_sources),
-    allow_domains: mergeArray(basePolicy.allow_domains, localPolicy.allow_domains),
-    blocked_keywords: mergeArray(basePolicy.blocked_keywords, localPolicy.blocked_keywords),
-    block_domains: mergeArray(basePolicy.block_domains, localPolicy.block_domains)
-  };
-}
-
 function mergeObject(first = {}, second = {}) {
   return {
     ...(first || {}),
     ...(second || {})
   };
-}
-
-function mergeArray(first = [], second = []) {
-  return [...asArray(first), ...asArray(second)];
-}
-
-function asArray(value) {
-  return Array.isArray(value) ? value : [];
 }
 
 function normalizeAllowDomainEntry(entry) {

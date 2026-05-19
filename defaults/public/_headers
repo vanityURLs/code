@@ -36,6 +36,10 @@
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
 
+/v8s-blocklist.json
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
 /redirect-targets.json
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
