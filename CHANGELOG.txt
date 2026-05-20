@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.1](https://github.com/vanityURLs/code/compare/v2.2.0...v2.2.1) (2026-05-20)
+
+
+### Bug Fixes
+
+* correct setup domain and badge links ([af2610e](https://github.com/vanityURLs/code/commit/af2610e99bf956d4960b5915347a8ce681f5c955))
+* prefill setup prompts from existing config ([493d7f5](https://github.com/vanityURLs/code/commit/493d7f5373d3fdfcff6a558a24d397ac64cfe28c))
+* validate setup worker names ([25db99b](https://github.com/vanityURLs/code/commit/25db99b764c95d3417e98bdb0d261fe6a283bc50))
+
 ## [2.2.0](https://github.com/vanityURLs/code/compare/v2.1.0...v2.2.0) (2026-05-19)
 
 
