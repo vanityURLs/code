@@ -12,6 +12,7 @@ const RUNTIME_REGISTRY_PATH = path.join(BUILD_DIR, "v8s.json");
 const RUNTIME_SITE_CONFIG_PATH = path.join(BUILD_DIR, "v8s-site-config.json");
 const DEFAULTS_DIR = path.join(ROOT, "defaults");
 const CUSTOM_DIR = path.join(ROOT, "custom");
+const CUSTOM_SITE_CONFIG_PATH = path.join(CUSTOM_DIR, "v8s-site-config.json");
 const LOCAL_CONFIG_PATH = path.join(CUSTOM_DIR, "v8s-local-config.json");
 const WORKER_SOURCE_DIR = path.join(ROOT, "scripts", "workers");
 const RUNTIME_SOURCE_DIR = path.join(ROOT, "src");
@@ -225,9 +226,8 @@ function copyPublic(siteConfig) {
 
 function loadSiteConfig() {
   const defaultConfig = readJsonFile(path.join(DEFAULTS_DIR, "v8s-site-config.json"));
-  const customConfigPath = path.join(CUSTOM_DIR, "v8s-site-config.json");
-  if (fs.existsSync(customConfigPath)) {
-    return mergeSiteConfig(defaultConfig, readJsonFile(customConfigPath));
+  if (fs.existsSync(CUSTOM_SITE_CONFIG_PATH)) {
+    return mergeSiteConfig(defaultConfig, readJsonFile(CUSTOM_SITE_CONFIG_PATH));
   }
 
   return defaultConfig;
@@ -240,6 +240,18 @@ function mergeSiteConfig(base, custom) {
     i18n: {
       ...(base.i18n || {}),
       ...(custom.i18n || {})
+    },
+    operator: {
+      ...(base.operator || {}),
+      ...(custom.operator || {})
+    },
+    branding: {
+      ...(base.branding || {}),
+      ...(custom.branding || {}),
+      wordmark: {
+        ...(base.branding?.wordmark || {}),
+        ...(custom.branding?.wordmark || {})
+      }
     }
   };
 }
@@ -269,6 +281,191 @@ function pruneUnsupportedLanguageDirs(publicDir, siteConfig) {
 function writeSiteConfig(siteConfig) {
   fs.writeFileSync(RUNTIME_SITE_CONFIG_PATH, `${JSON.stringify(siteConfig, null, 2)}\n`);
 }
+
+function hasCustomSiteConfig() {
+  return fs.existsSync(CUSTOM_SITE_CONFIG_PATH);
+}
+
+function renderLegalPages(siteConfig) {
+  if (!hasCustomSiteConfig()) return;
+
+  const languages = supportedLanguages(siteConfig).filter((language) => language === "en" || language === "fr");
+  const legalPages = ["privacy", "terms", "abuse", "security"];
+
+  if (!languages.length) return;
+
+  const templatePages = [];
+  for (const language of languages) {
+    for (const slug of legalPages) {
+      for (const filePath of legalPagePaths(language, slug)) {
+        if (isDefaultLegalTemplate(filePath)) templatePages.push({ language, slug, filePath });
+      }
+    }
+  }
+
+  if (!templatePages.length) return;
+
+  validateOperatorConfig(siteConfig.operator || {});
+
+  for (const page of templatePages) {
+    const rendered = renderLegalPageContent(page.language, page.slug, siteConfig.operator || {});
+    const current = fs.readFileSync(page.filePath, "utf8");
+    fs.writeFileSync(page.filePath, replaceLegalContent(current, rendered));
+  }
+}
+
+function legalPagePaths(language, slug) {
+  return language === "en"
+    ? [path.join(BUILD_DIR, `${slug}.html`), path.join(BUILD_DIR, "en", `${slug}.html`)]
+    : [path.join(BUILD_DIR, language, `${slug}.html`)];
+}
+
+function isDefaultLegalTemplate(filePath) {
+  if (!fs.existsSync(filePath)) return false;
+  const html = fs.readFileSync(filePath, "utf8");
+  return html.includes("Default template to adapt by the instance owner.")
+    || html.includes("Modèle par défaut à adapter par le propriétaire de l'instance.");
+}
+
+function validateOperatorConfig(operator) {
+  const required = ["legal_name", "jurisdiction", "contact_email", "privacy_contact", "last_updated"];
+  const missing = required.filter((field) => isPlaceholderValue(operator[field]));
+
+  if (missing.length) {
+    throw new Error(`custom/v8s-site-config.json operator fields are required for default legal pages: ${missing.join(", ")}`);
+  }
+
+  for (const field of ["contact_email", "privacy_contact"]) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(operator[field]))) {
+      throw new Error(`custom/v8s-site-config.json operator.${field} must be an email address`);
+    }
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated))) {
+    throw new Error("custom/v8s-site-config.json operator.last_updated must use YYYY-MM-DD");
+  }
+}
+
+function isPlaceholderValue(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  return !normalized
+    || ["todo", "tbd", "to be defined", "changeme", "change-me", "default", "owner", "example", "example.com"].includes(normalized)
+    || normalized.includes("example.")
+    || normalized.includes("your-");
+}
+
+function replaceLegalContent(html, rendered) {
+  const pattern = /(<h2 class="legal-title">[\s\S]*?<\/h2>\n)([\s\S]*?)(\n\s*<nav class="page-links")/;
+  return html.replace(pattern, (_match, heading, _body, nav) => `${heading}${rendered}${nav}`);
+}
+
+function renderLegalPageContent(language, slug, operator) {
+  const content = LEGAL_CONTENT[language]?.[slug] || LEGAL_CONTENT.en[slug];
+  const paragraphs = content.sections.map(([heading, text]) => {
+    return `      <h3>${escapeHtml(heading)}</h3>\n      <p>${renderOperatorText(text, operator)}</p>`;
+  }).join("\n\n");
+
+  return `      <p class="legal-note">${renderOperatorText(content.note, operator)}</p>\n      <p class="legal-note">${escapeHtml(content.lastUpdated)} ${escapeHtml(operator.last_updated || "")}</p>\n\n${paragraphs}\n`;
+}
+
+function renderOperatorText(text, operator) {
+  return escapeHtml(text)
+    .replaceAll("{{legal_name}}", escapeHtml(operator.legal_name || ""))
+    .replaceAll("{{jurisdiction}}", escapeHtml(operator.jurisdiction || ""))
+    .replaceAll("{{contact_email}}", `<a href="mailto:${escapeHtml(operator.contact_email || "")}">${escapeHtml(operator.contact_email || "")}</a>`)
+    .replaceAll("{{privacy_contact}}", `<a href="mailto:${escapeHtml(operator.privacy_contact || "")}">${escapeHtml(operator.privacy_contact || "")}</a>`);
+}
+
+const LEGAL_CONTENT = {
+  en: {
+    privacy: {
+      note: "Privacy notice for {{legal_name}}, operated under {{jurisdiction}}.",
+      lastUpdated: "Last updated:",
+      sections: [
+        ["Overview", "{{legal_name}} operates this vanityURLs instance to redirect short links to destination pages."],
+        ["Information processed", "When someone visits a short link, the hosting provider and Worker runtime may process standard request information such as requested path, timestamp, IP address, user agent, referrer, and security metadata. This information is used to deliver redirects, protect the service, diagnose reliability issues, and respond to abuse."],
+        ["Analytics", "This instance may use privacy-respecting server-side analytics or Cloudflare-provided traffic data. Analytics should be limited to aggregate operations, security, and reliability needs."],
+        ["Destinations", "After a redirect, the destination website is controlled by its own operator and may have separate privacy practices."],
+        ["Contact", "For privacy questions, contact {{privacy_contact}}."]
+      ]
+    },
+    terms: {
+      note: "Terms and conditions for {{legal_name}}, operated under {{jurisdiction}}.",
+      lastUpdated: "Last updated:",
+      sections: [
+        ["Use of this service", "{{legal_name}} provides this instance to redirect short links to destination pages."],
+        ["Acceptable use", "Do not use this service for phishing, malware, credential theft, spam, harassment, impersonation, or other abusive activity. The operator may disable or remove links that appear unsafe, misleading, illegal, or inconsistent with its policies."],
+        ["External destinations", "Short links may redirect to websites operated by third parties. {{legal_name}} is not responsible for the content, availability, or practices of external destinations."],
+        ["No warranty", "This service is provided as configured by the operator. Availability, accuracy, and continued operation are not guaranteed."],
+        ["Contact", "Questions about these terms should be directed to {{contact_email}}."]
+      ]
+    },
+    abuse: {
+      note: "Trust and safety contact information for {{legal_name}}.",
+      lastUpdated: "Last updated:",
+      sections: [
+        ["Report abuse", "If a short link appears to be used for phishing, malware, spam, impersonation, harassment, or another harmful purpose, report it to {{contact_email}}."],
+        ["What to include", "Include the short URL, the destination you reached, the reason it appears abusive, and any relevant screenshots or timestamps. Do not include sensitive personal information unless necessary for the report."],
+        ["Response", "{{legal_name}} may disable unsafe links, update block policies, or take other action needed to protect visitors and the reputation of the short domain."],
+        ["Jurisdiction", "This instance is operated under {{jurisdiction}}."]
+      ]
+    },
+    security: {
+      note: "Security contact information for {{legal_name}}.",
+      lastUpdated: "Last updated:",
+      sections: [
+        ["Security model", "This instance is a static-asset and Cloudflare Worker based redirect service. It should not expose a public write API, visitor accounts, cookies, or client-side analytics by default."],
+        ["Infrastructure", "{{legal_name}} should use Cloudflare security controls, access protection for operational paths, safe redirect-target validation, and abuse block policies appropriate for this deployment."],
+        ["Vulnerability reports", "If you discover a security issue affecting this instance, report it privately to {{contact_email}}. Do not publish exploit details before the operator has had time to respond."],
+        ["Project security", "Security issues in the vanityURLs software itself can be reported through the project's GitHub security advisory process."]
+      ]
+    }
+  },
+  fr: {
+    privacy: {
+      note: "Avis de confidentialité pour {{legal_name}}, exploité sous {{jurisdiction}}.",
+      lastUpdated: "Dernière mise à jour :",
+      sections: [
+        ["Vue d’ensemble", "{{legal_name}} exploite cette instance vanityURLs pour rediriger des liens courts vers des pages de destination."],
+        ["Renseignements traités", "Lorsqu'une personne visite un lien court, l'hébergeur et le Worker peuvent traiter des renseignements standards de requête comme le chemin demandé, l'horodatage, l'adresse IP, l'agent utilisateur, le référent et certaines métadonnées de sécurité. Ces renseignements servent à livrer les redirections, protéger le service, diagnostiquer les problèmes de fiabilité et répondre aux abus."],
+        ["Analytique", "Cette instance peut utiliser une analytique côté serveur respectueuse de la vie privée ou les données de trafic fournies par Cloudflare. L'analytique devrait être limitée aux besoins d'exploitation, de sécurité et de fiabilité."],
+        ["Destinations", "Après une redirection, le site de destination est contrôlé par son propre exploitant et peut avoir ses propres pratiques de confidentialité."],
+        ["Contact", "Pour les questions de confidentialité, contactez {{privacy_contact}}."]
+      ]
+    },
+    terms: {
+      note: "Conditions d'utilisation pour {{legal_name}}, exploité sous {{jurisdiction}}.",
+      lastUpdated: "Dernière mise à jour :",
+      sections: [
+        ["Utilisation du service", "{{legal_name}} fournit cette instance pour rediriger des liens courts vers des pages de destination."],
+        ["Utilisation acceptable", "N'utilisez pas ce service pour l'hameçonnage, les logiciels malveillants, le vol d'identifiants, le pourriel, le harcèlement, l'usurpation d'identité ou toute autre activité abusive. L'opérateur peut désactiver ou supprimer les liens qui semblent dangereux, trompeurs, illégaux ou incompatibles avec ses politiques."],
+        ["Destinations externes", "Les liens courts peuvent rediriger vers des sites exploités par des tiers. {{legal_name}} n'est pas responsable du contenu, de la disponibilité ou des pratiques des destinations externes."],
+        ["Aucune garantie", "Ce service est fourni selon la configuration de l'opérateur. La disponibilité, l'exactitude et le fonctionnement continu ne sont pas garantis."],
+        ["Contact", "Les questions relatives à ces conditions doivent être adressées à {{contact_email}}."]
+      ]
+    },
+    abuse: {
+      note: "Information confiance et sécurité pour {{legal_name}}.",
+      lastUpdated: "Dernière mise à jour :",
+      sections: [
+        ["Signaler un abus", "Si un lien court semble utilisé pour l'hameçonnage, des logiciels malveillants, du pourriel, l'usurpation d'identité, le harcèlement ou un autre usage nuisible, signalez-le à {{contact_email}}."],
+        ["Quoi inclure", "Incluez l'URL courte, la destination atteinte, la raison pour laquelle elle semble abusive et toute capture d'écran ou tout horodatage pertinent. N'incluez pas de renseignements personnels sensibles sauf si c'est nécessaire au signalement."],
+        ["Réponse", "{{legal_name}} peut désactiver les liens dangereux, mettre à jour les politiques de blocage ou prendre d'autres mesures nécessaires pour protéger les visiteurs et la réputation du domaine court."],
+        ["Juridiction", "Cette instance est exploitée sous {{jurisdiction}}."]
+      ]
+    },
+    security: {
+      note: "Information de sécurité pour {{legal_name}}.",
+      lastUpdated: "Dernière mise à jour :",
+      sections: [
+        ["Modèle de sécurité", "Cette instance est un service de redirection basé sur des actifs statiques et un Cloudflare Worker. Par défaut, elle ne devrait pas exposer d'API publique d'écriture, de comptes visiteurs, de témoins ou d'analytique côté client."],
+        ["Infrastructure", "{{legal_name}} devrait utiliser les contrôles de sécurité Cloudflare, la protection d'accès pour les chemins opérationnels, la validation sécuritaire des cibles de redirection et des politiques de blocage adaptées à ce déploiement."],
+        ["Signalement de vulnérabilités", "Si vous découvrez un problème de sécurité touchant cette instance, signalez-le en privé à {{contact_email}}. Ne publiez pas les détails d'exploitation avant que l'opérateur ait eu le temps de répondre."],
+        ["Sécurité du projet", "Les problèmes de sécurité dans le logiciel vanityURLs lui-même peuvent être signalés via le processus d'avis de sécurité GitHub du projet."]
+      ]
+    }
+  }
+};
 
 function buildTestsPage(siteConfig) {
   const languages = supportedLanguages(siteConfig);
@@ -489,6 +686,7 @@ function main() {
   patchRuntimeLanguages(siteConfig);
   cleanBuild();
   copyPublic(siteConfig);
+  renderLegalPages(siteConfig);
   writeSiteConfig(siteConfig);
   buildTestsPage(siteConfig);
   copyRuntimeBlocklist();

@@ -72,6 +72,7 @@ async function promptForMissing(args) {
   const configuredOwner = args.owner === "owner" ? inferOwnerFromLinks() || args.owner : args.owner;
   const configuredAnalytics = args.analytics === "disabled" ? wranglerConfig.analyticsProvider || args.analytics : args.analytics;
   const configuredAccessTeamDomain = args.accessTeamDomain || wranglerConfig.accessTeamDomain || "";
+  const configuredOperator = siteConfig.operator || {};
   const suggested = suggestWordmarkSplit(configuredDomain);
 
   const rl = readline.createInterface({ input, output });
@@ -82,6 +83,11 @@ async function promptForMissing(args) {
     args.analytics = await question(rl, "Analytics provider", configuredAnalytics);
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
     args.languages = await question(rl, "Supported languages", args.languages || configuredLanguages);
+    args.operatorLegalName = await question(rl, "Operator legal name", args.operatorLegalName || configuredOperator.legal_name || "");
+    args.operatorJurisdiction = await question(rl, "Operator jurisdiction", args.operatorJurisdiction || configuredOperator.jurisdiction || "");
+    args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || "");
+    args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || args.operatorContactEmail || configuredOperator.contact_email || "");
+    args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || todayIsoDate());
     args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
 
     if (args.customizePublic) {
@@ -102,6 +108,7 @@ function normalizeArgs(args) {
   args.owner = slugifyOwner(args.owner);
   args.languages = normalizeLanguages(args.languages);
   args.customizePublic = normalizeBoolean(args.customizePublic);
+  args.operator = normalizeOperator(args);
 
   if (!args.domain) throw new Error("Domain cannot be empty.");
   if (!args.workerName) throw new Error("Worker name cannot be empty.");
@@ -231,6 +238,20 @@ function normalizeWordmarkSplit(args) {
   };
 }
 
+function normalizeOperator(args) {
+  return {
+    legal_name: String(args.operatorLegalName || "").trim(),
+    jurisdiction: String(args.operatorJurisdiction || "").trim(),
+    contact_email: String(args.operatorContactEmail || "").trim(),
+    privacy_contact: String(args.operatorPrivacyContact || args.operatorContactEmail || "").trim(),
+    last_updated: String(args.operatorLastUpdated || todayIsoDate()).trim()
+  };
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function suggestWordmarkSplit(domain) {
   const normalized = normalizeDomain(domain);
   const parts = normalized.split(".").filter(Boolean);
@@ -278,6 +299,7 @@ function updateSiteConfig(args) {
       default_language: args.languages[0] || "en",
       supported_languages: args.languages
     },
+    operator: args.operator,
     branding: {
       domain: args.domain,
       custom_public: args.customizePublic === true,
@@ -411,6 +433,10 @@ function mergeSiteConfig(base, custom) {
     i18n: {
       ...(base.i18n || {}),
       ...(custom.i18n || {})
+    },
+    operator: {
+      ...(base.operator || {}),
+      ...(custom.operator || {})
     },
     branding
   };

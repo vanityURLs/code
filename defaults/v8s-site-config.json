@@ -3,5 +3,12 @@
   "i18n": {
     "default_language": "en",
     "supported_languages": ["en", "fr", "es", "it", "de"]
+  },
+  "operator": {
+    "legal_name": "",
+    "jurisdiction": "",
+    "contact_email": "",
+    "privacy_contact": "",
+    "last_updated": ""
   }
 }
