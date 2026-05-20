@@ -27,7 +27,7 @@ const LANGUAGE_METADATA = {
       stats: "Stats",
       privacy: "Privacy",
       terms: "Terms",
-      abuse: "Abuse",
+      abuse: "Trust & Safety",
       security: "Security",
       notFound: "404",
       expired: "Expired",
@@ -45,7 +45,7 @@ const LANGUAGE_METADATA = {
       stats: "Stats",
       privacy: "Confidentialité",
       terms: "Conditions",
-      abuse: "Abus",
+      abuse: "Confiance et sécurité",
       security: "Sécurité",
       notFound: "404",
       expired: "Expiré",
@@ -305,12 +305,22 @@ function renderLegalPages(siteConfig) {
 
   if (!templatePages.length) return;
 
-  validateOperatorConfig(siteConfig.operator || {});
+  const operator = siteConfig.operator || {};
+  const operatorConfigIssues = validateOperatorConfig(operator);
+  const requiresOperatorConfig = siteConfig?.branding?.custom_public === true;
+  if (operatorConfigIssues.length && requiresOperatorConfig) {
+    throw new Error(`custom/v8s-site-config.json operator fields are required for default legal pages: ${operatorConfigIssues.join(", ")}`);
+  }
 
   for (const page of templatePages) {
-    const rendered = renderLegalPageContent(page.language, page.slug, siteConfig.operator || {});
+    const rendered = operatorConfigIssues.length
+      ? renderLegalConfigurationNotice(page.language)
+      : renderLegalPageContent(page.language, page.slug, operator);
     const current = fs.readFileSync(page.filePath, "utf8");
-    fs.writeFileSync(page.filePath, replaceLegalContent(current, rendered));
+    const withContent = replaceLegalContent(current, rendered);
+    fs.writeFileSync(page.filePath, operatorConfigIssues.length
+      ? replaceBrandSubtitle(withContent, legalConfigurationSubtitle(page.language))
+      : withContent);
   }
 }
 
@@ -329,21 +339,19 @@ function isDefaultLegalTemplate(filePath) {
 
 function validateOperatorConfig(operator) {
   const required = ["legal_name", "jurisdiction", "contact_email", "privacy_contact", "last_updated"];
-  const missing = required.filter((field) => isPlaceholderValue(operator[field]));
-
-  if (missing.length) {
-    throw new Error(`custom/v8s-site-config.json operator fields are required for default legal pages: ${missing.join(", ")}`);
-  }
+  const issues = required.filter((field) => isPlaceholderValue(operator[field]));
 
   for (const field of ["contact_email", "privacy_contact"]) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(operator[field]))) {
-      throw new Error(`custom/v8s-site-config.json operator.${field} must be an email address`);
+      issues.push(field);
     }
   }
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated))) {
-    throw new Error("custom/v8s-site-config.json operator.last_updated must use YYYY-MM-DD");
+    issues.push("last_updated");
   }
+
+  return [...new Set(issues)];
 }
 
 function isPlaceholderValue(value) {
@@ -359,6 +367,13 @@ function replaceLegalContent(html, rendered) {
   return html.replace(pattern, (_match, heading, _body, nav) => `${heading}${rendered}${nav}`);
 }
 
+function replaceBrandSubtitle(html, notice) {
+  return html.replace(
+    /<p class="instance-brand-subtitle">[\s\S]*?<\/p>/,
+    `<p class="instance-brand-subtitle">${escapeHtml(notice)}</p>`
+  );
+}
+
 function renderLegalPageContent(language, slug, operator) {
   const content = LEGAL_CONTENT[language]?.[slug] || LEGAL_CONTENT.en[slug];
   const paragraphs = content.sections.map(([heading, text]) => {
@@ -368,6 +383,19 @@ function renderLegalPageContent(language, slug, operator) {
   return `      <p class="legal-note">${renderOperatorText(content.note, operator)}</p>\n      <p class="legal-note">${escapeHtml(content.lastUpdated)} ${escapeHtml(operator.last_updated || "")}</p>\n\n${paragraphs}\n`;
 }
 
+function renderLegalConfigurationNotice(language) {
+  const notice = LEGAL_CONFIGURATION_NOTICE[language] || LEGAL_CONFIGURATION_NOTICE.en;
+  const paragraphs = notice.sections.map(([heading, text]) => {
+    return `      <h3>${escapeHtml(heading)}</h3>\n      <p>${escapeHtml(text)}</p>`;
+  }).join("\n\n");
+
+  return `      <p class="legal-note">${escapeHtml(notice.note)}</p>\n\n${paragraphs}\n`;
+}
+
+function legalConfigurationSubtitle(language) {
+  return (LEGAL_CONFIGURATION_NOTICE[language] || LEGAL_CONFIGURATION_NOTICE.en).subtitle;
+}
+
 function renderOperatorText(text, operator) {
   return escapeHtml(text)
     .replaceAll("{{legal_name}}", escapeHtml(operator.legal_name || ""))
@@ -375,6 +403,25 @@ function renderOperatorText(text, operator) {
     .replaceAll("{{contact_email}}", `<a href="mailto:${escapeHtml(operator.contact_email || "")}">${escapeHtml(operator.contact_email || "")}</a>`)
     .replaceAll("{{privacy_contact}}", `<a href="mailto:${escapeHtml(operator.privacy_contact || "")}">${escapeHtml(operator.privacy_contact || "")}</a>`);
 }
+
+const LEGAL_CONFIGURATION_NOTICE = {
+  en: {
+    subtitle: "Default legal pages are shown until this instance configures its legal and trust contacts.",
+    note: "Configuration notice: this instance is using default legal and trust content.",
+    sections: [
+      ["Operator information required", "The instance owner should configure operator legal name, jurisdiction, contact email, privacy contact, and last-updated date in custom/v8s-site-config.json."],
+      ["Before launch", "Do not treat this page as a final legal notice until the operator has reviewed and configured the instance-specific content."]
+    ]
+  },
+  fr: {
+    subtitle: "Les pages légales par défaut sont affichées tant que cette instance n'a pas configuré ses contacts légaux et de confiance.",
+    note: "Avis de configuration : cette instance utilise le contenu légal et de confiance par défaut.",
+    sections: [
+      ["Renseignements requis", "Le propriétaire de l'instance devrait configurer le nom légal de l'opérateur, la juridiction, le courriel de contact, le contact de confidentialité et la date de dernière mise à jour dans custom/v8s-site-config.json."],
+      ["Avant le lancement", "Ne considérez pas cette page comme un avis légal final tant que l'opérateur n'a pas révisé et configuré le contenu propre à l'instance."]
+    ]
+  }
+};
 
 const LEGAL_CONTENT = {
   en: {
@@ -401,12 +448,12 @@ const LEGAL_CONTENT = {
       ]
     },
     abuse: {
-      note: "Trust and safety contact information for {{legal_name}}.",
+      note: "Trust and safety information for {{legal_name}}.",
       lastUpdated: "Last updated:",
       sections: [
-        ["Report abuse", "If a short link appears to be used for phishing, malware, spam, impersonation, harassment, or another harmful purpose, report it to {{contact_email}}."],
+        ["Report harmful or unsafe use", "If a short link appears to be used for phishing, malware, spam, impersonation, harassment, security concerns, or another harmful purpose, report it to {{contact_email}}."],
         ["What to include", "Include the short URL, the destination you reached, the reason it appears abusive, and any relevant screenshots or timestamps. Do not include sensitive personal information unless necessary for the report."],
-        ["Response", "{{legal_name}} may disable unsafe links, update block policies, or take other action needed to protect visitors and the reputation of the short domain."],
+        ["Response", "{{legal_name}} may disable unsafe links, update block policies, investigate security concerns, or take other action needed to protect visitors and the reputation of the short domain."],
         ["Jurisdiction", "This instance is operated under {{jurisdiction}}."]
       ]
     },
@@ -445,12 +492,12 @@ const LEGAL_CONTENT = {
       ]
     },
     abuse: {
-      note: "Information confiance et sécurité pour {{legal_name}}.",
+      note: "Information de confiance et de sécurité pour {{legal_name}}.",
       lastUpdated: "Dernière mise à jour :",
       sections: [
-        ["Signaler un abus", "Si un lien court semble utilisé pour l'hameçonnage, des logiciels malveillants, du pourriel, l'usurpation d'identité, le harcèlement ou un autre usage nuisible, signalez-le à {{contact_email}}."],
+        ["Signaler un usage nuisible ou dangereux", "Si un lien court semble utilisé pour l'hameçonnage, des logiciels malveillants, du pourriel, l'usurpation d'identité, le harcèlement, un enjeu de sécurité ou un autre usage nuisible, signalez-le à {{contact_email}}."],
         ["Quoi inclure", "Incluez l'URL courte, la destination atteinte, la raison pour laquelle elle semble abusive et toute capture d'écran ou tout horodatage pertinent. N'incluez pas de renseignements personnels sensibles sauf si c'est nécessaire au signalement."],
-        ["Réponse", "{{legal_name}} peut désactiver les liens dangereux, mettre à jour les politiques de blocage ou prendre d'autres mesures nécessaires pour protéger les visiteurs et la réputation du domaine court."],
+        ["Réponse", "{{legal_name}} peut désactiver les liens dangereux, mettre à jour les politiques de blocage, enquêter sur les enjeux de sécurité ou prendre d'autres mesures nécessaires pour protéger les visiteurs et la réputation du domaine court."],
         ["Juridiction", "Cette instance est exploitée sous {{jurisdiction}}."]
       ]
     },
@@ -524,7 +571,7 @@ function renderTestsPanel(language) {
     ? [
       ["privacy", metadata.links.privacy || "Privacy"],
       ["terms", metadata.links.terms || "Terms"],
-      ["abuse", metadata.links.abuse || "Abuse"],
+      ["abuse", metadata.links.abuse || "Trust & Safety"],
       ["security", metadata.links.security || "Security"]
     ]
     : [];

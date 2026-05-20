@@ -40,7 +40,7 @@ The status pages use a consistent search-style VanityURLs layout:
 - a rounded message bar
 - a `v8s-redirected.svg` attribution badge linking to `https://vanityURLs.link`
 
-## Security And Abuse Notes
+## Trust And Safety Notes
 
 The `/expand/` page is exact-match only. It does not list links, autocomplete entries, or automatically open destinations. This reduces its value for bulk discovery while still allowing a visitor to preview a short-link destination before clicking.
 
@@ -48,7 +48,7 @@ The runtime registry is private to the Worker runtime. Instance owners should no
 
 The `/_stats/` dashboard exposes routing inventory and should be protected with Cloudflare Access or equivalent controls when deployed publicly.
 
-The default policy rejects risky destinations such as credentialed URLs, non-HTTP(S) protocols, private IP ranges, known shortener chains, phishing lures, and high-risk executable downloads. Instance owners should add local policy in `custom/v8s-policies.json` and must not use the redirect engine for phishing, malware, undisclosed tracking, or other abuse.
+The default policy rejects risky destinations such as credentialed URLs, non-HTTP(S) protocols, private IP ranges, known shortener chains, phishing lures, and high-risk executable downloads. Instance owners should add local policy in `custom/v8s-policies.json` and must not use the redirect engine for phishing, malware, undisclosed tracking, or other harmful activity.
 
 ## Useful Files
 
