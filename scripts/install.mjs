@@ -64,18 +64,23 @@ async function promptForMissing(args) {
   if (!process.stdin.isTTY) return args;
 
   const siteConfig = loadSiteConfig();
+  const wranglerConfig = loadWranglerConfig();
   const configuredLanguages = supportedLanguages(siteConfig).join(",");
   const configuredBrand = siteConfig.branding?.wordmark;
-  const configuredDomain = siteConfig.branding?.domain || args.domain || DEFAULT_DOMAIN;
+  const configuredDomain = siteConfig.branding?.domain || args.domain || wranglerConfig.routeDomain || DEFAULT_DOMAIN;
+  const configuredWorkerName = args.workerName || wranglerConfig.name || slugifyWorker(configuredDomain);
+  const configuredOwner = args.owner === "owner" ? inferOwnerFromLinks() || args.owner : args.owner;
+  const configuredAnalytics = args.analytics === "disabled" ? wranglerConfig.analyticsProvider || args.analytics : args.analytics;
+  const configuredAccessTeamDomain = args.accessTeamDomain || wranglerConfig.accessTeamDomain || "";
   const suggested = suggestWordmarkSplit(configuredDomain);
 
   const rl = readline.createInterface({ input, output });
   try {
     args.domain = args.domain || await question(rl, "Short domain", configuredDomain);
-    args.workerName = await rl.question(`Worker name (${slugifyWorker(args.domain)}): `) || slugifyWorker(args.domain);
-    args.owner = await rl.question(`Owner label (${args.owner}): `) || args.owner;
-    args.analytics = await rl.question("Analytics provider (disabled, umami, fathom, umami,fathom): ") || args.analytics;
-    args.accessTeamDomain = await rl.question("Cloudflare Access team domain (optional): ") || "";
+    args.workerName = await question(rl, "Worker name", configuredWorkerName);
+    args.owner = await question(rl, "Owner label", configuredOwner);
+    args.analytics = await question(rl, "Analytics provider", configuredAnalytics);
+    args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
     args.languages = await question(rl, "Supported languages", args.languages || configuredLanguages);
     args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
 
@@ -156,6 +161,51 @@ function normalizeAnalyticsProviders(value) {
   }
 
   return providers.join(",");
+}
+
+function loadWranglerConfig() {
+  if (!fs.existsSync(WRANGLER_PATH)) return {};
+
+  const toml = fs.readFileSync(WRANGLER_PATH, "utf8");
+  return {
+    name: readTomlString(toml, "name"),
+    routeDomain: readRouteDomain(toml),
+    analyticsProvider: readTomlSectionString(toml, "vars", "ANALYTICS_PROVIDER"),
+    accessTeamDomain: readTomlSectionString(toml, "vars", "CF_ACCESS_TEAM_DOMAIN")
+  };
+}
+
+function readTomlString(toml, key) {
+  const match = toml.match(new RegExp(`^\\s*${escapeRegExp(key)}\\s*=\\s*['"]([^'"]*)['"]\\s*$`, "m"));
+  return match?.[1] || "";
+}
+
+function readRouteDomain(toml) {
+  const routeSection = toml.match(/\[\[routes\]\][\s\S]*?(?=\n\[|$)/);
+  if (!routeSection) return "";
+  return readTomlString(routeSection[0], "pattern");
+}
+
+function readTomlSectionString(toml, section, key) {
+  const sectionMatch = toml.match(new RegExp(`\\[${escapeRegExp(section)}\\]([\\s\\S]*?)(?=\\n\\[|$)`));
+  if (!sectionMatch) return "";
+  return readTomlString(sectionMatch[1], key);
+}
+
+function inferOwnerFromLinks() {
+  if (!fs.existsSync(CUSTOM_LINKS_PATH)) return "";
+
+  const counts = new Map();
+  for (const rawLine of fs.readFileSync(CUSTOM_LINKS_PATH, "utf8").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const owner = (line.split("|")[6] || "").trim();
+    if (!owner) continue;
+    counts.set(owner, (counts.get(owner) || 0) + 1);
+  }
+
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || "";
 }
 
 function normalizeLanguages(value) {
