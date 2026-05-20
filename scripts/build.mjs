@@ -62,6 +62,7 @@ const LANGUAGE_METADATA = {
       expand: "Expandir",
       stats: "Stats",
       terms: "Términos",
+      abuse: "Confianza y seguridad",
       notFound: "404",
       expired: "Caducado",
       disabled: "Desactivado",
@@ -77,6 +78,7 @@ const LANGUAGE_METADATA = {
       expand: "Espandi",
       stats: "Stats",
       terms: "Condizioni",
+      abuse: "Fiducia e sicurezza",
       notFound: "404",
       expired: "Scaduto",
       disabled: "Disattivato",
@@ -92,6 +94,7 @@ const LANGUAGE_METADATA = {
       expand: "Erweitern",
       stats: "Stats",
       terms: "Bedingungen",
+      abuse: "Vertrauen und Sicherheit",
       notFound: "404",
       expired: "Abgelaufen",
       disabled: "Deaktiviert",
@@ -338,23 +341,41 @@ function renderSecurityTxt(siteConfig) {
   if (!hasCustomSiteConfig()) return;
 
   const operator = effectiveOperator(siteConfig.operator || {});
-  if (validateOperatorConfig(operator).length) return;
+  if (validateOperatorConfig(operator).length) {
+    removeSecurityTxt();
+    return;
+  }
 
-  const securityTxtPath = path.join(BUILD_DIR, "security.txt");
   const shortDomain = normalizeSecurityTxtValue(operator.short_domain);
   const securityContact = normalizeSecurityTxtValue(operator.security_contact);
   const preferredLanguages = supportedLanguages(siteConfig).join(", ");
   const expires = securityTxtExpires(operator.last_updated);
   const content = [
     `Contact: mailto:${securityContact}`,
-    `Policy: https://${shortDomain}/security`,
-    `Canonical: https://${shortDomain}/security.txt`,
+    `Policy: https://${shortDomain}/trust-safety`,
+    `Canonical: https://${shortDomain}/.well-known/security.txt`,
     `Preferred-Languages: ${preferredLanguages}`,
     `Expires: ${expires}`,
     ""
   ].join("\n");
 
-  fs.writeFileSync(securityTxtPath, content);
+  for (const filePath of securityTxtPaths()) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, content);
+  }
+}
+
+function securityTxtPaths() {
+  return [
+    path.join(BUILD_DIR, "security.txt"),
+    path.join(BUILD_DIR, ".well-known", "security.txt")
+  ];
+}
+
+function removeSecurityTxt() {
+  for (const filePath of securityTxtPaths()) {
+    fs.rmSync(filePath, { force: true });
+  }
 }
 
 function normalizeSecurityTxtValue(value) {
@@ -537,10 +558,18 @@ const LEGAL_CONTENT = {
       note: "Trust and safety information for {{legal_name}}.",
       lastUpdated: "Last updated:",
       sections: [
-        ["Report harmful or unsafe use", "If a short link appears to be used for phishing, malware, spam, impersonation, harassment, security concerns, or another harmful purpose, report it to {{abuse_contact}}."],
-        ["What to include", "Include the short URL, the destination you reached, the reason it appears abusive, and any relevant screenshots or timestamps. Do not include sensitive personal information unless necessary for the report."],
-        ["Response", "{{legal_name}} aims to review trust and safety reports within {{abuse_response_window}} and may disable unsafe links, update block policies, investigate security concerns, or take other action needed to protect visitors and the reputation of {{short_domain}}."],
-        ["Jurisdiction", "This instance is operated under {{jurisdiction}}."]
+        ["Overview", "This page is the single contact point for reporting abusive short links and for disclosing security vulnerabilities affecting {{operator.short_domain}}. It complements the machine-readable contact published at /.well-known/security.txt in accordance with RFC 9116."],
+        ["Report an abusive link", "Report any short link on this domain that appears to be used for phishing, malware distribution, credential theft, spam, harassment, impersonation, copyright or trademark infringement, defamation, or another harmful purpose."],
+        ["Where to send reports", "Send reports to {{operator.abuse_contact}}. A structured report template is available at /abuse-report.md; copy it, fill in the fields, and paste the result into the body of your email."],
+        ["Response", "The Operator will acknowledge well-formed reports on a best-effort basis, typically within {{operator.abuse_response_window}}, and may disable affected links, update the block-keyword policy in the open-source configuration, or take other action consistent with the Terms. No service-level agreement is offered; this is a best-effort response."],
+        ["Child sexual abuse material and imminent harm", "If you believe a short link points to child sexual abuse material, report it directly to the appropriate authority in addition to contacting the Operator. Canada: Cybertip.ca. United States: NCMEC CyberTipline. European Union and worldwide: INHOPE network hotlines. For any other situation involving imminent physical danger, contact your local emergency services first."],
+        ["Security vulnerability disclosure", "If you discover a security vulnerability in this instance, report it privately to {{operator.security_contact}}. The same contact is published in /.well-known/security.txt."],
+        ["In scope", "The {{operator.short_domain}} domain and the Cloudflare Worker code deployed at that domain are in scope, along with misconfiguration of redirect rules, block policies, or access controls specific to this instance."],
+        ["Out of scope", "Vulnerabilities in Cloudflare infrastructure should be reported directly to Cloudflare's HackerOne program. Vulnerabilities in GitHub should be reported through GitHub's HackerOne program. Vulnerabilities in the upstream vanityURLs open-source software should be reported through the project's GitHub Security Advisories, not through a public GitHub issue. Findings that require credentials, social engineering of the Operator, denial of service, or physical access are out of scope."],
+        ["Safe harbour", "Good-faith security research conducted within the scope above, that respects visitor privacy, avoids service disruption, does not access or modify data beyond what is necessary to demonstrate the issue, and follows coordinated disclosure, will not be subject to legal action by the Operator. This safe harbour does not bind third parties and does not authorize activity that violates applicable law."],
+        ["Coordinated disclosure", "Please allow a reasonable remediation window before public disclosure. Ninety days is the default expectation, shorter where a fix is trivial, longer where coordination with upstream maintainers is required. The Operator will keep reporters informed of progress and credit researchers who wish to be acknowledged."],
+        ["What we cannot do", "The Operator does not act as a general content moderator for the open internet. Reports about destination websites are most effective when also sent to the destination's hosting provider, domain registrar, or the relevant regulator. The Operator's authority is limited to the short links it publishes on {{operator.short_domain}}."],
+        ["Reference material", "Source code: https://github.com/vanityURLs/code. Documentation: /en/docs/. Machine-readable security contact: /.well-known/security.txt. Block-keyword policy: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."]
       ]
     },
     security: {
@@ -588,10 +617,18 @@ const LEGAL_CONTENT = {
       note: "Information de confiance et de sécurité pour {{legal_name}}.",
       lastUpdated: "Dernière mise à jour :",
       sections: [
-        ["Signaler un usage nuisible ou dangereux", "Si un lien court semble utilisé pour l'hameçonnage, des logiciels malveillants, du pourriel, l'usurpation d'identité, le harcèlement, un enjeu de sécurité ou un autre usage nuisible, signalez-le à {{abuse_contact}}."],
-        ["Quoi inclure", "Incluez l'URL courte, la destination atteinte, la raison pour laquelle elle semble abusive et toute capture d'écran ou tout horodatage pertinent. N'incluez pas de renseignements personnels sensibles sauf si c'est nécessaire au signalement."],
-        ["Réponse", "{{legal_name}} vise à examiner les signalements de confiance et sécurité dans un délai de {{abuse_response_window}} et peut désactiver les liens dangereux, mettre à jour les politiques de blocage, enquêter sur les enjeux de sécurité ou prendre d'autres mesures nécessaires pour protéger les visiteurs et la réputation de {{short_domain}}."],
-        ["Juridiction", "Cette instance est exploitée sous {{jurisdiction}}."]
+        ["Vue d'ensemble", "Cette page est le point de contact unique pour signaler des liens courts abusifs et divulguer des vulnérabilités de sécurité touchant {{operator.short_domain}}. Elle complète le contact lisible par machine publié à /.well-known/security.txt conformément à la RFC 9116."],
+        ["Signaler un lien abusif", "Signalez tout lien court de ce domaine qui semble utilisé pour l'hameçonnage, la distribution de logiciels malveillants, le vol d'identifiants, le pourriel, le harcèlement, l'usurpation d'identité, l'atteinte au droit d'auteur ou à une marque, la diffamation ou tout autre usage nuisible."],
+        ["Où envoyer les signalements", "Envoyez les signalements à {{operator.abuse_contact}}. Un modèle de signalement structuré est disponible à /abuse-report.md; copiez-le, remplissez les champs et collez le résultat dans le corps de votre courriel."],
+        ["Réponse", "L'Opérateur accusera réception des signalements bien formés dans la mesure du possible, généralement dans un délai de {{operator.abuse_response_window}}, et peut désactiver les liens concernés, mettre à jour la politique de mots-clés bloqués dans la configuration open source ou prendre toute autre mesure compatible avec les Conditions. Aucun accord de niveau de service n'est offert; la réponse est fournie au mieux des capacités."],
+        ["Matériel d'abus sexuel d'enfants et danger imminent", "Si vous croyez qu'un lien court pointe vers du matériel d'abus sexuel d'enfants, signalez-le directement à l'autorité appropriée en plus de contacter l'Opérateur. Canada : Cybertip.ca. États-Unis : NCMEC CyberTipline. Union européenne et monde : lignes d'assistance du réseau INHOPE. Pour toute autre situation impliquant un danger physique imminent, contactez d'abord les services d'urgence locaux."],
+        ["Divulgation de vulnérabilités de sécurité", "Si vous découvrez une vulnérabilité de sécurité dans cette instance, signalez-la en privé à {{operator.security_contact}}. Le même contact est publié dans /.well-known/security.txt."],
+        ["Dans le périmètre", "Le domaine {{operator.short_domain}} et le code Cloudflare Worker déployé sur ce domaine sont dans le périmètre, tout comme les erreurs de configuration des règles de redirection, des politiques de blocage ou des contrôles d'accès propres à cette instance."],
+        ["Hors périmètre", "Les vulnérabilités de l'infrastructure Cloudflare doivent être signalées directement au programme HackerOne de Cloudflare. Les vulnérabilités de GitHub doivent être signalées via le programme HackerOne de GitHub. Les vulnérabilités du logiciel open source vanityURLs en amont doivent être signalées via les avis de sécurité GitHub du projet, et non dans une issue GitHub publique. Les constats nécessitant des identifiants, de l'ingénierie sociale de l'Opérateur, un déni de service ou un accès physique sont hors périmètre."],
+        ["Sphère de sécurité", "La recherche de sécurité menée de bonne foi dans le périmètre ci-dessus, qui respecte la vie privée des visiteurs, évite toute interruption du service, n'accède pas aux données ou ne les modifie pas au-delà de ce qui est nécessaire pour démontrer le problème et suit une divulgation coordonnée, ne fera pas l'objet d'une action juridique de la part de l'Opérateur. Cette sphère de sécurité ne lie pas les tiers et n'autorise pas les activités qui violent la loi applicable."],
+        ["Divulgation coordonnée", "Veuillez prévoir une période raisonnable de correction avant toute divulgation publique. Quatre-vingt-dix jours est l'attente par défaut, plus courte lorsqu'un correctif est trivial, plus longue lorsqu'une coordination avec les mainteneurs en amont est nécessaire. L'Opérateur tiendra les chercheurs informés de l'avancement et créditera ceux qui souhaitent être reconnus."],
+        ["Ce que nous ne pouvons pas faire", "L'Opérateur n'agit pas comme modérateur général du contenu sur l'internet ouvert. Les signalements concernant des sites de destination sont plus efficaces lorsqu'ils sont également envoyés à l'hébergeur, au registraire du domaine ou au régulateur pertinent. L'autorité de l'Opérateur se limite aux liens courts qu'il publie sur {{operator.short_domain}}."],
+        ["Références", "Code source : https://github.com/vanityURLs/code. Documentation : /en/docs/. Contact de sécurité lisible par machine : /.well-known/security.txt. Politique de mots-clés bloqués : https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."]
       ]
     },
     security: {
@@ -622,6 +659,24 @@ const LEGAL_CONTENT = {
         ["Cambios", "Estos Términos pueden actualizarse para reflejar cambios operativos, legales o técnicos. El uso continuado del Servicio después de un cambio constituye la aceptación de los Términos actualizados. La fecha de última actualización anterior indica la revisión vigente."],
         ["Contacto", "Las preguntas sobre estos Términos pueden enviarse a {{operator.contact_email}}."]
       ]
+    },
+    abuse: {
+      note: "Información de confianza y seguridad de {{operator.legal_name}}.",
+      lastUpdated: "Última actualización:",
+      sections: [
+        ["Resumen", "Esta página es el punto único de contacto para reportar enlaces cortos abusivos y divulgar vulnerabilidades de seguridad que afecten a {{operator.short_domain}}. Complementa el contacto legible por máquina publicado en /.well-known/security.txt de conformidad con RFC 9116."],
+        ["Reportar un enlace abusivo", "Reporte cualquier enlace corto de este dominio que parezca usarse para phishing, distribución de malware, robo de credenciales, spam, acoso, suplantación, infracción de derechos de autor o marcas, difamación u otro propósito dañino."],
+        ["Dónde enviar reportes", "Envíe los reportes a {{operator.abuse_contact}}. Hay una plantilla estructurada disponible en /abuse-report.md; cópiela, complete los campos y pegue el resultado en el cuerpo del correo."],
+        ["Respuesta", "El Operador acusará recibo de reportes bien formados según su mejor esfuerzo, normalmente dentro de {{operator.abuse_response_window}}, y puede desactivar enlaces afectados, actualizar la política de palabras clave bloqueadas en la configuración open source o tomar otra medida coherente con los Términos. No se ofrece acuerdo de nivel de servicio; es una respuesta de mejor esfuerzo."],
+        ["Material de abuso sexual infantil y daño inminente", "Si cree que un enlace corto apunta a material de abuso sexual infantil, repórtelo directamente a la autoridad apropiada además de contactar al Operador. Canadá: Cybertip.ca. Estados Unidos: NCMEC CyberTipline. Unión Europea y mundial: líneas directas de la red INHOPE. Para cualquier otra situación con peligro físico inminente, contacte primero a los servicios de emergencia locales."],
+        ["Divulgación de vulnerabilidades de seguridad", "Si descubre una vulnerabilidad de seguridad en esta instancia, repórtela de forma privada a {{operator.security_contact}}. El mismo contacto se publica en /.well-known/security.txt."],
+        ["Dentro del alcance", "El dominio {{operator.short_domain}} y el código de Cloudflare Worker desplegado en ese dominio están dentro del alcance, junto con errores de configuración de reglas de redirección, políticas de bloqueo o controles de acceso específicos de esta instancia."],
+        ["Fuera del alcance", "Las vulnerabilidades en infraestructura de Cloudflare deben reportarse directamente al programa HackerOne de Cloudflare. Las vulnerabilidades en GitHub deben reportarse mediante el programa HackerOne de GitHub. Las vulnerabilidades del software open source vanityURLs upstream deben reportarse mediante los avisos de seguridad de GitHub del proyecto, no en una issue pública. Los hallazgos que requieran credenciales, ingeniería social del Operador, denegación de servicio o acceso físico están fuera del alcance."],
+        ["Puerto seguro", "La investigación de seguridad de buena fe realizada dentro del alcance anterior, que respete la privacidad de los visitantes, evite interrupciones del servicio, no acceda ni modifique datos más allá de lo necesario para demostrar el problema y siga una divulgación coordinada, no será objeto de acción legal por parte del Operador. Este puerto seguro no vincula a terceros ni autoriza actividades que violen la ley aplicable."],
+        ["Divulgación coordinada", "Permita una ventana razonable de remediación antes de la divulgación pública. Noventa días es la expectativa predeterminada, menos cuando la corrección sea trivial y más cuando se requiera coordinación con mantenedores upstream. El Operador mantendrá informados a los investigadores y dará crédito a quienes deseen ser reconocidos."],
+        ["Lo que no podemos hacer", "El Operador no actúa como moderador general de contenido para internet abierto. Los reportes sobre sitios de destino suelen ser más efectivos cuando también se envían al proveedor de alojamiento, registrador de dominio o regulador correspondiente. La autoridad del Operador se limita a los enlaces cortos que publica en {{operator.short_domain}}."],
+        ["Material de referencia", "Código fuente: https://github.com/vanityURLs/code. Documentación: /en/docs/. Contacto de seguridad legible por máquina: /.well-known/security.txt. Política de palabras clave bloqueadas: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."]
+      ]
     }
   },
   it: {
@@ -641,6 +696,24 @@ const LEGAL_CONTENT = {
         ["Modifiche", "I presenti Termini possono essere aggiornati per riflettere cambiamenti operativi, legali o tecnici. L'uso continuato del Servizio dopo una modifica costituisce accettazione dei Termini aggiornati. La data di ultimo aggiornamento sopra indicata identifica la revisione corrente."],
         ["Contatto", "Le domande su questi Termini possono essere inviate a {{operator.contact_email}}."]
       ]
+    },
+    abuse: {
+      note: "Informazioni su fiducia e sicurezza per {{operator.legal_name}}.",
+      lastUpdated: "Ultimo aggiornamento:",
+      sections: [
+        ["Panoramica", "Questa pagina è il punto di contatto unico per segnalare link brevi abusivi e divulgare vulnerabilità di sicurezza che riguardano {{operator.short_domain}}. Integra il contatto leggibile automaticamente pubblicato in /.well-known/security.txt in conformità con RFC 9116."],
+        ["Segnalare un link abusivo", "Segnala qualsiasi link breve su questo dominio che sembri usato per phishing, distribuzione di malware, furto di credenziali, spam, molestie, impersonificazione, violazione di copyright o marchi, diffamazione o altro scopo dannoso."],
+        ["Dove inviare le segnalazioni", "Invia le segnalazioni a {{operator.abuse_contact}}. Un modello strutturato è disponibile in /abuse-report.md; copialo, compila i campi e incolla il risultato nel corpo dell'email."],
+        ["Risposta", "L'Operatore confermerà le segnalazioni ben formate secondo il massimo impegno, in genere entro {{operator.abuse_response_window}}, e può disattivare i link interessati, aggiornare la policy delle parole chiave bloccate nella configurazione open source o adottare altre misure coerenti con i Termini. Non viene offerto alcun accordo sul livello di servizio; la risposta è best effort."],
+        ["Materiale di abuso sessuale su minori e pericolo imminente", "Se ritieni che un link breve punti a materiale di abuso sessuale su minori, segnalalo direttamente all'autorità competente oltre a contattare l'Operatore. Canada: Cybertip.ca. Stati Uniti: NCMEC CyberTipline. Unione Europea e mondo: hotline della rete INHOPE. Per qualsiasi altra situazione con pericolo fisico imminente, contatta prima i servizi di emergenza locali."],
+        ["Divulgazione di vulnerabilità di sicurezza", "Se scopri una vulnerabilità di sicurezza in questa istanza, segnalala privatamente a {{operator.security_contact}}. Lo stesso contatto è pubblicato in /.well-known/security.txt."],
+        ["Nel perimetro", "Il dominio {{operator.short_domain}} e il codice Cloudflare Worker distribuito su quel dominio sono nel perimetro, insieme a errori di configurazione di regole di reindirizzamento, policy di blocco o controlli di accesso specifici di questa istanza."],
+        ["Fuori perimetro", "Le vulnerabilità nell'infrastruttura Cloudflare devono essere segnalate direttamente al programma HackerOne di Cloudflare. Le vulnerabilità in GitHub devono essere segnalate tramite il programma HackerOne di GitHub. Le vulnerabilità nel software open source vanityURLs upstream devono essere segnalate tramite gli avvisi di sicurezza GitHub del progetto, non in una issue pubblica. I risultati che richiedono credenziali, social engineering dell'Operatore, denial of service o accesso fisico sono fuori perimetro."],
+        ["Safe harbour", "La ricerca di sicurezza in buona fede condotta nel perimetro indicato, che rispetta la privacy dei visitatori, evita interruzioni del servizio, non accede né modifica dati oltre quanto necessario per dimostrare il problema e segue la divulgazione coordinata, non sarà oggetto di azione legale da parte dell'Operatore. Questo safe harbour non vincola terzi e non autorizza attività che violano la legge applicabile."],
+        ["Divulgazione coordinata", "Concedi una finestra ragionevole di correzione prima della divulgazione pubblica. Novanta giorni è l'aspettativa predefinita, più breve quando la correzione è banale, più lunga quando è necessario coordinarsi con i manutentori upstream. L'Operatore terrà informati i ricercatori e accrediterà chi desidera essere riconosciuto."],
+        ["Cosa non possiamo fare", "L'Operatore non agisce come moderatore generale dei contenuti dell'internet aperta. Le segnalazioni sui siti di destinazione sono più efficaci se inviate anche al provider di hosting, al registrar del dominio o al regolatore pertinente. L'autorità dell'Operatore è limitata ai link brevi che pubblica su {{operator.short_domain}}."],
+        ["Materiale di riferimento", "Codice sorgente: https://github.com/vanityURLs/code. Documentazione: /en/docs/. Contatto di sicurezza leggibile automaticamente: /.well-known/security.txt. Policy delle parole chiave bloccate: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."]
+      ]
     }
   },
   de: {
@@ -659,6 +732,24 @@ const LEGAL_CONTENT = {
         ["Anwendbares Recht", "Diese Bedingungen unterliegen {{operator.governing_law}}, ohne Berücksichtigung kollisionsrechtlicher Regeln. Jede Streitigkeit aus diesen Bedingungen oder der Nutzung des Dienstes ist ausschließlich vor den Gerichten von {{operator.jurisdiction}} zu bringen, es sei denn, anwendbares Recht gewährt ein unabdingbares Recht, Verfahren anderswo einzuleiten."],
         ["Änderungen", "Diese Bedingungen können aktualisiert werden, um betriebliche, rechtliche oder technische Änderungen widerzuspiegeln. Die fortgesetzte Nutzung des Dienstes nach einer Änderung gilt als Annahme der aktualisierten Bedingungen. Das oben angegebene Datum der letzten Aktualisierung kennzeichnet die aktuelle Fassung."],
         ["Kontakt", "Fragen zu diesen Bedingungen können an {{operator.contact_email}} gesendet werden."]
+      ]
+    },
+    abuse: {
+      note: "Informationen zu Vertrauen und Sicherheit für {{operator.legal_name}}.",
+      lastUpdated: "Zuletzt aktualisiert:",
+      sections: [
+        ["Überblick", "Diese Seite ist die zentrale Kontaktstelle zum Melden missbräuchlicher Kurzlinks und zur Offenlegung von Sicherheitslücken, die {{operator.short_domain}} betreffen. Sie ergänzt den maschinenlesbaren Kontakt unter /.well-known/security.txt gemäß RFC 9116."],
+        ["Missbräuchlichen Link melden", "Melde jeden Kurzlink auf dieser Domain, der für Phishing, Malware-Verbreitung, Zugangsdaten-Diebstahl, Spam, Belästigung, Identitätsmissbrauch, Urheberrechts- oder Markenverletzung, Verleumdung oder einen anderen schädlichen Zweck genutzt zu werden scheint."],
+        ["Wohin Meldungen gesendet werden", "Sende Meldungen an {{operator.abuse_contact}}. Eine strukturierte Vorlage ist unter /abuse-report.md verfügbar; kopiere sie, fülle die Felder aus und füge das Ergebnis in den Text deiner E-Mail ein."],
+        ["Antwort", "Der Betreiber bestätigt gut strukturierte Meldungen nach bestem Aufwand, typischerweise innerhalb von {{operator.abuse_response_window}}, und kann betroffene Links deaktivieren, die Block-Keyword-Policy in der Open-Source-Konfiguration aktualisieren oder andere mit den Bedingungen vereinbare Maßnahmen ergreifen. Es wird keine Service-Level-Vereinbarung angeboten; die Antwort erfolgt nach bestem Aufwand."],
+        ["Material sexuellen Kindesmissbrauchs und unmittelbare Gefahr", "Wenn du glaubst, dass ein Kurzlink auf Material sexuellen Kindesmissbrauchs verweist, melde dies zusätzlich zur Kontaktaufnahme mit dem Betreiber direkt der zuständigen Stelle. Kanada: Cybertip.ca. Vereinigte Staaten: NCMEC CyberTipline. Europäische Union und weltweit: Hotlines des INHOPE-Netzwerks. Bei jeder anderen Situation mit unmittelbarer körperlicher Gefahr kontaktiere zuerst die örtlichen Notdienste."],
+        ["Offenlegung von Sicherheitslücken", "Wenn du eine Sicherheitslücke in dieser Instanz entdeckst, melde sie vertraulich an {{operator.security_contact}}. Derselbe Kontakt ist in /.well-known/security.txt veröffentlicht."],
+        ["Im Geltungsbereich", "Die Domain {{operator.short_domain}} und der auf dieser Domain bereitgestellte Cloudflare-Worker-Code liegen im Geltungsbereich, ebenso Fehlkonfigurationen von Weiterleitungsregeln, Block-Policies oder Zugriffskontrollen, die spezifisch für diese Instanz sind."],
+        ["Außerhalb des Geltungsbereichs", "Schwachstellen in der Cloudflare-Infrastruktur sollten direkt an Cloudflares HackerOne-Programm gemeldet werden. Schwachstellen in GitHub sollten über GitHubs HackerOne-Programm gemeldet werden. Schwachstellen in der upstream Open-Source-Software vanityURLs sollten über die GitHub Security Advisories des Projekts gemeldet werden, nicht über ein öffentliches GitHub-Issue. Befunde, die Zugangsdaten, Social Engineering des Betreibers, Denial of Service oder physischen Zugriff erfordern, liegen außerhalb des Geltungsbereichs."],
+        ["Safe Harbour", "Sicherheitsforschung in gutem Glauben innerhalb des oben genannten Geltungsbereichs, die die Privatsphäre der Besucher respektiert, Dienstunterbrechungen vermeidet, nicht über das zur Demonstration des Problems Notwendige hinaus auf Daten zugreift oder diese verändert und koordinierte Offenlegung befolgt, wird vom Betreiber nicht rechtlich verfolgt. Dieser Safe Harbour bindet keine Dritten und autorisiert keine Aktivitäten, die gegen geltendes Recht verstoßen."],
+        ["Koordinierte Offenlegung", "Bitte gewähre vor einer öffentlichen Offenlegung ein angemessenes Zeitfenster zur Behebung. Neunzig Tage sind die Standarderwartung, kürzer bei trivialen Korrekturen, länger wenn Koordination mit upstream Maintainern erforderlich ist. Der Betreiber informiert Forschende über den Fortschritt und nennt diejenigen, die anerkannt werden möchten."],
+        ["Was wir nicht tun können", "Der Betreiber handelt nicht als allgemeiner Inhaltsmoderator für das offene Internet. Meldungen zu Zielwebsites sind am wirksamsten, wenn sie auch an den Hosting-Anbieter, Domain-Registrar oder die zuständige Aufsichtsbehörde gesendet werden. Die Befugnis des Betreibers ist auf die Kurzlinks beschränkt, die er auf {{operator.short_domain}} veröffentlicht."],
+        ["Referenzmaterial", "Quellcode: https://github.com/vanityURLs/code. Dokumentation: /en/docs/. Maschinenlesbarer Sicherheitskontakt: /.well-known/security.txt. Block-Keyword-Policy: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."]
       ]
     }
   }
@@ -728,7 +819,10 @@ function renderTestsPanel(language) {
     `            <li><a href="${escapeHtml(indexHref)}">${escapeHtml(metadata.links.index)}</a></li>`,
     `            <li><a href="${escapeHtml(expandHref)}">${escapeHtml(metadata.links.expand)}</a></li>`,
     `            <li><a href="/_stats/">${escapeHtml(metadata.links.stats)}</a></li>`,
-    ...policyLinks.map(([slug, label]) => `            <li><a href="${prefix}/${slug}${extension}">${escapeHtml(label)}</a></li>`)
+    ...policyLinks.map(([slug, label]) => {
+      const hrefSlug = language === "en" && slug === "abuse" ? "trust-safety" : slug;
+      return `            <li><a href="${prefix}/${hrefSlug}${extension}">${escapeHtml(label)}</a></li>`;
+    })
   ].join("\n");
 
   return `      <article class="qa-panel"${language === "en" ? "" : ` lang="${escapeHtml(language)}"`}>

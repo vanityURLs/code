@@ -364,7 +364,7 @@ await run("serves Spanish, Italian, and German pages from Accept-Language", asyn
 });
 
 await run("serves extensionless policy page aliases", async () => {
-  for (const path of ["/index", "/privacy", "/terms", "/abuse", "/security"]) {
+  for (const path of ["/index", "/privacy", "/terms", "/abuse", "/trust-safety", "/security"]) {
     const ctx = mockCtx();
     const response = await worker.fetch(request(path, {
       headers: {
@@ -373,10 +373,11 @@ await run("serves extensionless policy page aliases", async () => {
     }), env(), ctx);
     assert(response.status === 200, `${path} status`);
     const body = await response.text();
-    assert(body.includes(path === "/index" ? "home" : path.slice(1)), `${path} body`);
+    const expected = path === "/index" ? "home" : path === "/trust-safety" ? "abuse" : path.slice(1);
+    assert(body.includes(expected), `${path} body`);
     await ctx.flush();
   }
-  assert(analyticsCalls.length === 5, "pageview count");
+  assert(analyticsCalls.length === 6, "pageview count");
   assert(analyticsCalls.every((call) => !("name" in call.body.payload)), "regular pageviews");
 });
 

@@ -137,7 +137,7 @@ async function handleRequest(context) {
   }
 
   if (hasStaticPageAlias(slug)) {
-    return renderAsset(request, env, `/${slug}.html`, 200, ctx);
+    return renderAsset(request, env, staticPageAliasPath(slug), 200, ctx);
   }
 
   if (slug === "deactivated") {
@@ -593,7 +593,14 @@ const statePages = {
   }
 };
 
-const staticPageAliases = new Set(["abuse", "index", "privacy", "security", "terms"]);
+const staticPageAliases = new Map([
+  ["abuse", "/abuse.html"],
+  ["index", "/index.html"],
+  ["privacy", "/privacy.html"],
+  ["security", "/security.html"],
+  ["terms", "/terms.html"],
+  ["trust-safety", "/abuse.html"]
+]);
 
 function hasStatePage(state) {
   return Object.hasOwn(statePages, state);
@@ -601,6 +608,10 @@ function hasStatePage(state) {
 
 function hasStaticPageAlias(slug) {
   return staticPageAliases.has(slug);
+}
+
+function staticPageAliasPath(slug) {
+  return staticPageAliases.get(slug);
 }
 
 async function renderStatePage(request, env, state, ctx) {
