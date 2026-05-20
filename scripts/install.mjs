@@ -16,6 +16,7 @@ const DEFAULT_SITE_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-site-config.js
 const DEFAULT_PUBLIC_DIR = path.join(ROOT, "defaults", "public");
 const DEFAULT_DOMAIN = "v8s.link";
 const DEFAULT_LANGUAGES = ["en", "fr", "es", "it", "de"];
+const PROJECT_SITE_URL = "https://www.vanityURLs.link";
 
 function parseArgs(argv) {
   const args = {
@@ -303,8 +304,10 @@ function applyBranding(html, args) {
   return html
     .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) => wordmark.replace("$1", attributes))
     .replace(/aria-label="VanityURLs"/g, `aria-label="${escapeHtmlAttribute(brandLabel)}"`)
-    .replace(/href="https:\/\/vanityurls\.link\/"/gi, `href="https://${escapeHtmlAttribute(args.domain)}/"`)
-    .replace(/href="https:\/\/vanityURLs\.link"/g, `href="https://${escapeHtmlAttribute(args.domain)}"`);
+    .replace(/(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi, `$1"https://${escapeHtmlAttribute(args.domain)}/"`)
+    .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityURLs\.link"/g, `$1"${PROJECT_SITE_URL}"`)
+    .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityurls\.link\/?"/gi, `$1"${PROJECT_SITE_URL}"`)
+    .replace(/(<a class="redirected-badge"[^>]*aria-label=)"[^"]*"/g, '$1"VanityURLs"');
 }
 
 function readJson(filePath, fallback = {}) {
@@ -420,7 +423,7 @@ function setTopLevelBoolean(toml, key, value) {
 }
 
 function setRouteDomain(toml, domain) {
-  let next = toml.replace(/(\[\[routes\]\][\s\S]*?pattern\s*=\s*)['"].*?['"]/, `$1"${domain}"`);
+  let next = toml.replace(/^(\s*pattern\s*=\s*)['"].*?['"]\s*$/m, `$1"${domain}"`);
   next = next.replace(/(\[\[routes\]\][\s\S]*?custom_domain\s*=\s*)(true|false)/, "$1true");
   return next;
 }
