@@ -84,10 +84,17 @@ async function promptForMissing(args) {
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
     args.languages = await question(rl, "Supported languages", args.languages || configuredLanguages);
     args.operatorLegalName = await question(rl, "Operator legal name", args.operatorLegalName || configuredOperator.legal_name || "");
+    args.operatorShortDomain = await question(rl, "Operator short domain", args.operatorShortDomain || configuredOperator.short_domain || configuredDomain);
     args.operatorJurisdiction = await question(rl, "Operator jurisdiction", args.operatorJurisdiction || configuredOperator.jurisdiction || "");
+    args.operatorGoverningLaw = await question(rl, "Governing law", args.operatorGoverningLaw || configuredOperator.governing_law || "");
     args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || "");
     args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || args.operatorContactEmail || configuredOperator.contact_email || "");
-    args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || todayIsoDate());
+    args.operatorAbuseContact = await question(rl, "Trust & Safety contact", args.operatorAbuseContact || configuredOperator.abuse_contact || args.operatorContactEmail || configuredOperator.contact_email || "");
+    args.operatorSecurityContact = await question(rl, "Security contact", args.operatorSecurityContact || configuredOperator.security_contact || args.operatorAbuseContact || args.operatorContactEmail || configuredOperator.contact_email || "");
+    args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate());
+    args.operatorAnalyticsDisclosure = await question(rl, "Analytics disclosure", args.operatorAnalyticsDisclosure || configuredOperator.analytics_disclosure || analyticsDisclosureDefault(args.analytics));
+    args.operatorAnalyticsRetention = await question(rl, "Analytics retention", args.operatorAnalyticsRetention || configuredOperator.analytics_retention || analyticsRetentionDefault(args.analytics));
+    args.operatorAbuseResponseWindow = await question(rl, "Trust & Safety response window", args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days");
     args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
 
     if (args.customizePublic) {
@@ -239,17 +246,55 @@ function normalizeWordmarkSplit(args) {
 }
 
 function normalizeOperator(args) {
+  const contactEmail = String(args.operatorContactEmail || "").trim();
+  const privacyContact = String(args.operatorPrivacyContact || contactEmail).trim();
+  const abuseContact = String(args.operatorAbuseContact || contactEmail).trim();
+  const securityContact = String(args.operatorSecurityContact || abuseContact || contactEmail).trim();
+
   return {
     legal_name: String(args.operatorLegalName || "").trim(),
+    short_domain: normalizeDomain(args.operatorShortDomain || args.domain),
     jurisdiction: String(args.operatorJurisdiction || "").trim(),
-    contact_email: String(args.operatorContactEmail || "").trim(),
-    privacy_contact: String(args.operatorPrivacyContact || args.operatorContactEmail || "").trim(),
-    last_updated: String(args.operatorLastUpdated || todayIsoDate()).trim()
+    governing_law: String(args.operatorGoverningLaw || "").trim(),
+    contact_email: contactEmail,
+    privacy_contact: privacyContact,
+    abuse_contact: abuseContact,
+    security_contact: securityContact,
+    last_updated: String(args.operatorLastUpdated || gitLastUpdatedDate() || todayIsoDate()).trim(),
+    analytics_disclosure: String(args.operatorAnalyticsDisclosure || analyticsDisclosureDefault(args.analytics)).trim(),
+    analytics_retention: String(args.operatorAnalyticsRetention || analyticsRetentionDefault(args.analytics)).trim(),
+    abuse_response_window: String(args.operatorAbuseResponseWindow || "5 business days").trim()
   };
 }
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function gitLastUpdatedDate() {
+  try {
+    return execFileSync("git", ["log", "-1", "--format=%cs"], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function analyticsDisclosureDefault(providers) {
+  const normalized = String(providers || "disabled").toLowerCase();
+  return normalized === "disabled" || normalized.includes("none") || normalized.includes("off")
+    ? "No analytics enabled."
+    : "Privacy-respecting analytics are configured for operations, security, and reliability.";
+}
+
+function analyticsRetentionDefault(providers) {
+  const normalized = String(providers || "disabled").toLowerCase();
+  return normalized === "disabled" || normalized.includes("none") || normalized.includes("off")
+    ? ""
+    : "180 days";
 }
 
 function suggestWordmarkSplit(domain) {
@@ -271,7 +316,8 @@ async function confirm(rl, label, defaultValue) {
 }
 
 async function question(rl, label, defaultValue) {
-  const answer = await rl.question(`${label} (${defaultValue}): `);
+  const suffix = defaultValue ? ` (${defaultValue})` : "";
+  const answer = await rl.question(`${label}${suffix}: `);
   return answer.trim() || defaultValue;
 }
 

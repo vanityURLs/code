@@ -6,9 +6,16 @@
   },
   "operator": {
     "legal_name": "",
+    "short_domain": "",
     "jurisdiction": "",
+    "governing_law": "",
     "contact_email": "",
     "privacy_contact": "",
-    "last_updated": ""
+    "abuse_contact": "",
+    "security_contact": "",
+    "last_updated": "",
+    "analytics_disclosure": "",
+    "analytics_retention": "",
+    "abuse_response_window": ""
   }
 }

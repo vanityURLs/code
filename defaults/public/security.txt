@@ -1,5 +1,5 @@
-Contact: mailto:security@dicaire.com
-Policy: https://dicai.re/security
-Canonical: https://dicai.re/security.txt
-Preferred-Languages: en, fr
-Expires: 2027-05-07T00:00:00Z
+Contact: https://www.vanityURLs.link/en/docs/
+Policy: https://www.vanityURLs.link/en/docs/
+Canonical: https://www.vanityURLs.link/security.txt
+Preferred-Languages: en
+Expires: 2027-01-01T00:00:00Z
