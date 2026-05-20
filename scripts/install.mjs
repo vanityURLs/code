@@ -16,6 +16,7 @@ const DEFAULT_SITE_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-site-config.js
 const DEFAULT_PUBLIC_DIR = path.join(ROOT, "defaults", "public");
 const DEFAULT_DOMAIN = "v8s.link";
 const DEFAULT_LANGUAGES = ["en", "fr", "es", "it", "de"];
+const MAX_WORKER_NAME_LENGTH = 63;
 const PROJECT_SITE_URL = "https://www.vanityURLs.link";
 
 function parseArgs(argv) {
@@ -99,6 +100,7 @@ function normalizeArgs(args) {
 
   if (!args.domain) throw new Error("Domain cannot be empty.");
   if (!args.workerName) throw new Error("Worker name cannot be empty.");
+  validateWorkerName(args.workerName);
   if (args.customizePublic) {
     const split = normalizeWordmarkSplit(args);
     args.wordmarkBlack = split.black;
@@ -121,7 +123,15 @@ function slugifyWorker(value) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-+|-+$/g, "")
+    .slice(0, MAX_WORKER_NAME_LENGTH)
+    .replace(/-+$/g, "");
+}
+
+function validateWorkerName(value) {
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(value)) {
+    throw new Error("Worker name must use lowercase letters, numbers, and hyphens; it must start and end with a letter or number.");
+  }
 }
 
 function slugifyOwner(value) {
