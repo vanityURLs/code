@@ -13,6 +13,35 @@ The website is the source of truth for setup and operations:
 * [Local CLI](https://www.VanityURLs.link/en/docs/cli/)
 * [Full documentation](https://www.VanityURLs.link/en/docs/)
 
+## Quickstart
+
+Before starting, you need a registered short domain, GitHub and Cloudflare accounts, Git, Node.js 20 or newer, npm, and a text editor. The short domain must use Cloudflare as its authoritative DNS provider before the Worker can serve it.
+
+Create your own repository from this project, clone it, and install dependencies:
+
+```bash
+git clone git@github.com:YOUR-ORG/YOUR-SHORT-DOMAIN.git
+cd YOUR-SHORT-DOMAIN
+npm install
+```
+
+Run the installer, then validate the plain instance:
+
+```bash
+npm run setup
+npm run check
+```
+
+Review `wrangler.toml` and set the Worker name plus the route or custom domain for your short domain. Keep instance-specific files in `custom/`; do not edit `defaults/` unless you are contributing upstream changes to vanityURLs itself.
+
+Add your first links with `./scripts/lnk` or by editing `custom/v8s-links.txt`, push the repository to GitHub, and connect it to Cloudflare Workers & Pages. You can also deploy manually:
+
+```bash
+npx wrangler deploy --config wrangler.toml
+```
+
+After the first redirect works, use the documentation to customize branding, legal pages, analytics, protected dashboards, and local workstation helpers.
+
 ## Local Workflow
 
 Run `npm run setup` first to configure the instance, then `npm run local-install` to install workstation helpers. Run `npm run local-publish` after local edits when you want checks, commit selection, and push handled in one step. Run `./scripts/lnk --help` for the local link-management quick reference.
