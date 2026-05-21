@@ -185,11 +185,11 @@ function patchRuntimeLanguages(siteConfig) {
   fs.writeFileSync(workerPath, next);
 }
 
-function copyEnglishPublicRoot() {
-  const englishPublic = path.join(DEFAULTS_DIR, "public", "en");
+function copyEnglishPublicRoot(publicSource = path.join(DEFAULTS_DIR, "public")) {
+  const englishPublic = path.join(publicSource, "en");
   if (!hasCopyableFiles(englishPublic)) return;
 
-  log("Copying defaults/public/en/ to public root");
+  log(`Copying ${path.relative(ROOT, englishPublic)}/ to public root`);
   copyDirectory(englishPublic, BUILD_DIR);
 }
 
@@ -226,6 +226,7 @@ function copyPublic(siteConfig) {
   if (usingCustomPublic) {
     log("Overlaying custom/public/");
     copyDirectory(customPublic, BUILD_DIR);
+    copyEnglishPublicRoot(customPublic);
   } else {
     copyLocalizedBadgeFallbacks(siteConfig);
   }

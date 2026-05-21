@@ -81,19 +81,25 @@ async function promptForMissing(args) {
     args.workerName = await question(rl, "Worker name", configuredWorkerName);
     args.owner = await question(rl, "Owner label", configuredOwner);
     args.analytics = await question(rl, "Analytics provider", configuredAnalytics);
+    const analyticsEnabled = !isAnalyticsDisabled(args.analytics);
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
     args.languages = await question(rl, "Supported languages", args.languages || configuredLanguages);
     args.operatorLegalName = await question(rl, "Operator legal name", args.operatorLegalName || configuredOperator.legal_name || "");
-    args.operatorShortDomain = await question(rl, "Operator short domain", args.operatorShortDomain || configuredOperator.short_domain || configuredDomain);
-    args.operatorJurisdiction = await question(rl, "Operator jurisdiction", args.operatorJurisdiction || configuredOperator.jurisdiction || "");
-    args.operatorGoverningLaw = await question(rl, "Governing law", args.operatorGoverningLaw || configuredOperator.governing_law || "");
-    args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || "");
-    args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || args.operatorContactEmail || configuredOperator.contact_email || "");
-    args.operatorAbuseContact = await question(rl, "Trust & Safety contact", args.operatorAbuseContact || configuredOperator.abuse_contact || args.operatorContactEmail || configuredOperator.contact_email || "");
-    args.operatorSecurityContact = await question(rl, "Security contact", args.operatorSecurityContact || configuredOperator.security_contact || args.operatorAbuseContact || args.operatorContactEmail || configuredOperator.contact_email || "");
+    args.operatorShortDomain = args.operatorShortDomain || args.domain;
+    args.operatorJurisdiction = await question(rl, "Operator jurisdiction, for example Canada", args.operatorJurisdiction || configuredOperator.jurisdiction || "");
+    args.operatorGoverningLaw = await question(rl, "Governing law", args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "");
+    args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || defaultContactEmail("hello", args.domain));
+    args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || defaultContactEmail("privacy", args.domain));
+    args.operatorAbuseContact = await question(rl, "Trust & Safety contact", args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", args.domain));
+    args.operatorSecurityContact = await question(rl, "Security contact", args.operatorSecurityContact || configuredOperator.security_contact || defaultContactEmail("security", args.domain));
     args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate());
-    args.operatorAnalyticsDisclosure = await question(rl, "Analytics disclosure", args.operatorAnalyticsDisclosure || configuredOperator.analytics_disclosure || analyticsDisclosureDefault(args.analytics));
-    args.operatorAnalyticsRetention = await question(rl, "Analytics retention", args.operatorAnalyticsRetention || configuredOperator.analytics_retention || analyticsRetentionDefault(args.analytics));
+    if (analyticsEnabled) {
+      args.operatorAnalyticsDisclosure = await question(rl, "Analytics disclosure", args.operatorAnalyticsDisclosure || configuredOperator.analytics_disclosure || analyticsDisclosureDefault(args.analytics));
+      args.operatorAnalyticsRetention = await question(rl, "Analytics retention", args.operatorAnalyticsRetention || configuredOperator.analytics_retention || analyticsRetentionDefault(args.analytics));
+    } else {
+      args.operatorAnalyticsDisclosure = args.operatorAnalyticsDisclosure || analyticsDisclosureDefault(args.analytics);
+      args.operatorAnalyticsRetention = args.operatorAnalyticsRetention || "";
+    }
     args.operatorAbuseResponseWindow = await question(rl, "Trust & Safety response window", args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days");
     args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
 
@@ -110,6 +116,7 @@ async function promptForMissing(args) {
 
 function normalizeArgs(args) {
   args.domain = normalizeDomain(args.domain);
+  if (!args.operatorShortDomain) args.operatorShortDomain = args.domain;
   args.workerName = args.workerName ? slugifyWorker(args.workerName) : slugifyWorker(args.domain);
   args.analytics = normalizeAnalyticsProviders(args.analytics);
   args.owner = slugifyOwner(args.owner);
@@ -120,6 +127,7 @@ function normalizeArgs(args) {
   if (!args.domain) throw new Error("Domain cannot be empty.");
   if (!args.workerName) throw new Error("Worker name cannot be empty.");
   validateWorkerName(args.workerName);
+  validateOperator(args.operator);
   if (args.customizePublic) {
     const split = normalizeWordmarkSplit(args);
     args.wordmarkBlack = split.black;
@@ -237,6 +245,19 @@ function normalizeBoolean(value) {
   return ["1", "true", "yes", "y", "on"].includes(String(value).trim().toLowerCase());
 }
 
+function isAnalyticsDisabled(value) {
+  const providers = String(value || "disabled")
+    .split(",")
+    .map((provider) => provider.trim().toLowerCase())
+    .filter(Boolean);
+  return !providers.length || providers.some((provider) => ["disabled", "none", "off"].includes(provider));
+}
+
+function defaultContactEmail(localPart, domain) {
+  const normalizedDomain = normalizeDomain(domain);
+  return normalizedDomain ? `${localPart}@${normalizedDomain}` : "";
+}
+
 function normalizeWordmarkSplit(args) {
   const suggested = suggestWordmarkSplit(args.domain);
   return {
@@ -246,16 +267,16 @@ function normalizeWordmarkSplit(args) {
 }
 
 function normalizeOperator(args) {
-  const contactEmail = String(args.operatorContactEmail || "").trim();
-  const privacyContact = String(args.operatorPrivacyContact || contactEmail).trim();
-  const abuseContact = String(args.operatorAbuseContact || contactEmail).trim();
-  const securityContact = String(args.operatorSecurityContact || abuseContact || contactEmail).trim();
+  const contactEmail = String(args.operatorContactEmail || defaultContactEmail("hello", args.domain)).trim();
+  const privacyContact = String(args.operatorPrivacyContact || defaultContactEmail("privacy", args.domain)).trim();
+  const abuseContact = String(args.operatorAbuseContact || defaultContactEmail("abuse", args.domain)).trim();
+  const securityContact = String(args.operatorSecurityContact || defaultContactEmail("security", args.domain)).trim();
 
   return {
     legal_name: String(args.operatorLegalName || "").trim(),
     short_domain: normalizeDomain(args.operatorShortDomain || args.domain),
     jurisdiction: String(args.operatorJurisdiction || "").trim(),
-    governing_law: String(args.operatorGoverningLaw || "").trim(),
+    governing_law: String(args.operatorGoverningLaw || args.operatorJurisdiction || "").trim(),
     contact_email: contactEmail,
     privacy_contact: privacyContact,
     abuse_contact: abuseContact,
@@ -265,6 +286,35 @@ function normalizeOperator(args) {
     analytics_retention: String(args.operatorAnalyticsRetention || analyticsRetentionDefault(args.analytics)).trim(),
     abuse_response_window: String(args.operatorAbuseResponseWindow || "5 business days").trim()
   };
+}
+
+function validateOperator(operator) {
+  const required = [
+    "legal_name",
+    "short_domain",
+    "jurisdiction",
+    "governing_law",
+    "contact_email",
+    "privacy_contact",
+    "abuse_contact",
+    "security_contact",
+    "last_updated",
+    "analytics_disclosure",
+    "abuse_response_window"
+  ];
+  const missing = required.filter((field) => !String(operator[field] || "").trim());
+  const invalidEmails = ["contact_email", "privacy_contact", "abuse_contact", "security_contact"]
+    .filter((field) => !isEmail(operator[field]));
+  const invalidDate = /^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated || "")) ? [] : ["last_updated"];
+  const issues = [...new Set([...missing, ...invalidEmails, ...invalidDate])];
+
+  if (issues.length) {
+    throw new Error(`Operator configuration needs valid values for: ${issues.join(", ")}`);
+  }
+}
+
+function isEmail(value) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(value || ""));
 }
 
 function todayIsoDate() {
