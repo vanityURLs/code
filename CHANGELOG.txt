@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/vanityURLs/code/compare/v2.4.0...v2.4.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* complete local publish messages ([cbda1da](https://github.com/vanityURLs/code/commit/cbda1da3b86c1d12ba3a236f1f9d022d431915cc))
+
 ## [2.4.0](https://github.com/vanityURLs/code/compare/v2.3.0...v2.4.0) (2026-05-21)
 
 
