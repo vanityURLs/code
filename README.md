@@ -26,12 +26,13 @@ Common commands:
 ```sh
 npm install
 npm run setup
+npm run local-install
 npm run check
 npm run build
 ./scripts/lnk --help
 ```
 
-Run `npm run local-install` to install workstation helpers and create local configuration. Run `npm run local-publish` after local edits when you want checks, commit selection, and push handled in one step.
+Run `npm run setup` first to configure the instance, then `npm run local-install` to install workstation helpers. Run `npm run local-publish` after local edits when you want checks, commit selection, and push handled in one step.
 
 See the [CLI documentation](https://www.VanityURLs.link/en/docs/cli/) and [custom override documentation](https://www.VanityURLs.link/en/docs/custom-overrides/) for the details.
 
