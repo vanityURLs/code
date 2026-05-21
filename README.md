@@ -1,4 +1,4 @@
-![logo](logo.png)
+![logo](.github/banner.png)
 
 [![GitHub license](https://img.shields.io/github/license/bhdicaire/vanityURLs)](https://github.com/bhdicaire/vanityURLs/blob/main/LICENSE) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md) [![All Contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?color=ee8449&style=flat-square)](#contributors)
 
