@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.3.0](https://github.com/vanityURLs/code/compare/v2.2.1...v2.3.0) (2026-05-21)
+
+
+### Features
+
+* add trust safety defaults ([4e04a0c](https://github.com/vanityURLs/code/commit/4e04a0c974ce80ae9ac707d4d162eda2101482ba))
+* expand operator site config ([1cf399f](https://github.com/vanityURLs/code/commit/1cf399f5a898100c97bd36c4d7fc0558ee488183))
+* gate legal pages on operator config ([0fb6ce3](https://github.com/vanityURLs/code/commit/0fb6ce3ebd1d440c011bdf723184b479b49fd4f9))
+* localize default terms pages ([366ea33](https://github.com/vanityURLs/code/commit/366ea335e395bd121689eca1cb51cd9f03e1dd91))
+* rename trust safety policy page ([5796bb2](https://github.com/vanityURLs/code/commit/5796bb26580a70962eabc7437a986f4c24a85a55))
+
 ## [2.2.1](https://github.com/vanityURLs/code/compare/v2.2.0...v2.2.1) (2026-05-20)
 
 
