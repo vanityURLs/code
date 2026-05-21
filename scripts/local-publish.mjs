@@ -70,7 +70,11 @@ function loadConfig() {
     ...custom,
     local_publish: {
       ...(defaults.local_publish || {}),
-      ...(custom.local_publish || {})
+      ...(custom.local_publish || {}),
+      commit_messages: {
+        ...(defaults.local_publish?.commit_messages || {}),
+        ...(custom.local_publish?.commit_messages || {})
+      }
     }
   };
 }
@@ -104,6 +108,33 @@ function hasStagedChanges(paths) {
   return result.status !== 0;
 }
 
+function stagedFiles(paths) {
+  const result = run("git", ["diff", "--cached", "--name-only", "--", ...paths], { capture: true });
+  if (result.status !== 0) process.exit(result.status ?? 1);
+  return result.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
+function selectCommitMessage(args, config, files) {
+  if (args.message) return args.message;
+
+  const messages = config.local_publish?.commit_messages || {};
+  if (files.length === 1) {
+    if (files[0] === "custom/v8s-links.txt") {
+      return messages.links || "chore(links): update short links";
+    }
+    if (files[0] === "custom/v8s-policies.json" || files[0] === "custom/v8s-blocklist.json") {
+      return messages.policies || "chore(policies): update local policies";
+    }
+    if (files[0] === "custom/v8s-site-config.json") {
+      return messages.site_config || "chore(site): update instance configuration";
+    }
+  }
+
+  return messages.mixed
+    || config.local_publish?.commit_message
+    || "chore: update local vanityURLs configuration";
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const config = loadConfig();
@@ -112,14 +143,16 @@ function main() {
     : Array.isArray(config.local_publish?.paths) && config.local_publish.paths.length
       ? config.local_publish.paths
       : ["custom"];
-  const message = args.message || config.local_publish?.commit_message || "chore: update local vanityURLs configuration";
+  const fallbackMessage = config.local_publish?.commit_messages?.mixed
+    || config.local_publish?.commit_message
+    || "chore: update local vanityURLs configuration";
 
   if (!assertCleanEnough(paths)) return;
 
   if (args.dryRun) {
     console.log("[dry-run] would run npm run check");
     console.log(`[dry-run] would stage: ${paths.join(", ")}`);
-    console.log(`[dry-run] would commit: ${message}`);
+    console.log(`[dry-run] would commit: ${args.message || fallbackMessage}`);
     console.log("[dry-run] would push");
     return;
   }
@@ -132,6 +165,7 @@ function main() {
     return;
   }
 
+  const message = selectCommitMessage(args, config, stagedFiles(paths));
   run("git", ["commit", "-m", message, "--", ...paths]);
   run("git", ["push"]);
 }

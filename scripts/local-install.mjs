@@ -99,7 +99,11 @@ function mergeConfig(base, local) {
     },
     local_publish: {
       ...(base.local_publish || {}),
-      ...(local.local_publish || {})
+      ...(local.local_publish || {}),
+      commit_messages: {
+        ...(base.local_publish?.commit_messages || {}),
+        ...(local.local_publish?.commit_messages || {})
+      }
     },
     registry: {
       ...(base.registry || {}),
@@ -132,7 +136,10 @@ async function promptConfig(config, args) {
         ...config.lnk_cli
       },
       local_publish: {
-        ...config.local_publish
+        ...config.local_publish,
+        commit_messages: {
+          ...(config.local_publish?.commit_messages || {})
+        }
       }
     };
   }
@@ -150,7 +157,10 @@ async function promptConfig(config, args) {
         ...config.lnk_cli
       },
       local_publish: {
-        ...config.local_publish
+        ...config.local_publish,
+        commit_messages: {
+          ...(config.local_publish?.commit_messages || {})
+        }
       },
       registry: {
         ...config.registry
@@ -164,7 +174,14 @@ async function promptConfig(config, args) {
 
     next.shell_helper.install_path = await question(rl, "Shell helper install path", next.shell_helper.install_path);
     next.lnk_cli.install_path = await question(rl, "lnk CLI install path", next.lnk_cli.install_path);
-    next.local_publish.commit_message = await question(rl, "Local publish commit message", next.local_publish.commit_message);
+    next.local_publish.commit_messages = {
+      ...(next.local_publish.commit_messages || {})
+    };
+    next.local_publish.commit_messages.mixed = await question(rl, "Local publish mixed commit message", next.local_publish.commit_messages.mixed || next.local_publish.commit_message);
+    next.local_publish.commit_messages.links = await question(rl, "Links-only commit message", next.local_publish.commit_messages.links);
+    next.local_publish.commit_messages.policies = await question(rl, "Policies-only commit message", next.local_publish.commit_messages.policies);
+    next.local_publish.commit_messages.site_config = await question(rl, "Site-config-only commit message", next.local_publish.commit_messages.site_config);
+    next.local_publish.commit_message = next.local_publish.commit_messages.mixed;
     next.shell_helper.rc_file = await question(rl, "Shell rc file to update", next.shell_helper.rc_file);
     next.registry.local_path = await question(rl, "Local registry path", next.registry.local_path);
     next.repository.path = await question(rl, "Local repository path", next.repository.path || ROOT);

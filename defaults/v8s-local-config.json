@@ -10,6 +10,12 @@
   },
   "local_publish": {
     "commit_message": "chore: update local vanityURLs configuration",
+    "commit_messages": {
+      "links": "chore(links): update short links",
+      "policies": "chore(policies): update local policies",
+      "site_config": "chore(site): update instance configuration",
+      "mixed": "chore: update local vanityURLs configuration"
+    },
     "paths": [
       "custom"
     ]

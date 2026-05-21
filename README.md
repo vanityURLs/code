@@ -63,7 +63,9 @@ Run `npm run local-install` to create or update
 `lnk` CLI, and write the local repository path used by workstation helpers.
 Run `npm run local-publish` after manual local edits; it runs
 `npm run check`, then commits and pushes the configured local paths with the
-commit message from `v8s-local-config.json`.
+commit message from `v8s-local-config.json`. It uses a more specific
+configured message when only `custom/v8s-links.txt`,
+`custom/v8s-policies.json`, or `custom/v8s-site-config.json` changed.
 
 The CLI intentionally documents only the user-facing environment flags:
 
