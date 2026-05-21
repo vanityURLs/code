@@ -8,6 +8,7 @@
     "build:links": "node scripts/build.mjs",
     "clean": "node scripts/clean.mjs",
     "convert:lnk": "node scripts/convert-lnk.mjs",
+    "detach": "node scripts/detach-instance.mjs",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "generate:blocklist": "node scripts/generate-blocklist.mjs build/blocklist.generated.json",
