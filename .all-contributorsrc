@@ -1,5 +1,5 @@
 {
-  "projectName": "vanityURLs",
+  "projectName": "code",
   "projectOwner": "vanityURLs",
   "repoType": "github",
   "repoHost": "https://github.com",
@@ -48,6 +48,16 @@
       "profile": "https://xvii.au",
       "contributions": [
         "doc"
+      ]
+    },
+    {
+      "login": "0xBJA",
+      "name": "Brian J. Adams",
+      "avatar_url": "https://avatars.githubusercontent.com/u/224307522?v=4",
+      "profile": "https://github.com/0xBJA",
+      "contributions": [
+        "ideas",
+        "userTesting"
       ]
     }
   ],
