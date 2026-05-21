@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.0](https://github.com/vanityURLs/code/compare/v2.4.1...v2.5.0) (2026-05-21)
+
+
+### Features
+
+* add instance detach helper ([32700a4](https://github.com/vanityURLs/code/commit/32700a419944d1aec603659fd2597c6b0e3857f7))
+
 ## [2.4.1](https://github.com/vanityURLs/code/compare/v2.4.0...v2.4.1) (2026-05-21)
 
 
