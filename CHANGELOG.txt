@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.0](https://github.com/vanityURLs/code/compare/v2.3.0...v2.4.0) (2026-05-21)
+
+
+### Features
+
+* localize default privacy pages ([ba26cd8](https://github.com/vanityURLs/code/commit/ba26cd864977384e6f05585e6831d303f79a36f8))
+
 ## [2.3.0](https://github.com/vanityURLs/code/compare/v2.2.1...v2.3.0) (2026-05-21)
 
 
