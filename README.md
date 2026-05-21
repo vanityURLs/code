@@ -2,39 +2,20 @@
 
 [![License](https://img.shields.io/github/license/vanityURLs/code?style=flat-square&labelColor=111827&color=0F766E)](LICENSE) [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-0F766E?style=flat-square&labelColor=111827)](.github/CODE_OF_CONDUCT.md) [![All Contributors](https://img.shields.io/badge/all_contributors-4-0F766E?style=flat-square&labelColor=111827)](#contributors)
 
-vanityURLs is a Cloudflare Workers redirector for running a branded short-link domain as code. Links, schedules, destination policies, localized instance pages, and operator configuration live in Git; the build produces the Worker assets Cloudflare deploys.
+vanityURLs is a Cloudflare Workers redirector for running a branded short-link domain as code. Links, schedules, destination policies, localized instance pages, and operator configuration live in Git; the build produces the Worker assets that Cloudflare deploys.
 
 ## Documentation
 
 The website is the source of truth for setup and operations:
 
 * [Getting started](https://www.VanityURLs.link/en/docs/getting-started/)
-* [Cloudflare deployment](https://www.VanityURLs.link/en/docs/cloudflare/)
-* [Repository layout](https://www.VanityURLs.link/en/docs/repository-layout/)
-* [Customization model](https://www.VanityURLs.link/en/docs/customize-overview/)
-* [Link format](https://www.VanityURLs.link/en/docs/link-format/)
-* [Schedules](https://www.VanityURLs.link/en/docs/schedules/)
-* [Destination policies](https://www.VanityURLs.link/en/docs/blocklist/)
+* [Customize your instance](https://www.VanityURLs.link/en/docs/customize-overview/)
 * [Local CLI](https://www.VanityURLs.link/en/docs/cli/)
-* [Runtime registry](https://www.VanityURLs.link/en/docs/runtime-registry/)
-* [Validation and CI](https://www.VanityURLs.link/en/docs/validation-ci/)
+* [Full documentation](https://www.VanityURLs.link/en/docs/)
 
 ## Local Workflow
 
-Common commands:
-
-```sh
-npm install
-npm run setup
-npm run local-install
-npm run check
-npm run build
-./scripts/lnk --help
-```
-
-Run `npm run setup` first to configure the instance, then `npm run local-install` to install workstation helpers. Run `npm run local-publish` after local edits when you want checks, commit selection, and push handled in one step.
-
-See the [CLI documentation](https://www.VanityURLs.link/en/docs/cli/) and [custom override documentation](https://www.VanityURLs.link/en/docs/custom-overrides/) for the details.
+Run `npm run setup` first to configure the instance, then `npm run local-install` to install workstation helpers. Run `npm run local-publish` after local edits when you want checks, commit selection, and push handled in one step. Run `./scripts/lnk --help` for the local link-management quick reference.
 
 ## Contributions
 
