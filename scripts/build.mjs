@@ -61,6 +61,7 @@ const LANGUAGE_METADATA = {
       index: "Inicio",
       expand: "Expandir",
       stats: "Stats",
+      privacy: "Privacidad",
       terms: "Términos",
       abuse: "Confianza y seguridad",
       notFound: "404",
@@ -77,6 +78,7 @@ const LANGUAGE_METADATA = {
       index: "Home",
       expand: "Espandi",
       stats: "Stats",
+      privacy: "Privacy",
       terms: "Condizioni",
       abuse: "Fiducia e sicurezza",
       notFound: "404",
@@ -93,6 +95,7 @@ const LANGUAGE_METADATA = {
       index: "Start",
       expand: "Erweitern",
       stats: "Stats",
+      privacy: "Datenschutz",
       terms: "Bedingungen",
       abuse: "Vertrauen und Sicherheit",
       notFound: "404",
@@ -414,6 +417,7 @@ function validateOperatorConfig(operator) {
     "abuse_contact",
     "security_contact",
     "last_updated",
+    "umami_geo_ip_mode",
     "analytics_disclosure",
     "abuse_response_window"
   ];
@@ -436,8 +440,36 @@ function effectiveOperator(operator) {
   return {
     ...operator,
     short_domain: operator.short_domain || "",
-    last_updated: operator.last_updated || gitLastUpdatedDate()
+    last_updated: operator.last_updated || gitLastUpdatedDate(),
+    umami_geo_ip_mode: deriveUmamiGeoIpMode()
   };
+}
+
+function deriveUmamiGeoIpMode() {
+  const analyticsProvider = configVar("ANALYTICS_PROVIDER").toLowerCase();
+  const providers = analyticsProvider.split(",").map((provider) => provider.trim()).filter(Boolean);
+  if (!providers.includes("umami")) {
+    return "not applicable — Umami is not enabled on this instance";
+  }
+
+  const mode = configVar("UMAMI_GEO_IP_MODE").toLowerCase() || "truncated";
+  return ["full", "truncated", "none"].includes(mode) ? mode : "truncated";
+}
+
+function configVar(name) {
+  return process.env[name] || readWranglerVar(name);
+}
+
+function readWranglerVar(name) {
+  const wranglerPath = path.join(ROOT, "wrangler.toml");
+  if (!fs.existsSync(wranglerPath)) return "";
+
+  const toml = fs.readFileSync(wranglerPath, "utf8");
+  const sectionMatch = toml.match(/\[vars\]([\s\S]*?)(?=\n\[|$)/);
+  if (!sectionMatch) return "";
+
+  const match = sectionMatch[1].match(new RegExp(`^\\s*${name}\\s*=\\s*['"]?([^'"\\n#]+)['"]?\\s*$`, "m"));
+  return match?.[1]?.trim() || "";
 }
 
 function gitLastUpdatedDate() {
@@ -526,15 +558,30 @@ const LEGAL_CONFIGURATION_NOTICE = {
 const LEGAL_CONTENT = {
   en: {
     privacy: {
-      note: "Privacy notice for {{legal_name}}, operated under {{jurisdiction}}.",
+      note: "Privacy statement for {{operator.legal_name}}, operated in {{operator.jurisdiction}}.",
       lastUpdated: "Last updated:",
       sections: [
-        ["Overview", "{{legal_name}} operates {{short_domain}} as a vanityURLs instance to redirect short links to destination pages."],
-        ["Information processed", "When someone visits a short link, the hosting provider and Worker runtime may process standard request information such as requested path, timestamp, IP address, user agent, referrer, and security metadata. This information is used to deliver redirects, protect the service, diagnose reliability issues, and respond to abuse."],
-        ["Analytics", "{{analytics_disclosure}}"],
-        ["Analytics retention", "{{analytics_retention}}"],
-        ["Destinations", "After a redirect, the destination website is controlled by its own operator and may have separate privacy practices."],
-        ["Contact", "For privacy questions, contact {{privacy_contact}}."]
+        ["Overview", "This short-link service at {{operator.short_domain}} is operated by {{operator.legal_name}} in {{operator.jurisdiction}}. It is a single instance of the open-source vanityURLs project, deployed and customized by the operator and provided at no cost."],
+        ["Purpose of processing", "Information is processed to deliver redirects, enforce the acceptable-use policy set out in the Terms, detect and block abusive traffic, and diagnose operational issues. Where applicable law requires a legal basis, the operator relies on legitimate interests in operating a functional and safe redirect service."],
+        ["No visitor accounts or cookies", "This redirector does not host visitor accounts, set cookies, or accept visitor-submitted links at runtime. No identifiers are stored client-side."],
+        ["Privacy contact", "For privacy enquiries, contact {{operator.privacy_contact}}, who acts as the person responsible for personal information for this instance."],
+        ["What this service does", "The service receives a short URL request, looks up a destination in a file bundled into a serverless instance at deploy time, and returns an HTTP redirect. The lookup happens entirely in memory, with no database read at request time and no call out to GitHub or any other system."],
+        ["Information processed at request time", "To deliver each redirect, the Cloudflare edge derives and provides the requested path, visitor IP address from the cf-connecting-ip header, country code from request.cf.country, first Accept-Language tag truncated to 35 characters, User-Agent, Referer, request timestamp, and a per-request correlation identifier generated by the Worker for the duration of the request."],
+        ["Analytics pipeline", "When server-side analytics is enabled, the Worker forwards one event per redirect and one event per use of the /expand preview pages to the configured provider. No event is forwarded when analytics is not configured."],
+        ["Umami analytics", "Umami receives the requested path and query string, hostname, first language tag from Accept-Language, Referer, User-Agent or bot fallback string, and the visitor IP address governed by UMAMI_GEO_IP_MODE. Non-pageview events additionally include the slug, destination host, country code, Cloudflare data-centre code, correlation identifier, event type, and HTTP status."],
+        ["Umami IP mode", "This instance's Umami IP mode is set to: {{operator.umami_geo_ip_mode}}."],
+        ["Fathom analytics", "Fathom is called server-side by the Worker. As a consequence, Fathom does not receive the visitor's IP address; it sees only the Cloudflare Worker's egress IP. The Worker forwards the request origin and path, an allowlist of campaign and common content query parameters, the Referer header, and the visitor's User-Agent as the outgoing HTTP request header. A fresh random number is generated per event in place of a stable visitor identifier."],
+        ["/expand preview pages", "A visitor can use localized /expand preview pages to see a short-link destination without being redirected. Preview requests post a small JSON body to /_analytics/expand containing the slug, effective-state label, result classification, and resolved target hostname. No personal information beyond what is already described above is added by this path."],
+        ["Retention", "The vanityURLs Worker is stateless and writes no persistent data of its own. Cloudflare Workers Logs are retained by Cloudflare for approximately 3 days on the Workers Free plan and 7 days on the Workers Paid plan. Cloudflare HTTP request logs are not retained by default unless the operator enables Enterprise Logpull or Logpush to operator-controlled storage."],
+        ["Cloudflare DNS and audit data", "Cloudflare authoritative DNS analytics retain aggregate query metadata for up to 31 days through the standard offering. Cloudflare audit logs record operator administrative changes and are retained for 18 months under standard plans. These logs concern operator activity, not visitor traffic."],
+        ["Optional analytics provider retention", "{{operator.analytics_disclosure}}"],
+        ["Analytics retention", "{{operator.analytics_retention}}"],
+        ["Sub-processors", "Runtime sub-processors may include Cloudflare, Inc. for DNS, Workers, Static Assets, and edge protection; Conva Ventures Inc. where Fathom Analytics is enabled; and Umami Software, Inc. where hosted Umami Cloud is enabled. GitHub, Inc. is part of the build-time supply chain and does not receive visitor traffic, IP addresses, or analytics events."],
+        ["International transfers", "Because this service is delivered through Cloudflare's global edge network, request data may be processed in countries other than the visitor's own. Cloudflare relies on safeguards described in its Data Processing Addendum, including the European Commission's Standard Contractual Clauses for EU/EEA transfers."],
+        ["Your rights and architectural limits", "This service is designed to process visitor data ephemerally. The operator does not maintain visitor accounts, identifiers, profiles, or any persistent store of personal information. There is no visitor record to retrieve, correct, or delete. Data held by Cloudflare and any configured analytics provider expires on their systems according to the retention schedules above."],
+        ["Operator-controlled requests", "The operator can act on requests that target operator-controlled configuration rather than visitor data, such as a request to remove a specific short link from the redirect registry. Privacy enquiries can be sent to {{operator.privacy_contact}}."],
+        ["Children", "This service is not directed at children under 13, or the equivalent minimum age in the visitor's jurisdiction, and does not knowingly collect information from them."],
+        ["Changes", "This page may be updated to reflect operational changes. The last updated date at the top indicates the current revision."]
       ]
     },
     terms: {
@@ -585,15 +632,30 @@ const LEGAL_CONTENT = {
   },
   fr: {
     privacy: {
-      note: "Avis de confidentialité pour {{legal_name}}, exploité sous {{jurisdiction}}.",
+      note: "Déclaration de confidentialité pour {{operator.legal_name}}, exploité sous {{operator.jurisdiction}}.",
       lastUpdated: "Dernière mise à jour :",
       sections: [
-        ["Vue d’ensemble", "{{legal_name}} exploite {{short_domain}} comme instance vanityURLs pour rediriger des liens courts vers des pages de destination."],
-        ["Renseignements traités", "Lorsqu'une personne visite un lien court, l'hébergeur et le Worker peuvent traiter des renseignements standards de requête comme le chemin demandé, l'horodatage, l'adresse IP, l'agent utilisateur, le référent et certaines métadonnées de sécurité. Ces renseignements servent à livrer les redirections, protéger le service, diagnostiquer les problèmes de fiabilité et répondre aux abus."],
-        ["Analytique", "{{analytics_disclosure}}"],
-        ["Conservation analytique", "{{analytics_retention}}"],
-        ["Destinations", "Après une redirection, le site de destination est contrôlé par son propre exploitant et peut avoir ses propres pratiques de confidentialité."],
-        ["Contact", "Pour les questions de confidentialité, contactez {{privacy_contact}}."]
+        ["Vue d'ensemble", "Ce service de liens courts situé à {{operator.short_domain}} est exploité par {{operator.legal_name}} dans {{operator.jurisdiction}}. Il s'agit d'une instance du projet open source vanityURLs, déployée et personnalisée par l'opérateur et fournie gratuitement."],
+        ["Finalité du traitement", "Les renseignements sont traités pour livrer les redirections, appliquer la politique d'utilisation acceptable décrite dans les Conditions, détecter et bloquer le trafic abusif et diagnostiquer les problèmes opérationnels. Lorsque la loi applicable exige une base juridique, l'opérateur s'appuie sur ses intérêts légitimes à exploiter un service de redirection fonctionnel et sûr."],
+        ["Aucun compte visiteur ni témoin", "Ce redirecteur n'héberge pas de comptes visiteurs, ne définit pas de témoins et n'accepte pas de liens soumis par les visiteurs à l'exécution. Aucun identifiant n'est stocké côté client."],
+        ["Contact de confidentialité", "Pour les questions de confidentialité, contactez {{operator.privacy_contact}}, qui agit comme personne responsable des renseignements personnels pour cette instance."],
+        ["Fonctionnement du service", "Le service reçoit une requête d'URL courte, cherche une destination dans un fichier intégré à une instance serverless au moment du déploiement et retourne une redirection HTTP. La recherche se fait entièrement en mémoire, sans lecture de base de données à l'exécution et sans appel vers GitHub ou un autre système."],
+        ["Renseignements traités à la requête", "Pour livrer chaque redirection, l'edge Cloudflare fournit le chemin demandé, l'adresse IP du visiteur depuis l'en-tête cf-connecting-ip, le code pays de request.cf.country, le premier tag Accept-Language tronqué à 35 caractères, User-Agent, Referer, l'horodatage de la requête et un identifiant de corrélation généré par le Worker pour la durée de la requête."],
+        ["Pipeline analytique", "Lorsque l'analytique côté serveur est activée, le Worker transmet un événement par redirection et un événement par utilisation des pages de prévisualisation /expand au fournisseur configuré. Aucun événement n'est transmis lorsque l'analytique n'est pas configurée."],
+        ["Analytique Umami", "Umami reçoit le chemin et la chaîne de requête demandés, l'hôte, le premier tag Accept-Language, Referer, User-Agent ou une chaîne de remplacement pour les robots, et l'adresse IP du visiteur selon UMAMI_GEO_IP_MODE. Les événements non-pageview incluent aussi le slug, l'hôte de destination, le code pays, le code de centre de données Cloudflare, l'identifiant de corrélation, le type d'événement et le statut HTTP."],
+        ["Mode IP Umami", "Le mode IP Umami de cette instance est : {{operator.umami_geo_ip_mode}}."],
+        ["Analytique Fathom", "Fathom est appelé côté serveur par le Worker. Par conséquent, Fathom ne reçoit pas l'adresse IP du visiteur; il voit seulement l'adresse IP de sortie du Worker Cloudflare. Le Worker transmet l'origine et le chemin de la requête, une liste autorisée de paramètres de campagne et de contenu courants, Referer et User-Agent comme en-tête HTTP sortant. Un nombre aléatoire frais est généré par événement à la place d'un identifiant visiteur stable."],
+        ["Pages de prévisualisation /expand", "Un visiteur peut utiliser les pages /expand localisées pour voir la destination d'un lien court sans être redirigé. Les demandes de prévisualisation publient un petit corps JSON vers /_analytics/expand contenant le slug, l'état effectif, la classification du résultat et l'hôte cible résolu. Aucun renseignement personnel au-delà de ce qui est déjà décrit n'est ajouté par ce chemin."],
+        ["Conservation", "Le Worker vanityURLs est sans état et n'écrit aucune donnée persistante de son propre chef. Les Workers Logs de Cloudflare sont conservés environ 3 jours sur le plan Workers Free et 7 jours sur le plan Workers Paid. Les journaux de requêtes HTTP Cloudflare ne sont pas conservés par défaut sauf si l'opérateur active Logpull Enterprise ou Logpush vers un stockage contrôlé par l'opérateur."],
+        ["DNS et audit Cloudflare", "Les analyses DNS autoritatives de Cloudflare conservent des métadonnées agrégées de requêtes pendant jusqu'à 31 jours dans l'offre standard. Les journaux d'audit Cloudflare enregistrent les changements administratifs de l'opérateur et sont conservés 18 mois sous les plans standards. Ces journaux concernent l'activité de l'opérateur, pas le trafic des visiteurs."],
+        ["Conservation du fournisseur analytique optionnel", "{{operator.analytics_disclosure}}"],
+        ["Conservation analytique", "{{operator.analytics_retention}}"],
+        ["Sous-traitants", "Les sous-traitants d'exécution peuvent inclure Cloudflare, Inc. pour DNS, Workers, Static Assets et protection edge; Conva Ventures Inc. lorsque Fathom Analytics est activé; et Umami Software, Inc. lorsque Umami Cloud hébergé est activé. GitHub, Inc. fait partie de la chaîne d'approvisionnement de build et ne reçoit pas le trafic visiteur, les adresses IP ou les événements analytiques."],
+        ["Transferts internationaux", "Comme ce service est livré par le réseau edge mondial de Cloudflare, les données de requête peuvent être traitées dans des pays autres que celui du visiteur. Cloudflare s'appuie sur les garanties décrites dans son addenda de traitement des données, y compris les clauses contractuelles types de la Commission européenne pour les transferts depuis l'UE/EEE."],
+        ["Vos droits et les limites de l'architecture", "Ce service est conçu pour traiter les données visiteur de façon éphémère. L'opérateur ne maintient pas de comptes visiteurs, d'identifiants, de profils ou de magasin persistant de renseignements personnels. Il n'existe aucun dossier visiteur à consulter, corriger ou supprimer. Les données détenues par Cloudflare et tout fournisseur analytique configuré expirent sur leurs systèmes selon les calendriers de conservation décrits ci-dessus."],
+        ["Demandes contrôlées par l'opérateur", "L'opérateur peut agir sur les demandes visant la configuration qu'il contrôle plutôt que les données visiteur, par exemple une demande de retrait d'un lien court précis du registre de redirection. Les questions de confidentialité peuvent être envoyées à {{operator.privacy_contact}}."],
+        ["Enfants", "Ce service ne s'adresse pas aux enfants de moins de 13 ans, ou l'âge minimum équivalent dans la juridiction du visiteur, et ne collecte pas sciemment de renseignements à leur sujet."],
+        ["Modifications", "Cette page peut être mise à jour pour refléter des changements opérationnels. La date de dernière mise à jour en haut indique la version actuelle."]
       ]
     },
     terms: {
@@ -643,6 +705,33 @@ const LEGAL_CONTENT = {
     }
   },
   es: {
+    privacy: {
+      note: "Declaración de privacidad de {{operator.legal_name}}, operado en {{operator.jurisdiction}}.",
+      lastUpdated: "Última actualización:",
+      sections: [
+        ["Resumen", "Este servicio de enlaces cortos en {{operator.short_domain}} es operado por {{operator.legal_name}} en {{operator.jurisdiction}}. Es una instancia del proyecto open source vanityURLs, desplegada y personalizada por el operador y ofrecida sin costo."],
+        ["Finalidad del tratamiento", "La información se procesa para entregar redirecciones, aplicar la política de uso aceptable de los Términos, detectar y bloquear tráfico abusivo y diagnosticar problemas operativos. Cuando la ley aplicable exige una base jurídica, el operador se basa en intereses legítimos para operar un servicio de redirección funcional y seguro."],
+        ["Sin cuentas ni cookies", "Este redirector no aloja cuentas de visitantes, no establece cookies y no acepta enlaces enviados por visitantes en tiempo de ejecución. No se almacenan identificadores del lado del cliente."],
+        ["Contacto de privacidad", "Para consultas de privacidad, contacte a {{operator.privacy_contact}}, responsable de la información personal de esta instancia."],
+        ["Cómo funciona el servicio", "El servicio recibe una solicitud de URL corta, busca un destino en un archivo incluido en una instancia serverless al desplegarse y devuelve una redirección HTTP. La búsqueda ocurre completamente en memoria, sin lectura de base de datos en tiempo de solicitud y sin llamada a GitHub u otro sistema."],
+        ["Información procesada al solicitar", "Para entregar cada redirección, Cloudflare edge proporciona la ruta solicitada, dirección IP del visitante desde cf-connecting-ip, código de país de request.cf.country, primer idioma de Accept-Language truncado a 35 caracteres, User-Agent, Referer, marca de tiempo y un identificador de correlación por solicitud."],
+        ["Analítica", "Cuando la analítica del lado servidor está habilitada, el Worker envía un evento por redirección y un evento por uso de las páginas /expand al proveedor configurado. No se envía ningún evento cuando la analítica no está configurada."],
+        ["Umami", "Umami recibe la ruta y query string solicitados, hostname, primer idioma de Accept-Language, Referer, User-Agent o cadena alternativa para bots, y la dirección IP del visitante según UMAMI_GEO_IP_MODE. Los eventos que no son pageview incluyen además slug, host de destino, país, centro de datos Cloudflare, identificador de correlación, tipo de evento y estado HTTP."],
+        ["Modo IP de Umami", "El modo IP de Umami de esta instancia es: {{operator.umami_geo_ip_mode}}."],
+        ["Fathom", "Fathom es llamado del lado servidor por el Worker. Por ello, Fathom no recibe la IP del visitante; ve la IP de salida del Worker de Cloudflare. El Worker reenvía origen y ruta, una lista permitida de parámetros de campaña y contenido, Referer y User-Agent. Se genera un número aleatorio nuevo por evento en lugar de un identificador estable."],
+        ["Páginas /expand", "Las páginas /expand localizadas permiten ver el destino de un enlace corto sin redirección. Las solicitudes de vista previa envían a /_analytics/expand un cuerpo JSON pequeño con slug, estado efectivo, clasificación del resultado y hostname de destino resuelto."],
+        ["Retención", "El Worker vanityURLs no tiene estado y no escribe datos persistentes propios. Cloudflare Workers Logs se conserva aproximadamente 3 días en el plan Free y 7 días en el plan Paid. Los logs HTTP de Cloudflare no se retienen por defecto salvo que el operador active Logpull Enterprise o Logpush."],
+        ["DNS y auditoría de Cloudflare", "Las analíticas DNS autoritativas de Cloudflare conservan metadatos agregados hasta 31 días. Los registros de auditoría de Cloudflare registran cambios administrativos del operador y se conservan 18 meses en planes estándar."],
+        ["Retención del proveedor analítico", "{{operator.analytics_disclosure}}"],
+        ["Retención analítica", "{{operator.analytics_retention}}"],
+        ["Subprocesadores", "Los subprocesadores de ejecución pueden incluir Cloudflare, Inc.; Conva Ventures Inc. cuando Fathom está habilitado; y Umami Software, Inc. cuando Umami Cloud alojado está habilitado. GitHub, Inc. forma parte de la cadena de suministro de compilación y no recibe tráfico de visitantes, IPs ni eventos analíticos."],
+        ["Transferencias internacionales", "Como este servicio se entrega mediante la red edge global de Cloudflare, los datos de solicitud pueden procesarse en países distintos al del visitante. Cloudflare se basa en las salvaguardas descritas en su Data Processing Addendum."],
+        ["Derechos y límites", "Este servicio está diseñado para procesar datos de visitantes de forma efímera. El operador no mantiene cuentas, identificadores, perfiles ni almacén persistente de información personal; no existe registro de visitante que consultar, corregir o eliminar."],
+        ["Solicitudes controladas por el operador", "El operador puede actuar sobre solicitudes dirigidas a la configuración que controla, como retirar un enlace corto específico del registro. Las consultas de privacidad pueden enviarse a {{operator.privacy_contact}}."],
+        ["Niños", "Este servicio no está dirigido a menores de 13 años, o la edad mínima equivalente en la jurisdicción del visitante, y no recopila información de ellos conscientemente."],
+        ["Cambios", "Esta página puede actualizarse para reflejar cambios operativos. La fecha de última actualización indica la revisión vigente."]
+      ]
+    },
     terms: {
       note: "Términos y condiciones de {{operator.legal_name}}, operado bajo {{operator.jurisdiction}}.",
       lastUpdated: "Última actualización:",
@@ -680,6 +769,33 @@ const LEGAL_CONTENT = {
     }
   },
   it: {
+    privacy: {
+      note: "Informativa privacy per {{operator.legal_name}}, gestita in {{operator.jurisdiction}}.",
+      lastUpdated: "Ultimo aggiornamento:",
+      sections: [
+        ["Panoramica", "Questo servizio di link brevi presso {{operator.short_domain}} è gestito da {{operator.legal_name}} in {{operator.jurisdiction}}. È un'istanza del progetto open source vanityURLs, distribuita e personalizzata dall'operatore e fornita gratuitamente."],
+        ["Finalità del trattamento", "Le informazioni sono trattate per fornire reindirizzamenti, applicare la policy di uso accettabile indicata nei Termini, rilevare e bloccare traffico abusivo e diagnosticare problemi operativi. Dove la legge richiede una base giuridica, l'operatore si basa sui legittimi interessi nel gestire un servizio di reindirizzamento funzionale e sicuro."],
+        ["Nessun account o cookie", "Questo redirector non ospita account visitatore, non imposta cookie e non accetta link inviati dai visitatori a runtime. Nessun identificatore viene archiviato lato client."],
+        ["Contatto privacy", "Per richieste privacy, contatta {{operator.privacy_contact}}, responsabile delle informazioni personali per questa istanza."],
+        ["Funzionamento del servizio", "Il servizio riceve una richiesta di URL breve, cerca una destinazione in un file incluso in un'istanza serverless al momento del deploy e restituisce un reindirizzamento HTTP. La ricerca avviene interamente in memoria, senza letture database a runtime e senza chiamate a GitHub o altri sistemi."],
+        ["Informazioni trattate alla richiesta", "Per ogni reindirizzamento, Cloudflare edge fornisce percorso richiesto, indirizzo IP del visitatore dall'header cf-connecting-ip, codice paese da request.cf.country, primo tag Accept-Language troncato a 35 caratteri, User-Agent, Referer, timestamp e identificatore di correlazione per richiesta."],
+        ["Pipeline analytics", "Quando l'analytics server-side è abilitata, il Worker invia un evento per reindirizzamento e un evento per uso delle pagine /expand al provider configurato. Nessun evento è inviato quando l'analytics non è configurata."],
+        ["Umami", "Umami riceve percorso e query string richiesti, hostname, primo tag Accept-Language, Referer, User-Agent o stringa alternativa per bot e indirizzo IP del visitatore secondo UMAMI_GEO_IP_MODE. Gli eventi non pageview includono anche slug, host di destinazione, paese, data center Cloudflare, identificatore di correlazione, tipo evento e stato HTTP."],
+        ["Modalità IP Umami", "La modalità IP Umami di questa istanza è: {{operator.umami_geo_ip_mode}}."],
+        ["Fathom", "Fathom è chiamato server-side dal Worker. Di conseguenza, Fathom non riceve l'IP del visitatore; vede solo l'IP di uscita del Worker Cloudflare. Il Worker inoltra origine e percorso, una allowlist di parametri campagna e contenuto, Referer e User-Agent. Un numero casuale nuovo viene generato per evento al posto di un identificatore stabile."],
+        ["Pagine /expand", "Le pagine /expand localizzate permettono di vedere la destinazione di un link breve senza reindirizzamento. Le richieste di anteprima inviano a /_analytics/expand un piccolo corpo JSON con slug, stato effettivo, classificazione del risultato e hostname di destinazione risolto."],
+        ["Conservazione", "Il Worker vanityURLs è stateless e non scrive dati persistenti propri. Cloudflare Workers Logs è conservato circa 3 giorni nel piano Free e 7 giorni nel piano Paid. I log HTTP Cloudflare non sono conservati di default salvo Logpull Enterprise o Logpush configurati dall'operatore."],
+        ["DNS e audit Cloudflare", "Le analytics DNS autoritative Cloudflare conservano metadati aggregati fino a 31 giorni. Gli audit log Cloudflare registrano modifiche amministrative dell'operatore e sono conservati 18 mesi nei piani standard."],
+        ["Conservazione del provider analytics", "{{operator.analytics_disclosure}}"],
+        ["Conservazione analytics", "{{operator.analytics_retention}}"],
+        ["Sub-responsabili", "I sub-responsabili runtime possono includere Cloudflare, Inc.; Conva Ventures Inc. quando Fathom è abilitato; e Umami Software, Inc. quando Umami Cloud ospitato è abilitato. GitHub, Inc. fa parte della supply chain di build e non riceve traffico visitatore, IP o eventi analytics."],
+        ["Trasferimenti internazionali", "Poiché il servizio è fornito tramite la rete edge globale Cloudflare, i dati delle richieste possono essere trattati in paesi diversi da quello del visitatore. Cloudflare si basa sulle garanzie descritte nel suo Data Processing Addendum."],
+        ["Diritti e limiti", "Il servizio è progettato per trattare dati dei visitatori in modo effimero. L'operatore non mantiene account, identificatori, profili o archivi persistenti di informazioni personali; non esiste un record visitatore da consultare, correggere o eliminare."],
+        ["Richieste controllate dall'operatore", "L'operatore può agire su richieste che riguardano la configurazione controllata dall'operatore, come rimuovere uno specifico link breve dal registro. Le richieste privacy possono essere inviate a {{operator.privacy_contact}}."],
+        ["Minori", "Questo servizio non è rivolto a minori di 13 anni, o all'età minima equivalente nella giurisdizione del visitatore, e non raccoglie consapevolmente informazioni da loro."],
+        ["Modifiche", "Questa pagina può essere aggiornata per riflettere modifiche operative. La data di ultimo aggiornamento indica la revisione corrente."]
+      ]
+    },
     terms: {
       note: "Termini e condizioni per {{operator.legal_name}}, gestito sotto {{operator.jurisdiction}}.",
       lastUpdated: "Ultimo aggiornamento:",
@@ -717,6 +833,33 @@ const LEGAL_CONTENT = {
     }
   },
   de: {
+    privacy: {
+      note: "Datenschutzerklärung für {{operator.legal_name}}, betrieben in {{operator.jurisdiction}}.",
+      lastUpdated: "Zuletzt aktualisiert:",
+      sections: [
+        ["Überblick", "Dieser Kurzlink-Dienst unter {{operator.short_domain}} wird von {{operator.legal_name}} in {{operator.jurisdiction}} betrieben. Er ist eine Instanz des Open-Source-Projekts vanityURLs, vom Betreiber bereitgestellt und angepasst und kostenlos verfügbar."],
+        ["Zweck der Verarbeitung", "Informationen werden verarbeitet, um Weiterleitungen auszuführen, die in den Bedingungen festgelegte Acceptable-Use-Policy durchzusetzen, missbräuchlichen Traffic zu erkennen und zu blockieren sowie Betriebsprobleme zu diagnostizieren. Soweit anwendbares Recht eine Rechtsgrundlage verlangt, stützt sich der Betreiber auf berechtigte Interessen am Betrieb eines funktionsfähigen und sicheren Weiterleitungsdienstes."],
+        ["Keine Besucher-Konten oder Cookies", "Dieser Redirector hostet keine Besucher-Konten, setzt keine Cookies und akzeptiert zur Laufzeit keine von Besuchern eingereichten Links. Es werden keine Kennungen clientseitig gespeichert."],
+        ["Datenschutzkontakt", "Für Datenschutzanfragen kontaktiere {{operator.privacy_contact}}, die verantwortliche Kontaktstelle für personenbezogene Informationen dieser Instanz."],
+        ["Funktionsweise", "Der Dienst empfängt eine Kurz-URL-Anfrage, sucht ein Ziel in einer Datei, die beim Deployment in eine serverlose Instanz gebündelt wurde, und gibt eine HTTP-Weiterleitung zurück. Die Suche erfolgt vollständig im Speicher, ohne Datenbanklesung zur Anfragezeit und ohne Aufruf von GitHub oder anderen Systemen."],
+        ["Bei Anfragen verarbeitete Informationen", "Für jede Weiterleitung stellt Cloudflare edge den angefragten Pfad, die Besucher-IP aus cf-connecting-ip, den Ländercode aus request.cf.country, den ersten Accept-Language-Tag auf 35 Zeichen gekürzt, User-Agent, Referer, Zeitstempel und eine pro Anfrage erzeugte Korrelationskennung bereit."],
+        ["Analytics-Pipeline", "Wenn serverseitige Analytics aktiviert ist, sendet der Worker ein Ereignis pro Weiterleitung und ein Ereignis pro Nutzung der /expand-Vorschauseiten an den konfigurierten Anbieter. Ohne konfigurierte Analytics wird kein Ereignis gesendet."],
+        ["Umami", "Umami erhält angefragten Pfad und Query String, Hostname, ersten Accept-Language-Tag, Referer, User-Agent oder Bot-Fallback-String sowie die Besucher-IP gemäß UMAMI_GEO_IP_MODE. Nicht-Pageview-Ereignisse enthalten zusätzlich Slug, Zielhost, Land, Cloudflare-Rechenzentrum, Korrelationskennung, Ereignistyp und HTTP-Status."],
+        ["Umami-IP-Modus", "Der Umami-IP-Modus dieser Instanz ist: {{operator.umami_geo_ip_mode}}."],
+        ["Fathom", "Fathom wird serverseitig vom Worker aufgerufen. Daher erhält Fathom nicht die IP-Adresse des Besuchers, sondern nur die Egress-IP des Cloudflare Workers. Der Worker leitet Ursprung und Pfad, eine Allowlist von Kampagnen- und Inhaltsparametern, Referer und User-Agent weiter. Pro Ereignis wird eine neue Zufallszahl statt einer stabilen Besucherkennung erzeugt."],
+        ["/expand-Vorschauseiten", "Lokalisierte /expand-Seiten ermöglichen es, das Ziel eines Kurzlinks ohne Weiterleitung zu sehen. Vorschauanfragen senden einen kleinen JSON-Body an /_analytics/expand mit Slug, effektivem Status, Ergebnis-Klassifizierung und aufgelöstem Ziel-Hostname."],
+        ["Aufbewahrung", "Der vanityURLs Worker ist zustandslos und schreibt keine eigenen persistenten Daten. Cloudflare Workers Logs werden etwa 3 Tage im Free-Plan und 7 Tage im Paid-Plan aufbewahrt. Cloudflare HTTP-Request-Logs werden standardmäßig nicht gespeichert, außer der Betreiber aktiviert Enterprise Logpull oder Logpush."],
+        ["Cloudflare DNS und Audit", "Cloudflare authoritative DNS analytics speichern aggregierte Metadaten bis zu 31 Tage. Cloudflare Audit Logs erfassen administrative Änderungen des Betreibers und werden unter Standardplänen 18 Monate aufbewahrt."],
+        ["Aufbewahrung beim Analytics-Anbieter", "{{operator.analytics_disclosure}}"],
+        ["Analytics-Aufbewahrung", "{{operator.analytics_retention}}"],
+        ["Subprozessoren", "Runtime-Subprozessoren können Cloudflare, Inc.; Conva Ventures Inc. bei aktiviertem Fathom; und Umami Software, Inc. bei gehostetem Umami Cloud umfassen. GitHub, Inc. ist Teil der Build-Lieferkette und erhält keinen Besucher-Traffic, keine IP-Adressen und keine Analytics-Ereignisse."],
+        ["Internationale Übermittlungen", "Da dieser Dienst über Cloudflares globales Edge-Netzwerk bereitgestellt wird, können Anfragedaten in anderen Ländern als dem des Besuchers verarbeitet werden. Cloudflare stützt sich auf die in seinem Data Processing Addendum beschriebenen Garantien."],
+        ["Rechte und Grenzen", "Dieser Dienst ist so gestaltet, dass Besucherdaten flüchtig verarbeitet werden. Der Betreiber führt keine Besucher-Konten, Kennungen, Profile oder persistenten Speicher personenbezogener Informationen; es gibt keinen Besucher-Datensatz, der abgerufen, korrigiert oder gelöscht werden könnte."],
+        ["Betreiberkontrollierte Anfragen", "Der Betreiber kann Anfragen bearbeiten, die die von ihm kontrollierte Konfiguration betreffen, etwa das Entfernen eines bestimmten Kurzlinks aus dem Weiterleitungsregister. Datenschutzanfragen können an {{operator.privacy_contact}} gesendet werden."],
+        ["Kinder", "Dieser Dienst richtet sich nicht an Kinder unter 13 Jahren oder das entsprechende Mindestalter in der Jurisdiktion des Besuchers und sammelt wissentlich keine Informationen von ihnen."],
+        ["Änderungen", "Diese Seite kann aktualisiert werden, um betriebliche Änderungen widerzuspiegeln. Das Datum der letzten Aktualisierung gibt die aktuelle Fassung an."]
+      ]
+    },
     terms: {
       note: "Nutzungsbedingungen für {{operator.legal_name}}, betrieben unter {{operator.jurisdiction}}.",
       lastUpdated: "Zuletzt aktualisiert:",
