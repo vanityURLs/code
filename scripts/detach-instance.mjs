@@ -7,6 +7,8 @@ const ROOT = process.cwd();
 const DETACH_PATHS = [
   ".git",
   ".github",
+  ".all-contributorsrc",
+  ".release-please-manifest.json",
   "CHANGELOG.txt",
   "package-lock.json",
   "release-please-config.json"
