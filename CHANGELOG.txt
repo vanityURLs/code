@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.6.0](https://github.com/vanityURLs/code/compare/v2.5.0...v2.6.0) (2026-05-22)
+
+
+### Features
+
+* allow deferred legal setup ([35b5220](https://github.com/vanityURLs/code/commit/35b5220e2ccb091ef905258429a8d1c50d3df316))
+
+
+### Bug Fixes
+
+* remove release metadata during detach ([f74d89e](https://github.com/vanityURLs/code/commit/f74d89e1e3d199601ab6bda2050cb98df8c54cb8))
+* simplify setup prompts ([930b49f](https://github.com/vanityURLs/code/commit/930b49f9c5956c6bb38c2ebdecb80511032592c4))
+
 ## [2.5.0](https://github.com/vanityURLs/code/compare/v2.4.1...v2.5.0) (2026-05-21)
 
 
