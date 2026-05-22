@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.1](https://github.com/vanityURLs/code/compare/v2.6.0...v2.6.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* brand trust safety pages ([640ca60](https://github.com/vanityURLs/code/commit/640ca60fd3a0d65244e826a6e79aa640549010b1))
+
 ## [2.6.0](https://github.com/vanityURLs/code/compare/v2.5.0...v2.6.0) (2026-05-22)
 
 
