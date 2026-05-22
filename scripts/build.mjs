@@ -337,9 +337,11 @@ function renderLegalPages(siteConfig) {
       : renderLegalPageContent(page.language, page.slug, operator);
     const current = fs.readFileSync(page.filePath, "utf8");
     const withContent = replaceLegalContent(current, rendered);
-    fs.writeFileSync(page.filePath, operatorConfigIssues.length
-      ? replaceBrandSubtitle(withContent, legalConfigurationSubtitle(page.language))
-      : withContent);
+    const normalized = normalizeLegalTemplateChrome(withContent, page, siteConfig);
+    const finalHtml = operatorConfigIssues.length
+      ? replaceBrandSubtitle(normalized, legalConfigurationSubtitle(page.language))
+      : normalized;
+    fs.writeFileSync(page.filePath, removeEmptyPageLinks(finalHtml));
   }
 }
 
@@ -393,9 +395,9 @@ function removeDeferredLegalPages(siteConfig) {
   }
 
   rewriteHtmlFiles(BUILD_DIR, (html) => {
-    return html
+    return removeEmptyPageLinks(html
       .replace(/\s*<a href="[^"]*(?:privacy|terms|security)(?:\.html)?">[^<]*<\/a>/gi, "")
-      .replace(/\s*<li><a href="[^"]*(?:privacy|terms|security)(?:\.html)?">[^<]*<\/a><\/li>/gi, "");
+      .replace(/\s*<li><a href="[^"]*(?:privacy|terms|security)(?:\.html)?">[^<]*<\/a><\/li>/gi, ""));
   });
 }
 
@@ -576,7 +578,13 @@ function isPlaceholderValue(value) {
 
 function replaceLegalContent(html, rendered) {
   const pattern = /(<h2 class="legal-title">[\s\S]*?<\/h2>\n)([\s\S]*?)(\n\s*<nav class="page-links")/;
-  return html.replace(pattern, (_match, heading, _body, nav) => `${heading}${rendered}${nav}`);
+  return html.replace(pattern, (_match, heading, _body, nav) => `${toLegalPageHeading(heading)}${rendered}${nav}`);
+}
+
+function toLegalPageHeading(heading) {
+  return heading
+    .replace("<h2 ", "<h1 ")
+    .replace("</h2>", "</h1>");
 }
 
 function replaceBrandSubtitle(html, notice) {
@@ -586,12 +594,56 @@ function replaceBrandSubtitle(html, notice) {
   );
 }
 
+function normalizeLegalTemplateChrome(html, page, siteConfig) {
+  return removeEmptyPageLinks(
+    removeLegalRedirectedBadge(
+      removeCurrentLegalPageLink(
+        applyLegalBranding(html, siteConfig),
+        page
+      )
+    )
+  );
+}
+
+function applyLegalBranding(html, siteConfig) {
+  const wordmark = siteConfig?.branding?.wordmark;
+  if (!wordmark?.black && !wordmark?.green) return html;
+
+  const brandLabel = `${wordmark.black || ""}${wordmark.green || ""}`;
+  const renderedWordmark = renderConfiguredWordmark(siteConfig);
+  return html
+    .replace(/<header class="instance-brand" aria-label="[^"]*">/, `<header class="instance-brand" aria-label="${escapeHtmlAttribute(brandLabel)}">`)
+    .replace(/<h1 class="instance-brand-title"><a href="([^"]+)" aria-label="[^"]*">[\s\S]*?<\/a><\/h1>/, `<h1 class="instance-brand-title"><a href="$1" aria-label="${escapeHtmlAttribute(brandLabel)}">${renderedWordmark}</a></h1>`);
+}
+
+function removeLegalRedirectedBadge(html) {
+  return html.replace(/\n\s*<a class="redirected-badge"[\s\S]*?<\/a>\n(?=\s*<\/article>)/, "\n");
+}
+
+function removeEmptyPageLinks(html) {
+  return html.replace(/\n\s*<nav class="page-links"[^>]*>[\s\n]*<\/nav>/g, "");
+}
+
+function removeCurrentLegalPageLink(html, page) {
+  const hrefSlug = page.language === "en" && page.slug === "abuse" ? "trust-safety" : page.slug;
+  const prefix = page.language === "en" ? "" : `/${page.language}`;
+  const extension = page.language === "en" ? "" : ".html";
+  const href = `${prefix}/${hrefSlug}${extension}`;
+  const escapedHref = escapeRegExp(href);
+  return html.replace(new RegExp(`\\n\\s*<a href="${escapedHref}">[^<]*<\\/a>`, "g"), "");
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function renderLegalPageContent(language, slug, operator) {
   const content = LEGAL_CONTENT[language]?.[slug] || LEGAL_CONTENT.en[slug];
   const paragraphs = content.sections.filter(([, text]) => {
     return !text.includes("{{analytics_retention}}") || Boolean(String(operator.analytics_retention || "").trim());
-  }).map(([heading, text]) => {
-    return `      <h3>${escapeHtml(heading)}</h3>\n      <p>${renderOperatorText(text, operator)}</p>`;
+  }).map(([heading, text], index) => {
+    const headingLevel = legalSectionHeadingLevel(slug, index);
+    return `      <${headingLevel}>${escapeHtml(heading)}</${headingLevel}>\n      <p>${renderOperatorText(text, operator)}</p>`;
   }).join("\n\n");
 
   return `      <p class="legal-note">${renderOperatorText(content.note, operator)}</p>\n      <p class="legal-note">${escapeHtml(content.lastUpdated)} ${escapeHtml(operator.last_updated || "")}</p>\n\n${paragraphs}\n`;
@@ -612,10 +664,28 @@ function legalConfigurationSubtitle(language) {
 
 function renderOperatorText(text, operator) {
   const emailFields = new Set(["contact_email", "privacy_contact", "abuse_contact", "security_contact"]);
-  return escapeHtml(text).replace(/\{\{(?:operator\.)?([a-z_]+)\}\}/g, (_match, field) => {
+  const rendered = escapeHtml(text).replace(/\{\{(?:operator\.)?([a-z_]+)\}\}/g, (_match, field) => {
     const value = escapeHtml(operator[field] || "");
     return emailFields.has(field) ? `<a href="mailto:${value}">${value}</a>` : value;
   });
+  return linkifyHtmlText(rendered);
+}
+
+function legalSectionHeadingLevel(slug, index) {
+  if (slug !== "abuse") return "h3";
+  return index > 5 ? "h3" : "h2";
+}
+
+function linkifyHtmlText(html) {
+  return String(html).split(/(<[^>]+>)/g).map((part) => {
+    if (part.startsWith("<")) return part;
+
+    return part.replace(/(^|[\s(])(https?:\/\/[^\s<]+|\/[A-Za-z0-9._~/-]+)/g, (match, prefix, value) => {
+      const cleanValue = value.replace(/[.)\],;:]+$/g, "");
+      const suffix = value.slice(cleanValue.length);
+      return `${prefix}<a href="${escapeHtmlAttribute(cleanValue)}">${cleanValue}</a>${suffix}`;
+    });
+  }).join("");
 }
 
 const LEGAL_CONFIGURATION_NOTICE = {
@@ -684,17 +754,17 @@ const LEGAL_CONTENT = {
       ]
     },
     abuse: {
-      note: "Trust and safety information for {{legal_name}}.",
+      note: "Trust and safety information for {{operator.short_domain}}.",
       lastUpdated: "Last updated:",
       sections: [
-        ["Overview", "This page is the single contact point for reporting abusive short links and for disclosing security vulnerabilities affecting {{operator.short_domain}}. It complements the machine-readable contact published at /.well-known/security.txt in accordance with RFC 9116."],
+        ["Overview", "This page is the single contact point for reporting abusive short links and for disclosing security vulnerabilities affecting {{operator.short_domain}}. It complements the machine-readable contact published at /.well-known/security.txt in accordance with RFC 9116: A File Format to Aid in Security Vulnerability Disclosure (https://www.rfc-editor.org/info/rfc9116)."],
         ["Report an abusive link", "Report any short link on this domain that appears to be used for phishing, malware distribution, credential theft, spam, harassment, impersonation, copyright or trademark infringement, defamation, or another harmful purpose."],
         ["Where to send reports", "Send reports to {{operator.abuse_contact}}. A structured report template is available at /abuse-report.md; copy it, fill in the fields, and paste the result into the body of your email."],
         ["Response", "The Operator will acknowledge well-formed reports on a best-effort basis, typically within {{operator.abuse_response_window}}, and may disable affected links, update the block-keyword policy in the open-source configuration, or take other action consistent with the Terms. No service-level agreement is offered; this is a best-effort response."],
-        ["Child sexual abuse material and imminent harm", "If you believe a short link points to child sexual abuse material, report it directly to the appropriate authority in addition to contacting the Operator. Canada: Cybertip.ca. United States: NCMEC CyberTipline. European Union and worldwide: INHOPE network hotlines. For any other situation involving imminent physical danger, contact your local emergency services first."],
+        ["Child sexual abuse material and imminent harm", "If you believe a short link points to child sexual abuse material, report it directly to the appropriate authority in addition to contacting the Operator. Canada: Cybertip.ca at https://www.cybertip.ca/. United States: NCMEC CyberTipline at https://report.cybertip.org/. European Union and worldwide: INHOPE network hotlines at https://www.inhope.org/. For any other situation involving imminent physical danger, contact your local emergency services first."],
         ["Security vulnerability disclosure", "If you discover a security vulnerability in this instance, report it privately to {{operator.security_contact}}. The same contact is published in /.well-known/security.txt."],
         ["In scope", "The {{operator.short_domain}} domain and the Cloudflare Worker code deployed at that domain are in scope, along with misconfiguration of redirect rules, block policies, or access controls specific to this instance."],
-        ["Out of scope", "Vulnerabilities in Cloudflare infrastructure should be reported directly to Cloudflare's HackerOne program. Vulnerabilities in GitHub should be reported through GitHub's HackerOne program. Vulnerabilities in the upstream vanityURLs open-source software should be reported through the project's GitHub Security Advisories, not through a public GitHub issue. Findings that require credentials, social engineering of the Operator, denial of service, or physical access are out of scope."],
+        ["Out of scope", "Vulnerabilities in Cloudflare infrastructure should be reported directly to Cloudflare's HackerOne program at https://hackerone.com/cloudflare. Vulnerabilities in GitHub should be reported through GitHub's HackerOne program at https://hackerone.com/github. Vulnerabilities in the upstream vanityURLs open-source software should be reported through the project's GitHub Security Advisories at https://github.com/vanityURLs/code/security/advisories, not through a public GitHub issue. Findings that require credentials, social engineering of the Operator, denial of service, or physical access are out of scope."],
         ["Safe harbour", "Good-faith security research conducted within the scope above, that respects visitor privacy, avoids service disruption, does not access or modify data beyond what is necessary to demonstrate the issue, and follows coordinated disclosure, will not be subject to legal action by the Operator. This safe harbour does not bind third parties and does not authorize activity that violates applicable law."],
         ["Coordinated disclosure", "Please allow a reasonable remediation window before public disclosure. Ninety days is the default expectation, shorter where a fix is trivial, longer where coordination with upstream maintainers is required. The Operator will keep reporters informed of progress and credit researchers who wish to be acknowledged."],
         ["What we cannot do", "The Operator does not act as a general content moderator for the open internet. Reports about destination websites are most effective when also sent to the destination's hosting provider, domain registrar, or the relevant regulator. The Operator's authority is limited to the short links it publishes on {{operator.short_domain}}."],
@@ -1076,6 +1146,10 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function escapeHtmlAttribute(value) {
+  return escapeHtml(value).replaceAll("'", "&#39;");
 }
 
 function copyRuntimeBlocklist() {
