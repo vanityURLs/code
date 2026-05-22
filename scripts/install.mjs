@@ -84,12 +84,20 @@ async function promptForMissing(args) {
     const analyticsEnabled = !isAnalyticsDisabled(args.analytics);
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
     args.languages = await question(rl, "Supported languages", args.languages || configuredLanguages);
+    args.configureLegalPages = await confirm(rl, "Configure privacy, terms, and security pages now?", configuredOperator.legal_pages_enabled !== false && hasConfiguredLegalPages(configuredOperator));
     args.operatorLegalName = await question(rl, "Operator legal name", args.operatorLegalName || configuredOperator.legal_name || "");
     args.operatorShortDomain = args.operatorShortDomain || args.domain;
-    args.operatorJurisdiction = await question(rl, "Operator jurisdiction, for example Canada", args.operatorJurisdiction || configuredOperator.jurisdiction || "");
-    args.operatorGoverningLaw = await question(rl, "Governing law", args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "");
-    args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || defaultContactEmail("hello", args.domain));
-    args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || defaultContactEmail("privacy", args.domain));
+    if (args.configureLegalPages) {
+      args.operatorJurisdiction = await question(rl, "Operator jurisdiction, for example Canada", args.operatorJurisdiction || configuredOperator.jurisdiction || "");
+      args.operatorGoverningLaw = await question(rl, "Governing law", args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "");
+      args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || defaultContactEmail("hello", args.domain));
+      args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || defaultContactEmail("privacy", args.domain));
+    } else {
+      args.operatorJurisdiction = args.operatorJurisdiction || configuredOperator.jurisdiction || "";
+      args.operatorGoverningLaw = args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "";
+      args.operatorContactEmail = args.operatorContactEmail || configuredOperator.contact_email || "";
+      args.operatorPrivacyContact = args.operatorPrivacyContact || configuredOperator.privacy_contact || "";
+    }
     args.operatorAbuseContact = await question(rl, "Trust & Safety contact", args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", args.domain));
     args.operatorSecurityContact = await question(rl, "Security contact", args.operatorSecurityContact || configuredOperator.security_contact || defaultContactEmail("security", args.domain));
     args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate());
@@ -284,12 +292,22 @@ function normalizeOperator(args) {
     last_updated: String(args.operatorLastUpdated || gitLastUpdatedDate() || todayIsoDate()).trim(),
     analytics_disclosure: String(args.operatorAnalyticsDisclosure || analyticsDisclosureDefault(args.analytics)).trim(),
     analytics_retention: String(args.operatorAnalyticsRetention || analyticsRetentionDefault(args.analytics)).trim(),
-    abuse_response_window: String(args.operatorAbuseResponseWindow || "5 business days").trim()
+    abuse_response_window: String(args.operatorAbuseResponseWindow || "5 business days").trim(),
+    legal_pages_enabled: args.configureLegalPages === true
   };
 }
 
+function hasConfiguredLegalPages(operator) {
+  return Boolean(
+    String(operator?.jurisdiction || "").trim()
+    && String(operator?.governing_law || "").trim()
+    && String(operator?.contact_email || "").trim()
+    && String(operator?.privacy_contact || "").trim()
+  );
+}
+
 function validateOperator(operator) {
-  const required = [
+  const required = operator.legal_pages_enabled === true ? [
     "legal_name",
     "short_domain",
     "jurisdiction",
@@ -301,9 +319,18 @@ function validateOperator(operator) {
     "last_updated",
     "analytics_disclosure",
     "abuse_response_window"
+  ] : [
+    "short_domain",
+    "abuse_contact",
+    "security_contact",
+    "last_updated",
+    "abuse_response_window"
   ];
   const missing = required.filter((field) => !String(operator[field] || "").trim());
-  const invalidEmails = ["contact_email", "privacy_contact", "abuse_contact", "security_contact"]
+  const emailFields = operator.legal_pages_enabled === true
+    ? ["contact_email", "privacy_contact", "abuse_contact", "security_contact"]
+    : ["abuse_contact", "security_contact"];
+  const invalidEmails = emailFields
     .filter((field) => !isEmail(operator[field]));
   const invalidDate = /^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated || "")) ? [] : ["last_updated"];
   const issues = [...new Set([...missing, ...invalidEmails, ...invalidDate])];
@@ -481,6 +508,8 @@ function applyBranding(html, args) {
 
   return html
     .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) => wordmark.replace("$1", attributes))
+    .replace(/<title>([^<]*?)VanityURLs([^<]*?)<\/title>/gi, `<title>$1${escapeHtml(brandLabel)}$2</title>`)
+    .replace(/redirected by VanityURLs engine/gi, `redirected by ${escapeHtmlAttribute(brandLabel)} engine`)
     .replace(/aria-label="VanityURLs"/g, `aria-label="${escapeHtmlAttribute(brandLabel)}"`)
     .replace(/(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi, `$1"https://${escapeHtmlAttribute(args.domain)}/"`)
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityURLs\.link"/g, `$1"${PROJECT_SITE_URL}"`)

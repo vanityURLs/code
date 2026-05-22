@@ -307,7 +307,7 @@ function renderLegalPages(siteConfig) {
   if (!hasCustomSiteConfig()) return;
 
   const languages = supportedLanguages(siteConfig);
-  const legalPages = ["privacy", "terms", "abuse", "security"];
+  const legalPages = legalPageSlugs(siteConfig);
 
   if (!languages.length) return;
 
@@ -323,7 +323,9 @@ function renderLegalPages(siteConfig) {
   if (!templatePages.length) return;
 
   const operator = effectiveOperator(siteConfig.operator || {});
-  const operatorConfigIssues = validateOperatorConfig(operator);
+  const operatorConfigIssues = legalPagesEnabled(siteConfig)
+    ? validateOperatorConfig(operator)
+    : validateTrustConfig(operator);
   const requiresOperatorConfig = siteConfig?.branding?.custom_public === true;
   if (operatorConfigIssues.length && requiresOperatorConfig) {
     throw new Error(`custom/v8s-site-config.json operator fields are required for default legal pages: ${operatorConfigIssues.join(", ")}`);
@@ -345,7 +347,7 @@ function renderSecurityTxt(siteConfig) {
   if (!hasCustomSiteConfig()) return;
 
   const operator = effectiveOperator(siteConfig.operator || {});
-  if (validateOperatorConfig(operator).length) {
+  if (validateSecurityConfig(operator).length) {
     removeSecurityTxt();
     return;
   }
@@ -367,6 +369,34 @@ function renderSecurityTxt(siteConfig) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, content);
   }
+}
+
+function legalPagesEnabled(siteConfig) {
+  return siteConfig?.operator?.legal_pages_enabled !== false;
+}
+
+function legalPageSlugs(siteConfig) {
+  return legalPagesEnabled(siteConfig)
+    ? ["privacy", "terms", "abuse", "security"]
+    : ["abuse"];
+}
+
+function removeDeferredLegalPages(siteConfig) {
+  if (legalPagesEnabled(siteConfig)) return;
+
+  for (const language of supportedLanguages(siteConfig)) {
+    for (const slug of ["privacy", "terms", "security"]) {
+      for (const filePath of legalPagePaths(language, slug)) {
+        fs.rmSync(filePath, { force: true });
+      }
+    }
+  }
+
+  rewriteHtmlFiles(BUILD_DIR, (html) => {
+    return html
+      .replace(/\s*<a href="[^"]*(?:privacy|terms|security)(?:\.html)?">[^<]*<\/a>/gi, "")
+      .replace(/\s*<li><a href="[^"]*(?:privacy|terms|security)(?:\.html)?">[^<]*<\/a><\/li>/gi, "");
+  });
 }
 
 function securityTxtPaths() {
@@ -399,6 +429,19 @@ function legalPagePaths(language, slug) {
     : [path.join(BUILD_DIR, language, `${slug}.html`)];
 }
 
+function rewriteHtmlFiles(directory, transform) {
+  if (!fs.existsSync(directory)) return;
+
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      rewriteHtmlFiles(entryPath, transform);
+    } else if (entry.isFile() && entry.name.endsWith(".html")) {
+      fs.writeFileSync(entryPath, transform(fs.readFileSync(entryPath, "utf8")));
+    }
+  }
+}
+
 function isDefaultLegalTemplate(filePath) {
   if (!fs.existsSync(filePath)) return false;
   const html = fs.readFileSync(filePath, "utf8");
@@ -428,6 +471,44 @@ function validateOperatorConfig(operator) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(operator[field]))) {
       issues.push(field);
     }
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated))) {
+    issues.push("last_updated");
+  }
+
+  return [...new Set(issues)];
+}
+
+function validateTrustConfig(operator) {
+  const required = [
+    "short_domain",
+    "abuse_contact",
+    "security_contact",
+    "last_updated",
+    "abuse_response_window"
+  ];
+  const issues = required.filter((field) => isPlaceholderValue(operator[field]));
+
+  for (const field of ["abuse_contact", "security_contact"]) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(operator[field]))) {
+      issues.push(field);
+    }
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated))) {
+    issues.push("last_updated");
+  }
+
+  return [...new Set(issues)];
+}
+
+function validateSecurityConfig(operator) {
+  const required = ["short_domain", "security_contact", "last_updated"];
+  const issues = required.filter((field) => isPlaceholderValue(operator[field]));
+
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(operator.security_contact))) {
+    issues.push("security_contact");
   }
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated))) {
@@ -1124,6 +1205,7 @@ function main() {
   renderSecurityTxt(siteConfig);
   writeSiteConfig(runtimeSiteConfig(siteConfig));
   buildTestsPage(siteConfig);
+  removeDeferredLegalPages(siteConfig);
   copyRuntimeBlocklist();
   buildRedirectTargets();
   validateRuntimeRegistry();
