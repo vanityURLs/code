@@ -10,7 +10,7 @@ Mailroom is the current project name. Public URLs and page labels should use nam
 
 Every operator needs predictable, trustworthy forms to receive ad hoc information related to abuse, security vulnerabilities, privacy requests, accessibility, internationalization, website feedback, meeting requests, and similar operational workflows.
 
-Form intake is a different operational surface than redirects. It needs validation, spam controls, rate limits, delivery integrations, secrets, and possibly attachment or evidence handling. Mailroom should follow the same general operational philosophy as vanityURLs: each operator runs their own instance, owns its configuration, and deploys it on their own hostname. A typical hostname is `notification.<operator-domain>`, for example `notification.dicaire.com`.
+Form intake is a different operational surface than redirects. It needs validation, spam controls, rate limits, delivery integrations, secrets, and possibly attachment or evidence handling. Mailroom should follow the same general operational philosophy as vanityURLs: each operator runs their own instance, owns its configuration, and deploys it on their own hostname. The initial documentation should use `notification.<operator-domain>` as the working hostname pattern, for example `notification.dicaire.com`, while treating the final URL naming strategy as unresolved.
 
 Mailroom is not a public marketing website. It is a form handler with a minimal web surface, server-rendered HTML, and no client-side JavaScript in the core experience.
 
@@ -140,9 +140,11 @@ Suggested fields:
 - Electronic signature.
 - Optional evidence URL.
 
+The first DMCA takedown form should be generic enough for early implementation. A future form library should support jurisdiction-specific variants and legal requirements.
+
 ## Delivery Integrations
 
-One primary destination is selected per deployment. First-class destination candidates:
+One global primary destination is selected per deployment, and each form type can override it when needed. First-class destination candidates:
 
 - Slack incoming webhook.
 - Email provider.
@@ -185,6 +187,7 @@ Future destination candidates:
 - `PRIVACY_NOTICE_URL`
 - `TRUST_SAFETY_URL`
 - `PRIMARY_DESTINATION`
+- `REPORT_TYPE_DESTINATION_OVERRIDES`
 - `TURNSTILE_POLICY`
 
 ## Security And Privacy Guardrails
@@ -248,7 +251,8 @@ Mailroom accepts untrusted input from the open internet and must be designed as 
 - Version 1 starts as no-storage delivery only to accelerate development and testing.
 - Encrypted storage in KV, D1, or R2 is a priority roadmap item.
 - Slack webhook and email delivery are first-class destinations.
-- One primary delivery destination is configured per deployment.
+- One global primary delivery destination is configured per deployment.
+- Each form type may override the global primary delivery destination.
 - Turnstile is configurable per deployment or through a global instance policy.
 - Generated reports are sanitized, size-limited, and treated as untrusted.
 - Each Worker serves one operator; multi-tenant routing is not part of version 1.
@@ -261,6 +265,7 @@ Mailroom accepts untrusted input from the open internet and must be designed as 
 - Should the redirector add `/report-abuse` and `/report-security` helper aliases, or should links live only inside Trust & Safety content?
 - Should the v1 launch include privacy, accessibility, internationalization, feedback, and meeting forms, or should those follow after abuse, security, and DMCA prove the engine?
 - What exact report reference format should be treated as canonical?
+- What public hostname pattern is most understandable and trustworthy for visitors, given that `notification.<operator-domain>` is only the working default?
 
 ## Suggested Implementation Phases
 
@@ -284,7 +289,8 @@ The first useful implementation should include:
 - Server-side validation.
 - Turnstile verification hook.
 - Slack webhook delivery.
-- Configurable primary delivery destination.
+- Configurable global primary delivery destination.
+- Per-form delivery destination overrides.
 - Local tests.
 - Deployment documentation.
 
@@ -321,4 +327,6 @@ The Mailroom marketing and documentation website should be similar to `www.vanit
 - 2026-05-23: Version 1 supports one operator per Worker.
 - 2026-05-23: Recommended report reference format is a human-friendly opaque ID with date prefix, for example `MR-20260523-8X4K2P`.
 - 2026-05-23: Version 1 should support multiple form types to prove the intake engine, starting with abuse, security, and DMCA takedown.
-- 2026-05-23: Each deployment should use one primary delivery destination.
+- 2026-05-23: Initial documentation should use `notification.<operator-domain>` as the working hostname pattern, but this is not believed to be the final best URL strategy.
+- 2026-05-23: DMCA takedown should start generic, with a future form library for jurisdiction-specific requirements.
+- 2026-05-23: Each deployment should use one global primary delivery destination, and each form type can override it.
