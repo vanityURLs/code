@@ -4,6 +4,8 @@
 
 Mailroom is a Cloudflare Worker-based form intake service for operational reports and requests.
 
+Mailroom is the current project name. Public URLs and page labels should use naming that visitors understand and trust, such as report, notification, abuse, security, privacy, trust, or contact language depending on the operator and report type.
+
 ## Context
 
 Every operator needs predictable, trustworthy forms to receive ad hoc information related to abuse, security vulnerabilities, privacy requests, accessibility, internationalization, website feedback, meeting requests, and similar operational workflows.
@@ -41,11 +43,13 @@ Mailroom is not a public marketing website. It is a form handler with a minimal 
 - Internationalization or localization feedback.
 - Website, article, post, or documentation feedback.
 - Meeting request.
+- DMCA takedown request.
 - Optional legal or contact report types.
 
 ## Core Behavior
 
 - Serve form pages for abuse, security, and optional legal/contact report types.
+- Serve multiple report-type forms in version 1 to prove the intake engine supports distinct use cases.
 - Validate required fields.
 - Apply Cloudflare protections such as WAF, Bot Fight Mode, Turnstile, rate limiting, and managed challenge rules.
 - Send reports to configured destinations such as Slack webhook, email provider, generic webhook, or issue tracker.
@@ -69,6 +73,7 @@ Mailroom should explicitly support these five core security principles:
 
 - Filling out a form should be easy and predictable.
 - The confirmation page should clearly show the report reference.
+- Report references should be short, human-friendly, opaque IDs with a date prefix, such as `MR-20260523-8X4K2P`.
 - The confirmation page must not reflect untrusted content back to the user.
 - The reporter should understand what data is required and what should not be included.
 - Forms should ask for the least information needed for the report type.
@@ -119,9 +124,25 @@ Suggested fields:
 - Disclosure preference.
 - Credit preference.
 
+### DMCA Takedown Report
+
+Suggested fields:
+
+- URL or content location.
+- Original copyrighted work location.
+- Rights holder name.
+- Reporter name.
+- Reporter email.
+- Reporter role or authority to act.
+- Description of alleged infringement.
+- Good-faith belief confirmation.
+- Accuracy and authority confirmation.
+- Electronic signature.
+- Optional evidence URL.
+
 ## Delivery Integrations
 
-First-class destinations:
+One primary destination is selected per deployment. First-class destination candidates:
 
 - Slack incoming webhook.
 - Email provider.
@@ -134,6 +155,8 @@ Email provider candidates:
 - Postmark.
 - SendGrid.
 - Cloudflare Email Routing plus Worker-compatible outbound email if available.
+
+Default email recommendation is undecided. Resend is available for low-volume deployments, but Cloudflare-native delivery is preferred if viable and if the privacy impact is acceptable.
 
 Future destination candidates:
 
@@ -161,6 +184,8 @@ Future destination candidates:
 - `ALLOW_ATTACHMENTS`
 - `PRIVACY_NOTICE_URL`
 - `TRUST_SAFETY_URL`
+- `PRIMARY_DESTINATION`
+- `TURNSTILE_POLICY`
 
 ## Security And Privacy Guardrails
 
@@ -220,20 +245,22 @@ Mailroom accepts untrusted input from the open internet and must be designed as 
 
 - The vanityURLs Worker publishes policy pages and links to intake channels.
 - The Mailroom Worker owns form rendering, POST validation, anti-abuse controls, and delivery integrations.
-- No storage is enabled by default unless explicitly configured.
+- Version 1 starts as no-storage delivery only to accelerate development and testing.
+- Encrypted storage in KV, D1, or R2 is a priority roadmap item.
 - Slack webhook and email delivery are first-class destinations.
-- Turnstile and Cloudflare network protections are supported.
+- One primary delivery destination is configured per deployment.
+- Turnstile is configurable per deployment or through a global instance policy.
 - Generated reports are sanitized, size-limited, and treated as untrusted.
+- Each Worker serves one operator; multi-tenant routing is not part of version 1.
 - Redirector integration, if needed later, should add only optional fields such as `operator.abuse_report_url` and `operator.security_report_url` while keeping email fallbacks intact.
 
 ## Open Architecture Questions
 
-- Should the first implementation be no-storage delivery only, or should it store encrypted copies in KV, D1, or R2?
 - Which email provider should be the default recommendation?
-- Should Turnstile be required for all forms or only public deployments?
 - Should `security.txt` include both email and form `Contact:` lines when `security_report_url` exists?
 - Should the redirector add `/report-abuse` and `/report-security` helper aliases, or should links live only inside Trust & Safety content?
-- Should Mailroom support multi-tenant forms from the start, or one Worker per operator?
+- Should the v1 launch include privacy, accessibility, internationalization, feedback, and meeting forms, or should those follow after abuse, security, and DMCA prove the engine?
+- What exact report reference format should be treated as canonical?
 
 ## Suggested Implementation Phases
 
@@ -252,10 +279,12 @@ Mailroom accepts untrusted input from the open internet and must be designed as 
 The first useful implementation should include:
 
 - Abuse and security forms.
+- DMCA takedown form.
 - POST endpoints.
 - Server-side validation.
 - Turnstile verification hook.
 - Slack webhook delivery.
+- Configurable primary delivery destination.
 - Local tests.
 - Deployment documentation.
 
@@ -285,5 +314,11 @@ The Mailroom marketing and documentation website should be similar to `www.vanit
 
 ## Clarification Log
 
-Use this section to record scope decisions as they are clarified.
-
+- 2026-05-23: Mailroom remains the project name, but public URLs and labels should use visitor-trust language rather than project-internal naming when appropriate.
+- 2026-05-23: Version 1 starts with no storage to accelerate development and testing; encrypted storage remains a priority roadmap item.
+- 2026-05-23: Resend is available for low-volume email delivery, but Cloudflare-native delivery is preferred if viable and if the privacy impact is acceptable.
+- 2026-05-23: Turnstile is configurable per deployment or via global instance policy.
+- 2026-05-23: Version 1 supports one operator per Worker.
+- 2026-05-23: Recommended report reference format is a human-friendly opaque ID with date prefix, for example `MR-20260523-8X4K2P`.
+- 2026-05-23: Version 1 should support multiple form types to prove the intake engine, starting with abuse, security, and DMCA takedown.
+- 2026-05-23: Each deployment should use one primary delivery destination.
