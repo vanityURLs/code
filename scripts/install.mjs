@@ -89,7 +89,7 @@ async function promptForMissing(args) {
     args.analytics = await question(rl, "Analytics provider", configuredAnalytics);
     const analyticsEnabled = !isAnalyticsDisabled(args.analytics);
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
-    args.languages = await question(rl, "Supported languages", args.languages || configuredLanguages);
+    args.languages = normalizeLanguages(await question(rl, "Supported languages", args.languages || configuredLanguages));
     args.configureLegalPages = await confirm(rl, "Configure privacy, terms, and security pages now?", configuredOperator.legal_pages_enabled !== false && hasConfiguredLegalPages(configuredOperator));
     args.operatorLegalName = await question(rl, "Operator legal name", args.operatorLegalName || configuredOperator.legal_name || "");
     args.operatorShortDomain = args.operatorShortDomain || args.domain;
@@ -123,13 +123,20 @@ async function promptForMissing(args) {
     }
     args.configureBranding = await confirm(rl, "Configure branding now?", hasConfiguredBranding(configuredBranding));
     if (args.configureBranding) {
-      args.brandingSlogan = await question(rl, "Brand slogan", args.brandingSlogan || configuredBranding.slogan || defaultBrandingSlogan(args));
+      args.brandingSloganEnabled = await confirm(
+        rl,
+        `Add a slogan line under the domain name on your pages, such as "${defaultBrandingSlogan(args, "en")}"?`,
+        hasConfiguredSlogan(configuredBranding.slogan)
+      );
+      args.brandingSlogans = args.brandingSloganEnabled
+        ? await promptForBrandingSlogans(rl, args, configuredBranding.slogan)
+        : {};
       args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
       args.wordmarkBlack = await question(rl, "Black wordmark portion", args.wordmarkBlack || configuredBrand?.black || suggested.black);
       args.wordmarkGreen = await question(rl, "Green wordmark portion", args.wordmarkGreen || configuredBrand?.green || suggested.green);
     } else {
       args.customizePublic = args.customizePublic ?? siteConfig.branding?.custom_public === true;
-      args.brandingSlogan = args.brandingSlogan ?? configuredBranding.slogan ?? "";
+      args.brandingSlogans = normalizeSloganMap(configuredBranding.slogan, args.languages, args);
     }
   } finally {
     rl.close();
@@ -149,12 +156,13 @@ function normalizeArgs(args) {
   args.configureBranding = args.configureBranding ?? (
     args.customizePublic != null
     || args.brandingSlogan != null
+    || args.brandingSlogans != null
     || args.wordmarkBlack != null
     || args.wordmarkGreen != null
   );
   args.configureBranding = normalizeBoolean(args.configureBranding);
   args.customizePublic = normalizeBoolean(args.customizePublic);
-  args.brandingSlogan = String(args.brandingSlogan || "").trim();
+  args.brandingSlogans = normalizeSloganMap(args.brandingSlogans ?? args.brandingSlogan, args.languages, args);
   args.operator = normalizeOperator(args);
 
   if (!args.domain) throw new Error("Domain cannot be empty.");
@@ -424,17 +432,71 @@ function suggestWordmarkSplit(domain) {
 function hasConfiguredBranding(branding) {
   return Boolean(
     branding?.custom_public === true
-    || String(branding?.slogan || "").trim()
+    || hasConfiguredSlogan(branding?.slogan)
     || String(branding?.wordmark?.black || "").trim()
     || String(branding?.wordmark?.green || "").trim()
   );
 }
 
-function defaultBrandingSlogan(args) {
+function hasConfiguredSlogan(slogan) {
+  if (slogan && typeof slogan === "object" && !Array.isArray(slogan)) {
+    return Object.values(slogan).some((value) => String(value || "").trim());
+  }
+  return Boolean(String(slogan || "").trim());
+}
+
+async function promptForBrandingSlogans(rl, args, configuredSlogan) {
+  const slogans = {};
+  const configured = normalizeSloganMap(configuredSlogan, args.languages, args);
+  for (const language of args.languages) {
+    slogans[language] = await question(
+      rl,
+      `Brand slogan [${language}]`,
+      configured[language] || defaultBrandingSlogan(args, language)
+    );
+  }
+  return slogans;
+}
+
+function normalizeSloganMap(value, languages, args) {
+  const normalized = {};
+  const supported = Array.isArray(languages) && languages.length ? languages : DEFAULT_LANGUAGES;
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    for (const language of supported) {
+      const slogan = String(value[language] || value.en || "").trim();
+      if (slogan) normalized[language] = slogan;
+    }
+    return normalized;
+  }
+
+  const slogan = String(value || "").trim();
+  if (!slogan) return normalized;
+  for (const language of supported) {
+    normalized[language] = language === "en" ? slogan : defaultBrandingSlogan(args, language);
+  }
+  return normalized;
+}
+
+function defaultBrandingSlogan(args, language = "en") {
   const operatorName = String(args.operatorLegalName || "").trim();
-  return operatorName
-    ? `A short-link service for ${operatorName}'s projects`
-    : "A short-link service powered by vanityURLs";
+  if (!operatorName) {
+    return {
+      en: "A short-link service powered by vanityURLs",
+      fr: "Un service de liens courts propulsé par vanityURLs",
+      es: "Un servicio de enlaces cortos impulsado por vanityURLs",
+      it: "Un servizio di link brevi alimentato da vanityURLs",
+      de: "Ein Kurzlink-Dienst, betrieben mit vanityURLs"
+    }[language] || "A short-link service powered by vanityURLs";
+  }
+
+  return {
+    en: `A short-link service for ${operatorName}'s projects`,
+    fr: `Un service de liens courts pour les projets de ${operatorName}`,
+    es: `Un servicio de enlaces cortos para los proyectos de ${operatorName}`,
+    it: `Un servizio di link brevi per i progetti di ${operatorName}`,
+    de: `Ein Kurzlink-Dienst fuer die Projekte von ${operatorName}`
+  }[language] || `A short-link service for ${operatorName}'s projects`;
 }
 
 async function confirm(rl, label, defaultValue) {
@@ -490,7 +552,7 @@ function updateSiteConfig(args) {
     branding: args.configureBranding
       ? {
         domain: args.domain,
-        slogan: args.brandingSlogan,
+        slogan: args.brandingSlogans,
         custom_public: args.customizePublic === true,
         wordmark: args.customizePublic
           ? {
@@ -525,7 +587,7 @@ function customizePublicPages(args) {
   fs.rmSync(CUSTOM_PUBLIC_DIR, { recursive: true, force: true });
   copyDirectory(DEFAULT_PUBLIC_DIR, CUSTOM_PUBLIC_DIR);
   pruneUnsupportedLanguageDirs(CUSTOM_PUBLIC_DIR, args.languages);
-  rewriteHtmlFiles(CUSTOM_PUBLIC_DIR, (html) => applyBranding(html, args));
+  rewriteHtmlFiles(CUSTOM_PUBLIC_DIR, (html, filePath) => applyBranding(html, args, languageForPublicFile(filePath)));
 }
 
 function copyDirectory(source, target) {
@@ -567,15 +629,20 @@ function rewriteHtmlFiles(directory, transform) {
     if (entry.isDirectory()) {
       rewriteHtmlFiles(entryPath, transform);
     } else if (entry.isFile() && entry.name.endsWith(".html")) {
-      fs.writeFileSync(entryPath, transform(fs.readFileSync(entryPath, "utf8")));
+      fs.writeFileSync(entryPath, transform(fs.readFileSync(entryPath, "utf8"), entryPath));
     }
   }
 }
 
-function applyBranding(html, args) {
+function languageForPublicFile(filePath) {
+  const [language] = path.relative(CUSTOM_PUBLIC_DIR, filePath).split(path.sep);
+  return DEFAULT_LANGUAGES.includes(language) ? language : "en";
+}
+
+function applyBranding(html, args, language = "en") {
   const brandLabel = `${args.wordmarkBlack}${args.wordmarkGreen}`;
   const wordmark = `<h1$1><span>${escapeHtml(args.wordmarkBlack)}</span><span>${escapeHtml(args.wordmarkGreen)}</span></h1>`;
-  const slogan = renderBrandingSlogan(args.brandingSlogan, args.operator);
+  const slogan = renderBrandingSlogan(localizedSlogan(args.brandingSlogans, language), args.operator);
 
   return html
     .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) => wordmark.replace("$1", attributes))
@@ -596,6 +663,13 @@ function renderBrandingSlogan(slogan, operator = {}) {
 
   const escapedName = escapeHtml(legalName);
   return rendered.replace(escapedName, `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedName}</a>`);
+}
+
+function localizedSlogan(slogans, language = "en") {
+  if (slogans && typeof slogans === "object" && !Array.isArray(slogans)) {
+    return slogans[language] || slogans.en || "";
+  }
+  return String(slogans || "");
 }
 
 function readJson(filePath, fallback = {}) {

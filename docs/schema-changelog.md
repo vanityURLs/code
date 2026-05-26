@@ -40,6 +40,8 @@ Added installer-managed branding fields:
 
 Compatibility: additive, no `schema_version` bump
 
+Follow-up: `branding.slogan` now supports localized slogan maps such as `{ "en": "...", "fr": "..." }`. Existing string values remain valid and are treated as the English fallback.
+
 Migration: none required. Existing instances without `branding` continue to use default public assets or custom public files.
 
 ### v8s-site-config.json

@@ -117,6 +117,14 @@ function run(command) {
   });
 }
 
+function normalizeDomain(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/.*$/g, "")
+    .toLowerCase();
+}
+
 function copyDirectory(source, target) {
   fs.cpSync(source, target, {
     recursive: true,
@@ -607,14 +615,14 @@ function normalizeLegalTemplateChrome(html, page, siteConfig) {
   return removeEmptyPageLinks(
     removeLegalRedirectedBadge(
       removeCurrentLegalPageLink(
-        applyLegalBranding(html, siteConfig),
+        applyLegalBranding(html, siteConfig, page.language),
         page
       )
     )
   );
 }
 
-function applyLegalBranding(html, siteConfig) {
+function applyLegalBranding(html, siteConfig, language = "en") {
   const wordmark = siteConfig?.branding?.wordmark;
   let brandedHtml = html;
 
@@ -626,7 +634,7 @@ function applyLegalBranding(html, siteConfig) {
       .replace(/<h1 class="instance-brand-title"><a href="([^"]+)" aria-label="[^"]*">[\s\S]*?<\/a><\/h1>/, `<h1 class="instance-brand-title"><a href="$1" aria-label="${escapeHtmlAttribute(brandLabel)}">${renderedWordmark}</a></h1>`);
   }
 
-  const slogan = renderBrandingSlogan(siteConfig?.branding?.slogan, siteConfig?.operator);
+  const slogan = renderBrandingSlogan(localizedSlogan(siteConfig?.branding?.slogan, language), siteConfig?.operator);
   return slogan
     ? brandedHtml.replace(/<p class="instance-brand-subtitle">[\s\S]*?<\/p>/, `<p class="instance-brand-subtitle">${slogan}</p>`)
     : brandedHtml;
@@ -640,6 +648,13 @@ function renderBrandingSlogan(slogan, operator = {}) {
 
   const escapedName = escapeHtml(legalName);
   return rendered.replace(escapedName, `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedName}</a>`);
+}
+
+function localizedSlogan(slogans, language = "en") {
+  if (slogans && typeof slogans === "object" && !Array.isArray(slogans)) {
+    return slogans[language] || slogans.en || "";
+  }
+  return String(slogans || "");
 }
 
 function removeLegalRedirectedBadge(html) {
