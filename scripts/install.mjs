@@ -91,20 +91,22 @@ async function promptForMissing(args) {
     args.configureLegalPages = await confirm(rl, "Configure privacy, terms, and security pages now?", configuredOperator.legal_pages_enabled !== false && hasConfiguredLegalPages(configuredOperator));
     args.operatorLegalName = await question(rl, "Operator legal name", args.operatorLegalName || configuredOperator.legal_name || "");
     args.operatorShortDomain = args.operatorShortDomain || args.domain;
+    args.operatorDomain = await question(rl, "Operator domain for contact emails", args.operatorDomain || configuredOperator.operator_domain || "");
+    const operatorEmailDomain = args.operatorDomain || args.domain;
     if (args.configureLegalPages) {
       args.operatorJurisdiction = await question(rl, "Operator jurisdiction, for example Canada", args.operatorJurisdiction || configuredOperator.jurisdiction || "");
       args.operatorGoverningLaw = await question(rl, "Governing law", args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "");
-      args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || defaultContactEmail("hello", args.domain));
-      args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || defaultContactEmail("privacy", args.domain));
+      args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || defaultContactEmail("hello", operatorEmailDomain));
+      args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || defaultContactEmail("privacy", operatorEmailDomain));
     } else {
       args.operatorJurisdiction = args.operatorJurisdiction || configuredOperator.jurisdiction || "";
       args.operatorGoverningLaw = args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "";
       args.operatorContactEmail = args.operatorContactEmail || configuredOperator.contact_email || "";
       args.operatorPrivacyContact = args.operatorPrivacyContact || configuredOperator.privacy_contact || "";
     }
-    args.operatorAbuseContact = await question(rl, "Trust & Safety contact", args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", args.domain));
+    args.operatorAbuseContact = await question(rl, "Trust & Safety contact", args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", operatorEmailDomain));
     args.operatorAbuseResponseWindow = await question(rl, "Trust & Safety response window", args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days");
-    args.operatorSecurityContact = await question(rl, "Security contact", args.operatorSecurityContact || configuredOperator.security_contact || defaultContactEmail("security", args.domain));
+    args.operatorSecurityContact = await question(rl, "Security contact", args.operatorSecurityContact || configuredOperator.security_contact || defaultContactEmail("security", operatorEmailDomain));
     if (args.configureLegalPages) {
       args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate());
     } else {
@@ -292,14 +294,17 @@ function normalizeWordmarkSplit(args) {
 }
 
 function normalizeOperator(args) {
-  const contactEmail = String(args.operatorContactEmail || defaultContactEmail("hello", args.domain)).trim();
-  const privacyContact = String(args.operatorPrivacyContact || defaultContactEmail("privacy", args.domain)).trim();
-  const abuseContact = String(args.operatorAbuseContact || defaultContactEmail("abuse", args.domain)).trim();
-  const securityContact = String(args.operatorSecurityContact || defaultContactEmail("security", args.domain)).trim();
+  const operatorDomain = normalizeDomain(args.operatorDomain || "");
+  const emailDomain = operatorDomain || args.domain;
+  const contactEmail = String(args.operatorContactEmail || defaultContactEmail("hello", emailDomain)).trim();
+  const privacyContact = String(args.operatorPrivacyContact || defaultContactEmail("privacy", emailDomain)).trim();
+  const abuseContact = String(args.operatorAbuseContact || defaultContactEmail("abuse", emailDomain)).trim();
+  const securityContact = String(args.operatorSecurityContact || defaultContactEmail("security", emailDomain)).trim();
 
   return {
     legal_name: String(args.operatorLegalName || "").trim(),
     short_domain: normalizeDomain(args.operatorShortDomain || args.domain),
+    operator_domain: operatorDomain,
     jurisdiction: String(args.operatorJurisdiction || "").trim(),
     governing_law: String(args.operatorGoverningLaw || args.operatorJurisdiction || "").trim(),
     contact_email: contactEmail,

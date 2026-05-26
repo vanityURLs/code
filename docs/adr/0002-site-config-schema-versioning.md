@@ -16,6 +16,8 @@ Keep `schema_version` at `1.0` for additive, backward-compatible changes.
 
 Increment `schema_version` only when a stored `custom/v8s-site-config.json` file needs a migration or when existing field semantics change incompatibly.
 
+Record additive field changes in `docs/schema-changelog.md`, even when `schema_version` does not change.
+
 When `schema_version` changes, the same change should include:
 
 - the new default schema version in `defaults/v8s-site-config.json`

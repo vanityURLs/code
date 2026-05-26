@@ -15,6 +15,7 @@
   "operator": {
     "legal_name": "",
     "short_domain": "",
+    "operator_domain": "",
     "jurisdiction": "",
     "governing_law": "",
     "contact_email": "",
