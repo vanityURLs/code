@@ -4,6 +4,10 @@
     "default_language": "en",
     "supported_languages": ["en", "fr", "es", "it", "de"]
   },
+  "links": {
+    "random_slug_length": 3,
+    "tag_random_slug_lengths": {}
+  },
   "operator": {
     "legal_name": "",
     "short_domain": "",

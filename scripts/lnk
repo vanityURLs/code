@@ -3,6 +3,8 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
+import readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 
 const ROOT = process.env.V8S_REPO || process.cwd();
 process.chdir(ROOT);
@@ -10,6 +12,11 @@ process.chdir(ROOT);
 const VERSION = readPackageVersion();
 const DEFAULT_OWNER = process.env.V8S_LINKS_OWNER || "bhd";
 const LINKS_FILE = resolveLinksFile();
+const DEFAULT_SITE_CONFIG_FILE = "defaults/v8s-site-config.json";
+const CUSTOM_SITE_CONFIG_FILE = "custom/v8s-site-config.json";
+const DEFAULT_RANDOM_SLUG_LENGTH = 3;
+const MAX_RANDOM_SLUG_LENGTH = 64;
+const RANDOM_SLUG_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
 const VALID_STATES = new Set([
   "permanent",
   "ephemeral",
@@ -25,12 +32,16 @@ Version: ${VERSION}
 
 Usage:
   ./scripts/lnk LONG_URL [SLUG]
+  ./scripts/lnk LONG_URL [--random-slug-length LENGTH]
   ./scripts/lnk --splat LONG_URL_WITH_:splat SLUG
   ./scripts/lnk list [SLUG]
   ./scripts/lnk list policy
   ./scripts/lnk list categories
   ./scripts/lnk list domain [block|allow]
   ./scripts/lnk list keyword
+  ./scripts/lnk tag list
+  ./scripts/lnk tag set TAG --random-slug-length LENGTH
+  ./scripts/lnk tag unset TAG
   ./scripts/lnk version
 
 Schedules:
@@ -53,6 +64,10 @@ Options:
   --owner OWNER          Owner/accountability label
   --expires-at DATE      ISO date or timestamp
   --notes TEXT           Internal notes
+  --random-slug-length N Character count for a generated slug
+  --slug-length N        Alias for --random-slug-length
+  --replace              Replace an existing slug without prompting
+  --no-replace           Do not replace an existing slug
   --splat                Create a splat link; SLUG is stored as SLUG/* in the links file
   --help                 Show this help
 
@@ -60,6 +75,7 @@ Files:
   Links are written to custom/v8s-links.txt unless V8S_LINKS_FILE overrides the path.
   Schedules are written to custom/v8s-schedules.json.
   Block policies are written to custom/v8s-policies.json.
+  Link CLI defaults are read from custom/v8s-site-config.json.
 
 Environment:
   DRY_RUN=true           Print the planned change without writing, committing, or pushing
@@ -72,6 +88,8 @@ Environment:
 
 Notes:
   Slugs may contain / to create API-like paths.
+  Random slugs use readable lowercase characters: ${RANDOM_SLUG_ALPHABET}.
+  Tag-specific random slug lengths use the shortest matching tag default.
   Successful write operations run npm run check, then commit and push automatically.
 
 Examples:
@@ -80,6 +98,8 @@ Examples:
   ./scripts/lnk list domain allow
   ./scripts/lnk list keyword --format json
   ./scripts/lnk https://github.com/vanityURLs github
+  ./scripts/lnk https://github.com/houba/styleGuide --random-slug-length 5
+  ./scripts/lnk tag set social --random-slug-length 5
   ./scripts/lnk https://x.com/vanityURLs social/x
   ./scripts/lnk https://www.linkedin.com/company/example social/linkedin
   ./scripts/lnk --splat https://docs.example.com/:splat docs
@@ -130,7 +150,8 @@ function parseArgs(argv) {
     tags: "",
     owner: DEFAULT_OWNER,
     expiresAt: "",
-    notes: ""
+    notes: "",
+    randomSlugLength: ""
   };
   const positionals = [];
 
@@ -165,6 +186,13 @@ function parseArgs(argv) {
     } else if (arg === "--notes") {
       options.notes = readOptionValue(argv, index, arg);
       index += 1;
+    } else if (arg === "--random-slug-length" || arg === "--slug-length") {
+      options.randomSlugLength = readOptionValue(argv, index, arg);
+      index += 1;
+    } else if (arg === "--replace") {
+      options.replace = true;
+    } else if (arg === "--no-replace") {
+      options.replace = false;
     } else if (arg.startsWith("--")) {
       throw new Error(`Unknown option: ${arg}`);
     } else {
@@ -223,15 +251,138 @@ function assertNoPipe(values) {
   }
 }
 
-function slugExists(filePath, slug) {
-  if (!fs.existsSync(filePath)) return false;
+function findSlugEntry(filePath, slug) {
+  if (!fs.existsSync(filePath)) return null;
 
   const rows = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
-  return rows.some((row) => row.split("|")[0] === slug);
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (!row.trim() || row.trim().startsWith("#")) continue;
+    if (row.split("|")[0] === slug) {
+      return {
+        index,
+        line: row,
+        fields: parseLinkFields(row)
+      };
+    }
+  }
+
+  return null;
 }
 
-function randomSlug() {
-  return crypto.randomBytes(3).toString("hex");
+function parseLinkFields(line) {
+  const [
+    slug = "",
+    target = "",
+    state = "",
+    title = "",
+    description = "",
+    tags = "",
+    owner = "",
+    expiresAt = "",
+    notes = ""
+  ] = String(line || "").split("|");
+
+  return {
+    slug,
+    target,
+    state,
+    title,
+    description,
+    tags,
+    owner,
+    expiresAt,
+    notes
+  };
+}
+
+function replaceLine(filePath, index, line) {
+  const existing = fs.readFileSync(filePath, "utf8");
+  const hasTrailingNewline = existing.endsWith("\n");
+  const rows = existing.split(/\r?\n/);
+  rows[index] = line;
+  fs.writeFileSync(filePath, `${rows.join("\n").replace(/\n*$/g, "")}${hasTrailingNewline ? "\n" : ""}`);
+}
+
+function randomSlug(length) {
+  const size = normalizeRandomSlugLength(length, "random slug length");
+  let slug = "";
+  for (let index = 0; index < size; index += 1) {
+    slug += RANDOM_SLUG_ALPHABET[crypto.randomInt(RANDOM_SLUG_ALPHABET.length)];
+  }
+  return slug;
+}
+
+function normalizeRandomSlugLength(value, label = "random slug length") {
+  const number = Number.parseInt(String(value || ""), 10);
+  if (!Number.isInteger(number) || number < 1 || number > MAX_RANDOM_SLUG_LENGTH) {
+    throw new Error(`${label} must be an integer from 1 to ${MAX_RANDOM_SLUG_LENGTH}.`);
+  }
+  return number;
+}
+
+function normalizeTag(value) {
+  const tag = String(value || "").trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9._~-]*$/.test(tag)) {
+    throw new Error(`Invalid tag: ${value}\nUse lowercase URL-safe tags starting with a letter or digit.`);
+  }
+  return tag;
+}
+
+function normalizeTags(value) {
+  return String(value || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .map(normalizeTag);
+}
+
+function mergeSiteConfig(base, custom) {
+  return {
+    ...base,
+    ...custom,
+    links: {
+      ...(base.links || {}),
+      ...(custom.links || {}),
+      tag_random_slug_lengths: {
+        ...(base.links?.tag_random_slug_lengths || {}),
+        ...(custom.links?.tag_random_slug_lengths || {})
+      }
+    }
+  };
+}
+
+function readSiteConfig() {
+  return mergeSiteConfig(
+    readJson(DEFAULT_SITE_CONFIG_FILE, {}),
+    readJson(CUSTOM_SITE_CONFIG_FILE, {})
+  );
+}
+
+function readCustomSiteConfig() {
+  return readJson(CUSTOM_SITE_CONFIG_FILE, {});
+}
+
+function writeCustomSiteConfig(config) {
+  writeJson(CUSTOM_SITE_CONFIG_FILE, config);
+}
+
+function configuredRandomSlugLength(options) {
+  if (options.randomSlugLength) {
+    return normalizeRandomSlugLength(options.randomSlugLength, "--random-slug-length");
+  }
+
+  const siteConfig = readSiteConfig();
+  const globalLength = normalizeRandomSlugLength(
+    siteConfig.links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH
+  );
+  const tagLengths = siteConfig.links?.tag_random_slug_lengths || {};
+  const matchingLengths = normalizeTags(options.tags)
+    .map((tag) => tagLengths[tag])
+    .filter((value) => value !== undefined && value !== "")
+    .map((value) => normalizeRandomSlugLength(value, "tag random slug length"));
+
+  return matchingLengths.length ? Math.min(...matchingLengths) : globalLength;
 }
 
 function appendLine(filePath, line) {
@@ -352,6 +503,95 @@ function parseGenericArgs(argv) {
     options,
     positionals
   };
+}
+
+function tagUsage() {
+  console.log(`LNK tags - manage tag-specific random slug defaults.
+
+Usage:
+  ./scripts/lnk tag list
+  ./scripts/lnk tag set TAG --random-slug-length LENGTH
+  ./scripts/lnk tag unset TAG
+
+Options:
+  --format FORMAT        table | json for list output
+  --random-slug-length N Character count for generated slugs using this tag
+  --slug-length N        Alias for --random-slug-length
+  --dry-run              Print updated JSON without writing
+  --help                 Show this help`);
+}
+
+function tagRandomSlugLengths(config) {
+  return config.links?.tag_random_slug_lengths || {};
+}
+
+function handleTags(argv) {
+  const subcommand = argv[0] || "";
+  const { options, positionals } = parseGenericArgs(argv.slice(1));
+
+  if (!subcommand || options.help || subcommand === "--help" || subcommand === "-h") {
+    tagUsage();
+    return;
+  }
+
+  if (subcommand === "list") {
+    const config = readSiteConfig();
+    const globalLength = normalizeRandomSlugLength(config.links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH);
+    const rows = Object.entries(tagRandomSlugLengths(config))
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([tag, length]) => [tag, String(length)]);
+
+    if (options.format === "json") {
+      console.log(JSON.stringify({
+        random_slug_length: globalLength,
+        tag_random_slug_lengths: Object.fromEntries(rows)
+      }, null, 2));
+      return;
+    }
+
+    if (options.format && options.format !== "table") {
+      throw new Error("--format must be table or json");
+    }
+
+    console.log(`Global random slug length: ${globalLength}`);
+    if (!rows.length) {
+      console.log("No tag-specific random slug lengths configured");
+      return;
+    }
+    printTable(rows, ["Tag", "Random slug length"]);
+    return;
+  }
+
+  const tag = normalizeTag(positionals[0] || "");
+  const customConfig = readCustomSiteConfig();
+  customConfig.links ||= {};
+  customConfig.links.tag_random_slug_lengths ||= {};
+
+  if (subcommand === "set") {
+    const rawLength = options.randomSlugLength || options.slugLength;
+    const length = normalizeRandomSlugLength(rawLength, "--random-slug-length");
+    customConfig.links.tag_random_slug_lengths[tag] = length;
+    saveTagConfig(customConfig, options.dryRun, `chore(lnk): set ${tag} random slug length`);
+    return;
+  }
+
+  if (subcommand === "unset") {
+    delete customConfig.links.tag_random_slug_lengths[tag];
+    saveTagConfig(customConfig, options.dryRun, `chore(lnk): unset ${tag} random slug length`);
+    return;
+  }
+
+  throw new Error(`Unknown tag command: ${subcommand}`);
+}
+
+function saveTagConfig(config, dryRun, message) {
+  if (dryRun || process.env.DRY_RUN === "true") {
+    console.log(JSON.stringify(config, null, 2));
+    return;
+  }
+
+  writeCustomSiteConfig(config);
+  finalizeChange(CUSTOM_SITE_CONFIG_FILE, message);
 }
 
 function scheduleUsage() {
@@ -521,7 +761,39 @@ function handleSchedule(argv) {
   throw new Error(`Unknown schedule command: ${subcommand}`);
 }
 
-function main() {
+function printLinkSummary(label, line) {
+  const entry = parseLinkFields(line);
+  console.log(label);
+  printTable([[
+    entry.slug,
+    entry.state || "permanent",
+    entry.owner || "",
+    entry.title || "",
+    entry.target || ""
+  ]], ["Slug", "State", "Owner", "Title", "Target"]);
+}
+
+async function shouldReplaceSlug(existingLine, newLine, options) {
+  printLinkSummary("Existing entry:", existingLine);
+  printLinkSummary("New entry:", newLine);
+
+  if (options.replace === true) return true;
+  if (options.replace === false) return false;
+
+  if (!process.stdin.isTTY) {
+    throw new Error("Slug already exists. Rerun with --replace to update it or --no-replace to leave it unchanged.");
+  }
+
+  const rl = readline.createInterface({ input, output });
+  try {
+    const answer = (await rl.question("Replace the existing entry? (y/N): ")).trim().toLowerCase();
+    return ["y", "yes", "true", "1"].includes(answer);
+  } finally {
+    rl.close();
+  }
+}
+
+async function main() {
   const argv = process.argv.slice(2);
 
   if (argv[0] === "version" || argv[0] === "--version" || argv[0] === "-v") {
@@ -536,6 +808,11 @@ function main() {
 
   if (argv[0] === "schedule") {
     handleSchedule(argv.slice(1));
+    return;
+  }
+
+  if (argv[0] === "tag" || argv[0] === "tags") {
+    handleTags(argv.slice(1));
     return;
   }
 
@@ -566,7 +843,7 @@ function main() {
   }
 
   if (!slug) {
-    slug = randomSlug();
+    slug = randomSlug(configuredRandomSlugLength(options));
   }
 
   if (options.state === "hidden") {
@@ -607,8 +884,17 @@ function main() {
     return;
   }
 
-  if (slugExists(LINKS_FILE, slug)) {
-    throw new Error(`Slug already exists in ${LINKS_FILE}: ${slug}`);
+  const existingEntry = findSlugEntry(LINKS_FILE, slug);
+  if (existingEntry) {
+    const shouldReplace = await shouldReplaceSlug(existingEntry.line, line, options);
+    if (!shouldReplace) {
+      console.log("No changes made.");
+      return;
+    }
+
+    replaceLine(LINKS_FILE, existingEntry.index, line);
+    finalizeChange(LINKS_FILE, `feat(links): update ${slug}`);
+    return;
   }
 
   appendLine(LINKS_FILE, line);
@@ -623,9 +909,7 @@ function finalizeChange(filePath, message) {
   run("git", ["push"]);
 }
 
-try {
-  main();
-} catch (error) {
+main().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
-}
+});

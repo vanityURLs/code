@@ -16,6 +16,8 @@ const DEFAULT_SITE_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-site-config.js
 const DEFAULT_PUBLIC_DIR = path.join(ROOT, "defaults", "public");
 const DEFAULT_DOMAIN = "v8s.link";
 const DEFAULT_LANGUAGES = ["en", "fr", "es", "it", "de"];
+const DEFAULT_RANDOM_SLUG_LENGTH = 3;
+const MAX_RANDOM_SLUG_LENGTH = 64;
 const MAX_WORKER_NAME_LENGTH = 63;
 const PROJECT_SITE_URL = "https://www.vanityURLs.link";
 
@@ -70,6 +72,7 @@ async function promptForMissing(args) {
   const configuredDomain = siteConfig.branding?.domain || args.domain || wranglerConfig.routeDomain || DEFAULT_DOMAIN;
   const configuredWorkerName = args.workerName || wranglerConfig.name || slugifyWorker(configuredDomain);
   const configuredOwner = args.owner === "owner" ? inferOwnerFromLinks() || args.owner : args.owner;
+  const configuredRandomSlugLength = args.randomSlugLength || siteConfig.links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH;
   const configuredAnalytics = args.analytics === "disabled" ? wranglerConfig.analyticsProvider || args.analytics : args.analytics;
   const configuredAccessTeamDomain = args.accessTeamDomain || wranglerConfig.accessTeamDomain || "";
   const configuredOperator = siteConfig.operator || {};
@@ -80,6 +83,7 @@ async function promptForMissing(args) {
     args.domain = args.domain || await question(rl, "Short domain", configuredDomain);
     args.workerName = await question(rl, "Worker name", configuredWorkerName);
     args.owner = await question(rl, "Owner label", configuredOwner);
+    args.randomSlugLength = await question(rl, "Random slug length", configuredRandomSlugLength);
     args.analytics = await question(rl, "Analytics provider", configuredAnalytics);
     const analyticsEnabled = !isAnalyticsDisabled(args.analytics);
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
@@ -128,6 +132,7 @@ function normalizeArgs(args) {
   args.workerName = args.workerName ? slugifyWorker(args.workerName) : slugifyWorker(args.domain);
   args.analytics = normalizeAnalyticsProviders(args.analytics);
   args.owner = slugifyOwner(args.owner);
+  args.randomSlugLength = normalizeRandomSlugLength(args.randomSlugLength || DEFAULT_RANDOM_SLUG_LENGTH);
   args.languages = normalizeLanguages(args.languages);
   args.customizePublic = normalizeBoolean(args.customizePublic);
   args.operator = normalizeOperator(args);
@@ -191,6 +196,14 @@ function normalizeAnalyticsProviders(value) {
   }
 
   return providers.join(",");
+}
+
+function normalizeRandomSlugLength(value) {
+  const number = Number.parseInt(String(value || ""), 10);
+  if (!Number.isInteger(number) || number < 1 || number > MAX_RANDOM_SLUG_LENGTH) {
+    throw new Error(`Random slug length must be an integer from 1 to ${MAX_RANDOM_SLUG_LENGTH}.`);
+  }
+  return number;
 }
 
 function loadWranglerConfig() {
@@ -423,6 +436,10 @@ function updateSiteConfig(args) {
       supported_languages: args.languages
     },
     operator: args.operator,
+    links: {
+      ...(loadSiteConfig().links || {}),
+      random_slug_length: args.randomSlugLength
+    },
     branding: {
       domain: args.domain,
       custom_public: args.customizePublic === true,
@@ -562,6 +579,14 @@ function mergeSiteConfig(base, custom) {
     operator: {
       ...(base.operator || {}),
       ...(custom.operator || {})
+    },
+    links: {
+      ...(base.links || {}),
+      ...(custom.links || {}),
+      tag_random_slug_lengths: {
+        ...(base.links?.tag_random_slug_lengths || {}),
+        ...(custom.links?.tag_random_slug_lengths || {})
+      }
     },
     branding
   };
