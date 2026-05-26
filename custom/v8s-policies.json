@@ -94,6 +94,7 @@
       "severity": "low",
       "reason": "Generic PHP endpoint scanner probe on a non-PHP service",
       "source": "runtime-scanner-policy",
+      "scope": "request",
       "added_at": "2026-05-07"
     },
     {

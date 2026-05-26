@@ -244,7 +244,14 @@ function findBlockedDomain(hostname, policy) {
 
 function findBlockedKeyword(url, policy) {
   const haystack = normalizeKeyword(`${url.hostname}${url.pathname}${url.search}`);
-  return policy.blockedKeywords.find((entry) => haystack.includes(entry.keyword));
+  return policy.blockedKeywords.find((entry) => {
+    return keywordAppliesToTarget(entry) && haystack.includes(entry.keyword);
+  });
+}
+
+function keywordAppliesToTarget(entry) {
+  const scope = String(entry.scope || "target").trim().toLowerCase();
+  return scope === "target" || scope === "both" || scope === "all";
 }
 
 function domainMatches(hostname, domain) {

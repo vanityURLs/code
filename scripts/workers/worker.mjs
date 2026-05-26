@@ -332,8 +332,15 @@ function scannerKeywords(policy) {
   return entries
     .map((entry) => normalizeRuntimeKeyword(entry))
     .filter((entry) => {
-      return entry.keyword && (entry.category === "scanner-probe" || entry.source === "runtime-scanner-policy");
+      return keywordAppliesToRequest(entry)
+        && entry.keyword
+        && (entry.category === "scanner-probe" || entry.source === "runtime-scanner-policy");
     });
+}
+
+function keywordAppliesToRequest(entry) {
+  const scope = String(entry.scope || "request").trim().toLowerCase();
+  return scope === "request" || scope === "both" || scope === "all";
 }
 
 function normalizeRuntimeKeyword(entry) {
@@ -357,7 +364,8 @@ function normalizeRuntimeKeyword(entry) {
     ...entry,
     keyword: normalizeKeyword(entry.keyword),
     category: String(entry.category || ""),
-    source: String(entry.source || "")
+    source: String(entry.source || ""),
+    scope: String(entry.scope || "")
   };
 }
 

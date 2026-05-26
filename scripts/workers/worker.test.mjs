@@ -100,7 +100,8 @@ const assets = {
       {
         keyword: ".php",
         category: "scanner-probe",
-        source: "runtime-scanner-policy"
+        source: "runtime-scanner-policy",
+        scope: "request"
       },
       {
         keyword: "/wp-content/",
