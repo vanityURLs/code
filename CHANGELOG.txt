@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.8.0](https://github.com/vanityURLs/code/compare/v2.7.2...v2.8.0) (2026-05-26)
+
+
+### Features
+
+* **setup:** add branding slogan configuration ([913c56f](https://github.com/vanityURLs/code/commit/913c56fc08d523f60416ea61833f0711104273d7))
+* **setup:** support operator contact domain ([831db9d](https://github.com/vanityURLs/code/commit/831db9d0e4c07fcad107bec5248b200714576f4e))
+
+
+### Bug Fixes
+
+* **defaults:** correct generated instance pages ([e1befad](https://github.com/vanityURLs/code/commit/e1befadcebba23315f7034a2109051ea6966d486))
+* **setup:** clarify trust prompts during install ([fc42b9f](https://github.com/vanityURLs/code/commit/fc42b9f865f111906548de7de46a4dce1a174b9f))
+
 ## [2.7.2](https://github.com/vanityURLs/code/compare/v2.7.1...v2.7.2) (2026-05-26)
 
 
