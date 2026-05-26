@@ -12,8 +12,8 @@ predictable version numbers, changelog entries, and release notes so instance ow
 The code repository uses Conventional Commits for change intent. The repository also includes a GitHub Actions workflow
 at `.github/workflows/release-please.yml`.
 
-The code repository has `npm run lint`, implemented by `scripts/lint.mjs`, and `npm run check`, which runs build, lint,
-and tests. It does not currently use an automatic formatter such as Prettier or Biome.
+The code repository has `npm run lint`, implemented by `scripts/lint.mjs`, and `npm run check`, which runs formatting,
+build, lint, and tests.
 
 ## Decision
 
@@ -36,5 +36,4 @@ repositories should not publish vanityURLs product releases.
 - Product releases are repeatable and tied to commit intent
 - Instance owners can refer to release notes before upgrading
 - Conventional Commits matter for release automation, not just readability
-- Lint and test automation exist through npm scripts, but automatic formatting is intentionally not part of the current
-  toolchain
+- Formatting, lint, build, and test automation exist through npm scripts

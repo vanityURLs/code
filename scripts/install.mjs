@@ -958,19 +958,41 @@ function writeFile(filePath, content, args) {
 
 function runCheck(args) {
   if (!args.check || args.dryRun) return;
-  execFileSync("npm", ["run", "check"], {
-    cwd: ROOT,
-    stdio: "inherit"
-  });
+
+  if (
+    !fs.existsSync(path.join(ROOT, "node_modules", ".bin", process.platform === "win32" ? "prettier.cmd" : "prettier"))
+  ) {
+    console.log("\nSkipped verification because dependencies are not installed yet.");
+    console.log("Run npm install, then run npm run setup again.");
+    return;
+  }
+
+  try {
+    execFileSync("npm", ["run", "check"], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    console.log("\nVerified local build, formatting, lint, and tests.");
+  } catch (error) {
+    const output = [error.stdout, error.stderr]
+      .filter(Boolean)
+      .map((value) => String(value).trim())
+      .filter(Boolean)
+      .join("\n\n");
+    if (output) console.error(output);
+    throw new Error("Verification failed. Fix the issue above, then rerun npm run setup.");
+  }
 }
 
 function printNextSteps(args) {
-  console.log(`\nConfigured ${args.workerName} for ${args.domain}.`);
-  console.log("\nRecommended Cloudflare settings:");
-  console.log("- Add the Worker Custom Domain for the root hostname.");
-  console.log("- Keep workers.dev and preview URLs disabled for production.");
-  console.log("- Protect /_stats/* and /_tests/* with Cloudflare Access.");
-  console.log("- Enable Workers Logs and keep Development Mode off.");
+  console.log(`\nSetup complete for ${args.domain}.`);
+  console.log("\nNext steps:");
+  console.log("- Review the generated files with git status --short");
+  console.log("- Commit the instance files and push them to your GitHub repository");
+  console.log("- Connect that repository in Cloudflare Workers & Pages");
+  console.log("- Add the Worker custom domain for the root hostname");
+  console.log("- Protect /_stats/* and /_tests/* with Cloudflare Access");
 
   const secretCommands = [];
 
@@ -983,12 +1005,9 @@ function printNextSteps(args) {
   }
 
   if (secretCommands.length) {
-    console.log("\nAdd required secrets:");
+    console.log("\nAfter the Cloudflare Access application exists, add required secrets:");
     for (const command of secretCommands) console.log(`  ${command}`);
   }
-
-  console.log("\nDeploy when ready:");
-  console.log("  npm run deploy");
 }
 
 async function main() {

@@ -2,6 +2,9 @@ import worker from "./worker.mjs";
 
 let analyticsCalls = [];
 const originalFetch = globalThis.fetch;
+const originalWarn = console.warn;
+
+console.warn = () => {};
 
 globalThis.fetch = async (url, init) => {
   analyticsCalls.push({ url, init, body: init.body ? JSON.parse(init.body) : null });
@@ -300,6 +303,7 @@ async function run(name, fn) {
     console.error(`✗ ${name}`);
     console.error(error);
     globalThis.fetch = originalFetch;
+    console.warn = originalWarn;
     process.exit(1);
   }
 }
