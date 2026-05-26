@@ -68,6 +68,10 @@ async function handleRequest(context) {
     return handleExpandAnalytics(request, env, ctx, correlationId);
   }
 
+  if (slug === "security.txt") {
+    return Response.redirect(new URL("/.well-known/security.txt", request.url).toString(), 308);
+  }
+
   if (isProtectedPath(slug)) {
     const accessResponse = await requireCloudflareAccess(request, env);
     if (accessResponse) return accessResponse;

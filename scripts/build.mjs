@@ -372,7 +372,7 @@ function renderSecurityTxt(siteConfig) {
     ""
   ].join("\n");
 
-  for (const filePath of securityTxtPaths()) {
+  for (const filePath of securityTxtWritePaths()) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, content);
   }
@@ -406,15 +406,17 @@ function removeDeferredLegalPages(siteConfig) {
   });
 }
 
-function securityTxtPaths() {
+function securityTxtWritePaths() {
   return [
-    path.join(BUILD_DIR, "security.txt"),
     path.join(BUILD_DIR, ".well-known", "security.txt")
   ];
 }
 
 function removeSecurityTxt() {
-  for (const filePath of securityTxtPaths()) {
+  for (const filePath of [
+    ...securityTxtWritePaths(),
+    path.join(BUILD_DIR, "security.txt")
+  ]) {
     fs.rmSync(filePath, { force: true });
   }
 }

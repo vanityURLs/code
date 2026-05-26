@@ -81,6 +81,9 @@ const assets = {
   "/fr/maintenance.html": html("<main>maintenance fr</main>"),
   "/fr/404.html": html("<main>fr {{SLUG_MESSAGE}}{{REFERENCE_LINE}}</main>"),
   "/_tests/index.html": html("<main>tests</main>"),
+  "/.well-known/security.txt": new Response("Contact: mailto:security@example.com\n", {
+    headers: { "content-type": "text/plain; charset=utf-8" }
+  }),
   "/style.css": new Response("body{}", {
     headers: { "content-type": "text/css" }
   }),
@@ -401,6 +404,13 @@ await run("blocks raw site config asset", async () => {
   const response = await worker.fetch(request("/v8s-site-config.json"), env(), ctx);
   assert(response.status === 404, "status");
   assert(response.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
+});
+
+await run("redirects legacy security.txt to well-known security.txt", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(request("/security.txt"), env(), ctx);
+  assert(response.status === 308, "status");
+  assert(response.headers.get("location") === "https://dicai.re/.well-known/security.txt", "location");
 });
 
 await run("requires Cloudflare Access config for protected paths", async () => {

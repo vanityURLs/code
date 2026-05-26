@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 const ROOT = process.cwd();
 const CHECK_EXTENSIONS = new Set([".js", ".mjs", ".json", ".md", ".toml", ".txt"]);
@@ -42,6 +43,22 @@ function lintFile(filePath) {
       JSON.parse(text);
     } catch (error) {
       failures.push(`${relative}: invalid JSON (${error.message})`);
+    }
+  }
+
+  if ([".js", ".mjs"].includes(path.extname(filePath))) {
+    try {
+      execFileSync(process.execPath, ["--check", filePath], {
+        cwd: ROOT,
+        stdio: "pipe"
+      });
+    } catch (error) {
+      const output = [error.stdout, error.stderr]
+        .filter(Boolean)
+        .map((buffer) => buffer.toString().trim())
+        .filter(Boolean)
+        .join("\n");
+      failures.push(`${relative}: JavaScript syntax check failed${output ? `\n${output}` : ""}`);
     }
   }
 }
