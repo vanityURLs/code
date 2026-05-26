@@ -526,7 +526,6 @@ function applyBranding(html, args) {
   return html
     .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) => wordmark.replace("$1", attributes))
     .replace(/<title>([^<]*?)VanityURLs([^<]*?)<\/title>/gi, `<title>$1${escapeHtml(brandLabel)}$2</title>`)
-    .replace(/redirected by VanityURLs engine/gi, `redirected by ${escapeHtmlAttribute(brandLabel)} engine`)
     .replace(/aria-label="VanityURLs"/g, `aria-label="${escapeHtmlAttribute(brandLabel)}"`)
     .replace(/(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi, `$1"https://${escapeHtmlAttribute(args.domain)}/"`)
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityURLs\.link"/g, `$1"${PROJECT_SITE_URL}"`)
