@@ -17,7 +17,7 @@ GitHub remote, while still being able to refresh product files from upstream.
 `wrangler.toml`, and `.dev.vars`.
 
 The default upgrade path includes product files such as `defaults/`, `scripts/`, `package.json`, `package-lock.json`,
-`README.md`, `LICENSE`, and `cloudflare-setup.md`.
+`README.md`, and `LICENSE`.
 
 ## Consequences
 
