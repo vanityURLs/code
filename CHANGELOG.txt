@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.2](https://github.com/vanityURLs/code/compare/v2.7.1...v2.7.2) (2026-05-26)
+
+
+### Bug Fixes
+
+* **policy:** preserve legacy scanner scope ([f9ba45d](https://github.com/vanityURLs/code/commit/f9ba45db9a90332ab02523ba3f921d536f29e9e6))
+
 ## [2.7.1](https://github.com/vanityURLs/code/compare/v2.7.0...v2.7.1) (2026-05-26)
 
 
