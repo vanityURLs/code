@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.1](https://github.com/vanityURLs/code/compare/v2.7.0...v2.7.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* **policy:** scope php scanner keyword ([0f994ec](https://github.com/vanityURLs/code/commit/0f994eca0dcb6c9ecb3d86bc95a1256a12364cd5))
+
 ## [2.7.0](https://github.com/vanityURLs/code/compare/v2.6.1...v2.7.0) (2026-05-26)
 
 
