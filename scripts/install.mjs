@@ -149,11 +149,15 @@ async function promptForMissing(args) {
       "Trust & Safety contact",
       args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", operatorEmailDomain)
     );
-    args.operatorAbuseResponseWindow = await question(
-      rl,
-      "Trust & Safety response window",
-      args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days"
-    );
+    if (args.configureLegalPages || configuredOperator.abuse_response_window) {
+      args.operatorAbuseResponseWindow = await question(
+        rl,
+        "Trust & Safety response window",
+        args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days"
+      );
+    } else {
+      args.operatorAbuseResponseWindow = args.operatorAbuseResponseWindow || "5 business days";
+    }
     args.operatorSecurityContact = await question(
       rl,
       "Security contact",
@@ -774,7 +778,28 @@ function writeJson(filePath, value, args) {
   }
 
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(removeUndefined(value), null, 2)}\n`);
+  fs.writeFileSync(filePath, formatJson(`${JSON.stringify(removeUndefined(value), null, 2)}\n`));
+}
+
+function formatJson(text) {
+  const prettierBin = path.join(
+    ROOT,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "prettier.cmd" : "prettier"
+  );
+  if (!fs.existsSync(prettierBin)) return text;
+
+  try {
+    return execFileSync(prettierBin, ["--parser", "json"], {
+      cwd: ROOT,
+      input: text,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "ignore"]
+    });
+  } catch {
+    return text;
+  }
 }
 
 function loadSiteConfig() {
