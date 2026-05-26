@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.7.0](https://github.com/vanityURLs/code/compare/v2.6.1...v2.7.0) (2026-05-26)
+
+
+### Features
+
+* **lnk:** configure random slug lengths ([1258d45](https://github.com/vanityURLs/code/commit/1258d45a5ae8c6f45849844b311f1f22dabf143f))
+* **lnk:** configure readable slug alphabet ([613dc7a](https://github.com/vanityURLs/code/commit/613dc7a05b56ff4d0e66c964e22abdeb6ac0bac8))
+
 ## [2.6.1](https://github.com/vanityURLs/code/compare/v2.6.0...v2.6.1) (2026-05-22)
 
 
