@@ -375,13 +375,12 @@ function renderSecurityTxt(siteConfig) {
 
   const shortDomain = normalizeSecurityTxtValue(operator.short_domain);
   const securityContact = normalizeSecurityTxtValue(operator.security_contact);
-  const preferredLanguages = supportedLanguages(siteConfig).join(", ");
   const expires = securityTxtExpires(operator.last_updated);
   const content = [
     `Contact: mailto:${securityContact}`,
     `Policy: https://${shortDomain}/trust-safety`,
     `Canonical: https://${shortDomain}/.well-known/security.txt`,
-    `Preferred-Languages: ${preferredLanguages}`,
+    "Preferred-Languages: en",
     `Expires: ${expires}`,
     ""
   ].join("\n");

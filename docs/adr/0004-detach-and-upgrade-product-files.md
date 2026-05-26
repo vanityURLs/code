@@ -11,7 +11,9 @@ GitHub remote, while still being able to refresh product files from upstream.
 
 ## Decision
 
-`npm run detach` removes upstream project metadata that should not belong to a new instance.
+`npm run detach` removes upstream project metadata that should not belong to a new instance. It also replaces the
+product README with `docs/README.md`, an operator-focused instance README, then removes `docs/` from the detached
+instance.
 
 `npm run upgrade` refreshes product-owned paths from upstream while protecting instance-owned paths such as `custom/`,
 `wrangler.toml`, and `.dev.vars`.
@@ -22,6 +24,7 @@ The default upgrade path includes product files such as `defaults/`, `scripts/`,
 ## Consequences
 
 - New instances can start as independent repositories
+- Detached instances get an operator-focused README at the repository root
 - Upgrades can refresh product behavior without overwriting local configuration
 - Protected local paths remain the operator's responsibility
 - Release metadata and upstream workflow files do not leak into detached instances

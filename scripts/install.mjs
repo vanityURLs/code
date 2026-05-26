@@ -988,6 +988,7 @@ function runCheck(args) {
 function printNextSteps(args) {
   console.log(`\nSetup complete for ${args.domain}.`);
   console.log("\nNext steps:");
+  console.log("- Review the starter link list with ./scripts/lnk list");
   console.log("- Review the generated files with git status --short");
   console.log("- Commit the instance files and push them to your GitHub repository");
   console.log("- Connect that repository in Cloudflare Workers & Pages");

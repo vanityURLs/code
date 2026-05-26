@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
+const INSTANCE_README_PATH = path.join(ROOT, "docs", "README.md");
+const ROOT_README_PATH = path.join(ROOT, "README.md");
 const DETACH_PATHS = [
   ".git",
   ".github",
@@ -11,7 +13,8 @@ const DETACH_PATHS = [
   ".release-please-manifest.json",
   "CHANGELOG.txt",
   "package-lock.json",
-  "release-please-config.json"
+  "release-please-config.json",
+  "docs"
 ];
 
 function hasExpectedPackage() {
@@ -29,6 +32,11 @@ function hasExpectedPackage() {
 if (!hasExpectedPackage()) {
   console.error("[detach] Refusing to run: this directory does not look like a vanityURLs code checkout.");
   process.exit(1);
+}
+
+if (fs.existsSync(INSTANCE_README_PATH)) {
+  fs.copyFileSync(INSTANCE_README_PATH, ROOT_README_PATH);
+  console.log("[detach] Replaced README.md with the instance README.");
 }
 
 for (const relativePath of DETACH_PATHS) {
