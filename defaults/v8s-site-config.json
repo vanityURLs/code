@@ -6,7 +6,11 @@
   },
   "links": {
     "random_slug_length": 3,
-    "tag_random_slug_lengths": {}
+    "random_slug_alphabet": "34789abcdefghjkmnpqrstvwxy",
+    "tag_random_slug_lengths": {
+      "training": 4,
+      "debug": 2
+    }
   },
   "operator": {
     "legal_name": "",

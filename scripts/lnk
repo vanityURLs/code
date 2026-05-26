@@ -16,7 +16,7 @@ const DEFAULT_SITE_CONFIG_FILE = "defaults/v8s-site-config.json";
 const CUSTOM_SITE_CONFIG_FILE = "custom/v8s-site-config.json";
 const DEFAULT_RANDOM_SLUG_LENGTH = 3;
 const MAX_RANDOM_SLUG_LENGTH = 64;
-const RANDOM_SLUG_ALPHABET = "23456789abcdefghjkmnpqrstuvwxyz";
+const DEFAULT_RANDOM_SLUG_ALPHABET = "34789abcdefghjkmnpqrstvwxy";
 const VALID_STATES = new Set([
   "permanent",
   "ephemeral",
@@ -88,7 +88,7 @@ Environment:
 
 Notes:
   Slugs may contain / to create API-like paths.
-  Random slugs use readable lowercase characters: ${RANDOM_SLUG_ALPHABET}.
+  Random slugs use the configured readable alphabet. The product default is ${DEFAULT_RANDOM_SLUG_ALPHABET}.
   Tag-specific random slug lengths use the shortest matching tag default.
   Successful write operations run npm run check, then commit and push automatically.
 
@@ -304,11 +304,12 @@ function replaceLine(filePath, index, line) {
   fs.writeFileSync(filePath, `${rows.join("\n").replace(/\n*$/g, "")}${hasTrailingNewline ? "\n" : ""}`);
 }
 
-function randomSlug(length) {
+function randomSlug(length, alphabet) {
   const size = normalizeRandomSlugLength(length, "random slug length");
+  const characters = normalizeRandomSlugAlphabet(alphabet);
   let slug = "";
   for (let index = 0; index < size; index += 1) {
-    slug += RANDOM_SLUG_ALPHABET[crypto.randomInt(RANDOM_SLUG_ALPHABET.length)];
+    slug += characters[crypto.randomInt(characters.length)];
   }
   return slug;
 }
@@ -319,6 +320,26 @@ function normalizeRandomSlugLength(value, label = "random slug length") {
     throw new Error(`${label} must be an integer from 1 to ${MAX_RANDOM_SLUG_LENGTH}.`);
   }
   return number;
+}
+
+function normalizeRandomSlugAlphabet(value) {
+  const alphabet = String(value || DEFAULT_RANDOM_SLUG_ALPHABET).trim();
+  if (!alphabet) {
+    throw new Error("random_slug_alphabet cannot be empty.");
+  }
+
+  const unique = [...new Set([...alphabet])].join("");
+  if (unique !== alphabet) {
+    throw new Error("random_slug_alphabet must not contain duplicate characters.");
+  }
+
+  for (const character of alphabet) {
+    if (!/^[A-Za-z0-9._~-]$/.test(character)) {
+      throw new Error(`Invalid random_slug_alphabet character: ${character}`);
+    }
+  }
+
+  return alphabet;
 }
 
 function normalizeTag(value) {
@@ -383,6 +404,11 @@ function configuredRandomSlugLength(options) {
     .map((value) => normalizeRandomSlugLength(value, "tag random slug length"));
 
   return matchingLengths.length ? Math.min(...matchingLengths) : globalLength;
+}
+
+function configuredRandomSlugAlphabet() {
+  const siteConfig = readSiteConfig();
+  return normalizeRandomSlugAlphabet(siteConfig.links?.random_slug_alphabet || DEFAULT_RANDOM_SLUG_ALPHABET);
 }
 
 function appendLine(filePath, line) {
@@ -537,6 +563,7 @@ function handleTags(argv) {
   if (subcommand === "list") {
     const config = readSiteConfig();
     const globalLength = normalizeRandomSlugLength(config.links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH);
+    const alphabet = normalizeRandomSlugAlphabet(config.links?.random_slug_alphabet || DEFAULT_RANDOM_SLUG_ALPHABET);
     const rows = Object.entries(tagRandomSlugLengths(config))
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([tag, length]) => [tag, String(length)]);
@@ -544,7 +571,12 @@ function handleTags(argv) {
     if (options.format === "json") {
       console.log(JSON.stringify({
         random_slug_length: globalLength,
-        tag_random_slug_lengths: Object.fromEntries(rows)
+        random_slug_alphabet: alphabet,
+        tag_random_slug_lengths: Object.fromEntries(
+          Object.entries(tagRandomSlugLengths(config))
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([tag, length]) => [tag, normalizeRandomSlugLength(length, "tag random slug length")])
+        )
       }, null, 2));
       return;
     }
@@ -554,6 +586,7 @@ function handleTags(argv) {
     }
 
     console.log(`Global random slug length: ${globalLength}`);
+    console.log(`Random slug alphabet: ${alphabet}`);
     if (!rows.length) {
       console.log("No tag-specific random slug lengths configured");
       return;
@@ -843,7 +876,7 @@ async function main() {
   }
 
   if (!slug) {
-    slug = randomSlug(configuredRandomSlugLength(options));
+    slug = randomSlug(configuredRandomSlugLength(options), configuredRandomSlugAlphabet());
   }
 
   if (options.state === "hidden") {
