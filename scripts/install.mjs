@@ -97,7 +97,7 @@ async function promptForMissing(args) {
     );
     args.configureLegalPages = await confirm(
       rl,
-      "Configure privacy, terms, and security pages now?",
+      "Configure jurisdiction, privacy, terms, and security pages now?",
       configuredOperator.legal_pages_enabled !== false && hasConfiguredLegalPages(configuredOperator)
     );
     args.operatorLegalName = await question(
@@ -989,26 +989,7 @@ function printNextSteps(args) {
   console.log(`\nSetup complete for ${args.domain}.`);
   console.log("\nNext steps:");
   console.log("- Review the starter link list with ./scripts/lnk list");
-  console.log("- Review the generated files with git status --short");
-  console.log("- Commit the instance files and push them to your GitHub repository");
-  console.log("- Connect that repository in Cloudflare Workers & Pages");
-  console.log("- Add the Worker custom domain for the root hostname");
-  console.log("- Protect /_stats/* and /_tests/* with Cloudflare Access");
-
-  const secretCommands = [];
-
-  if (args.analytics.includes("umami") && !args.umamiWebsiteId) {
-    secretCommands.push("npx wrangler secret put UMAMI_WEBSITE_ID --config wrangler.toml");
-  }
-
-  if (args.accessTeamDomain) {
-    secretCommands.push("npx wrangler secret put CF_ACCESS_AUD --config wrangler.toml");
-  }
-
-  if (secretCommands.length) {
-    console.log("\nAfter the Cloudflare Access application exists, add required secrets:");
-    for (const command of secretCommands) console.log(`  ${command}`);
-  }
+  console.log("- Continue Quickstart: https://www.vanityurls.link/en/docs/setup/quickstart/#install-local-helpers");
 }
 
 async function main() {
