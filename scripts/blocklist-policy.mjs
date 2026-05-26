@@ -250,8 +250,16 @@ function findBlockedKeyword(url, policy) {
 }
 
 function keywordAppliesToTarget(entry) {
-  const scope = String(entry.scope || "target").trim().toLowerCase();
+  const scope = String(entry.scope || defaultKeywordScope(entry)).trim().toLowerCase();
   return scope === "target" || scope === "both" || scope === "all";
+}
+
+function defaultKeywordScope(entry) {
+  return isRuntimeScannerKeyword(entry) ? "request" : "target";
+}
+
+function isRuntimeScannerKeyword(entry) {
+  return entry?.category === "scanner-probe" || entry?.source === "runtime-scanner-policy";
 }
 
 function domainMatches(hostname, domain) {
