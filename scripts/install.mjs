@@ -103,8 +103,13 @@ async function promptForMissing(args) {
       args.operatorPrivacyContact = args.operatorPrivacyContact || configuredOperator.privacy_contact || "";
     }
     args.operatorAbuseContact = await question(rl, "Trust & Safety contact", args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", args.domain));
+    args.operatorAbuseResponseWindow = await question(rl, "Trust & Safety response window", args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days");
     args.operatorSecurityContact = await question(rl, "Security contact", args.operatorSecurityContact || configuredOperator.security_contact || defaultContactEmail("security", args.domain));
-    args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate());
+    if (args.configureLegalPages) {
+      args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate());
+    } else {
+      args.operatorLastUpdated = args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate();
+    }
     if (analyticsEnabled) {
       args.operatorAnalyticsDisclosure = await question(rl, "Analytics disclosure", args.operatorAnalyticsDisclosure || configuredOperator.analytics_disclosure || analyticsDisclosureDefault(args.analytics));
       args.operatorAnalyticsRetention = await question(rl, "Analytics retention", args.operatorAnalyticsRetention || configuredOperator.analytics_retention || analyticsRetentionDefault(args.analytics));
@@ -112,7 +117,6 @@ async function promptForMissing(args) {
       args.operatorAnalyticsDisclosure = args.operatorAnalyticsDisclosure || analyticsDisclosureDefault(args.analytics);
       args.operatorAnalyticsRetention = args.operatorAnalyticsRetention || "";
     }
-    args.operatorAbuseResponseWindow = await question(rl, "Trust & Safety response window", args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days");
     args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
 
     if (args.customizePublic) {

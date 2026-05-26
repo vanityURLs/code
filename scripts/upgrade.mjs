@@ -8,7 +8,15 @@ import { execFileSync, spawnSync } from "node:child_process";
 const ROOT = process.cwd();
 const DEFAULT_REMOTE = "https://github.com/vanityURLs/code.git";
 const DEFAULT_REF = "main";
-const DEFAULT_PATHS = ["defaults", "scripts"];
+const DEFAULT_PATHS = [
+  "defaults",
+  "scripts",
+  "package.json",
+  "package-lock.json",
+  "README.md",
+  "LICENSE",
+  "cloudflare-setup.md"
+];
 const PROTECTED_PATHS = ["custom", "wrangler.toml", ".dev.vars"];
 
 function parseArgs(argv) {
