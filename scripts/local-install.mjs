@@ -53,10 +53,12 @@ Options:
 }
 
 function commandExists(command) {
-  return spawnSync(command, ["--version"], {
-    encoding: "utf8",
-    stdio: "ignore"
-  }).status === 0;
+  return (
+    spawnSync(command, ["--version"], {
+      encoding: "utf8",
+      stdio: "ignore"
+    }).status === 0
+  );
 }
 
 function printJqInstallHelp() {
@@ -177,10 +179,26 @@ async function promptConfig(config, args) {
     next.local_publish.commit_messages = {
       ...(next.local_publish.commit_messages || {})
     };
-    next.local_publish.commit_messages.mixed = await question(rl, "Local publish mixed commit message", next.local_publish.commit_messages.mixed || next.local_publish.commit_message);
-    next.local_publish.commit_messages.links = await question(rl, "Links-only commit message", next.local_publish.commit_messages.links);
-    next.local_publish.commit_messages.policies = await question(rl, "Policies-only commit message", next.local_publish.commit_messages.policies);
-    next.local_publish.commit_messages.site_config = await question(rl, "Site-config-only commit message", next.local_publish.commit_messages.site_config);
+    next.local_publish.commit_messages.mixed = await question(
+      rl,
+      "Local publish mixed commit message",
+      next.local_publish.commit_messages.mixed || next.local_publish.commit_message
+    );
+    next.local_publish.commit_messages.links = await question(
+      rl,
+      "Links-only commit message",
+      next.local_publish.commit_messages.links
+    );
+    next.local_publish.commit_messages.policies = await question(
+      rl,
+      "Policies-only commit message",
+      next.local_publish.commit_messages.policies
+    );
+    next.local_publish.commit_messages.site_config = await question(
+      rl,
+      "Site-config-only commit message",
+      next.local_publish.commit_messages.site_config
+    );
     next.local_publish.commit_message = next.local_publish.commit_messages.mixed;
     next.shell_helper.rc_file = await question(rl, "Shell rc file to update", next.shell_helper.rc_file);
     next.registry.local_path = await question(rl, "Local registry path", next.registry.local_path);
@@ -256,9 +274,7 @@ function installHelper(config, args) {
   fs.mkdirSync(path.dirname(rcFile), { recursive: true });
   const current = fs.existsSync(rcFile) ? fs.readFileSync(rcFile, "utf8") : "";
   const re = new RegExp(`${escapeRegExp(START_MARKER)}[\\s\\S]*?${escapeRegExp(END_MARKER)}\\n?`, "m");
-  const next = re.test(current)
-    ? current.replace(re, block)
-    : `${current.trimEnd()}\n\n${block}`;
+  const next = re.test(current) ? current.replace(re, block) : `${current.trimEnd()}\n\n${block}`;
 
   fs.writeFileSync(rcFile, next);
   console.log(`Installed V8S shell helper to ${helperTarget}`);

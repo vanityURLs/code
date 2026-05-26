@@ -6,15 +6,11 @@
     },
     "malware": {
       "description": "Malware distribution, payload hosting, exploit delivery, and command-and-control infrastructure",
-      "default_sources": [
-        "urlhaus_malware"
-      ]
+      "default_sources": ["urlhaus_malware"]
     },
     "shortener-loop": {
       "description": "Public URL shorteners used to hide redirect chains or obscure the final destination",
-      "default_sources": [
-        "url_shorteners"
-      ]
+      "default_sources": ["url_shorteners"]
     },
     "scanner-probe": {
       "description": "Automated vulnerability scanner paths that should not resolve as short links"

@@ -6,7 +6,8 @@ Status: Accepted
 
 ## Context
 
-vanityURLs instances need to receive product updates without overwriting local links, policies, branding, and operator settings.
+vanityURLs instances need to receive product updates without overwriting local links, policies, branding, and operator
+settings.
 
 The repository contains product-owned defaults and scripts, instance-owned custom files, and generated build output.
 
@@ -18,7 +19,8 @@ Instance-owned files live under `custom/`.
 
 Generated output lives under `build/` and `src/`.
 
-The build copies product defaults, overlays `custom/`, then writes generated runtime artifacts. Instance owners should edit `custom/`, not `defaults/` or `build/`, unless they are contributing product changes upstream.
+The build copies product defaults, overlays `custom/`, then writes generated runtime artifacts. Instance owners should
+edit `custom/`, not `defaults/` or `build/`, unless they are contributing product changes upstream.
 
 ## Consequences
 

@@ -6,9 +6,11 @@ Status: Accepted
 
 ## Context
 
-vanityURLs has product behavior, generated configuration, installer behavior, and deployment assumptions that are easier to understand when the reason for a decision is close to the code that implements it.
+vanityURLs has product behavior, generated configuration, installer behavior, and deployment assumptions that are easier
+to understand when the reason for a decision is close to the code that implements it.
 
-The public website should explain how to use vanityURLs, but it should not become a long internal design log. Maintainers still need a lightweight place to record why code-level contracts exist.
+The public website should explain how to use vanityURLs, but it should not become a long internal design log.
+Maintainers still need a lightweight place to record why code-level contracts exist.
 
 ## Decision
 
@@ -23,7 +25,8 @@ Use a small structure:
 
 Number ADR files with a stable prefix, for example `0001-record-architecture-decisions.md`.
 
-The website may link to an ADR or source file when the implementation detail matters, but ADRs are maintained in the code repository.
+The website may link to an ADR or source file when the implementation detail matters, but ADRs are maintained in the
+code repository.
 
 ## Consequences
 

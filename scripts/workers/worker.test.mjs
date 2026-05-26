@@ -248,11 +248,7 @@ async function signAccessJwt(fixture, overrides = {}) {
     ...overrides
   };
   const input = `${base64UrlJson(header)}.${base64UrlJson(payload)}`;
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    fixture.privateKey,
-    new TextEncoder().encode(input)
-  );
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", fixture.privateKey, new TextEncoder().encode(input));
 
   return `${input}.${base64UrlBytes(new Uint8Array(signature))}`;
 }
@@ -357,9 +353,13 @@ await run("serves localized status pages from Accept-Language", async () => {
 await run("serves Spanish, Italian, and German pages from Accept-Language", async () => {
   for (const language of ["es", "it", "de"]) {
     const ctx = mockCtx();
-    const response = await worker.fetch(request("/", {
-      headers: { "accept-language": `${language};q=1,en;q=0.5` }
-    }), env(), ctx);
+    const response = await worker.fetch(
+      request("/", {
+        headers: { "accept-language": `${language};q=1,en;q=0.5` }
+      }),
+      env(),
+      ctx
+    );
     assert(response.status === 200, `${language} status`);
     assert((await response.text()).includes(`home ${language}`), `${language} localized body`);
     assert(response.headers.get("content-language") === language, `${language} content language`);
@@ -370,11 +370,15 @@ await run("serves Spanish, Italian, and German pages from Accept-Language", asyn
 await run("serves extensionless policy page aliases", async () => {
   for (const path of ["/index", "/privacy", "/terms", "/abuse", "/trust-safety", "/security"]) {
     const ctx = mockCtx();
-    const response = await worker.fetch(request(path, {
-      headers: {
-        "accept-language": "en-CA,en;q=0.9"
-      }
-    }), env(), ctx);
+    const response = await worker.fetch(
+      request(path, {
+        headers: {
+          "accept-language": "en-CA,en;q=0.9"
+        }
+      }),
+      env(),
+      ctx
+    );
     assert(response.status === 200, `${path} status`);
     const body = await response.text();
     const expected = path === "/index" ? "home" : path === "/trust-safety" ? "abuse" : path.slice(1);
@@ -382,7 +386,10 @@ await run("serves extensionless policy page aliases", async () => {
     await ctx.flush();
   }
   assert(analyticsCalls.length === 6, "pageview count");
-  assert(analyticsCalls.every((call) => !("name" in call.body.payload)), "regular pageviews");
+  assert(
+    analyticsCalls.every((call) => !("name" in call.body.payload)),
+    "regular pageviews"
+  );
 });
 
 await run("blocks raw registry asset", async () => {
@@ -439,11 +446,15 @@ await run("protects non-GET requests to protected paths before method handling",
 
 await run("serves tests page with valid Cloudflare Access token", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_tests", {
-    headers: {
-      ...(await accessHeaders())
-    }
-  }), await accessEnv(), ctx);
+  const response = await worker.fetch(
+    request("/_tests", {
+      headers: {
+        ...(await accessHeaders())
+      }
+    }),
+    await accessEnv(),
+    ctx
+  );
   assert(response.status === 200, "status");
   assert((await response.text()).includes("tests"), "body");
 });
@@ -456,11 +467,15 @@ await run("protects direct tests asset path with Cloudflare Access", async () =>
 
 await run("rejects Cloudflare Access tokens with the wrong audience", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_tests", {
-    headers: {
-      ...(await accessHeaders({ aud: ["wrong-aud"] }))
-    }
-  }), await accessEnv(), ctx);
+  const response = await worker.fetch(
+    request("/_tests", {
+      headers: {
+        ...(await accessHeaders({ aud: ["wrong-aud"] }))
+      }
+    }),
+    await accessEnv(),
+    ctx
+  );
   assert(response.status === 403, "status");
 });
 
@@ -504,11 +519,15 @@ await run("blocks PHP and WordPress scanner probes", async () => {
 
 await run("exposes registry through stats API", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_stats/api/v8s.json", {
-    headers: {
-      ...(await accessHeaders())
-    }
-  }), await accessEnv(), ctx);
+  const response = await worker.fetch(
+    request("/_stats/api/v8s.json", {
+      headers: {
+        ...(await accessHeaders())
+      }
+    }),
+    await accessEnv(),
+    ctx
+  );
   assert(response.status === 200, "status");
   assert(response.headers.get("content-disposition") === 'attachment; filename="v8s.json"', "download header");
   assert((await response.json()).links.length === 4, "registry body");
@@ -516,11 +535,15 @@ await run("exposes registry through stats API", async () => {
 
 await run("summarizes redirects through stats API", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_stats/api/redirects", {
-    headers: {
-      ...(await accessHeaders())
-    }
-  }), await accessEnv(), ctx);
+  const response = await worker.fetch(
+    request("/_stats/api/redirects", {
+      headers: {
+        ...(await accessHeaders())
+      }
+    }),
+    await accessEnv(),
+    ctx
+  );
   const body = await response.json();
   assert(response.status === 200, "status");
   assert(body.total === 4, "total links");
@@ -530,12 +553,16 @@ await run("summarizes redirects through stats API", async () => {
 
 await run("tracks expand preview lookups", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(jsonRequest("/_analytics/expand", {
-    slug: "test",
-    state: "permanent",
-    target: "https://example.com/test",
-    result: "resolved"
-  }), env(), ctx);
+  const response = await worker.fetch(
+    jsonRequest("/_analytics/expand", {
+      slug: "test",
+      state: "permanent",
+      target: "https://example.com/test",
+      result: "resolved"
+    }),
+    env(),
+    ctx
+  );
   await ctx.flush();
   assert(response.status === 204, "status");
   assert(analyticsCalls.length === 1, "analytics count");
@@ -569,9 +596,13 @@ await run("redirects exact short link and tracks event", async () => {
 
 await run("uses scheduled target during active time window", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/hangout"), env({
-    V8S_NOW: "2026-05-11T14:00:00Z"
-  }), ctx);
+  const response = await worker.fetch(
+    request("/hangout"),
+    env({
+      V8S_NOW: "2026-05-11T14:00:00Z"
+    }),
+    ctx
+  );
   await ctx.flush();
   assert(response.status === 302, "status");
   assert(response.headers.get("location") === "https://zoom.us/j/work", "location");
@@ -584,9 +615,13 @@ await run("uses scheduled target during active time window", async () => {
 
 await run("uses default target outside scheduled time window", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/hangout"), env({
-    V8S_NOW: "2026-05-11T23:00:00Z"
-  }), ctx);
+  const response = await worker.fetch(
+    request("/hangout"),
+    env({
+      V8S_NOW: "2026-05-11T23:00:00Z"
+    }),
+    ctx
+  );
   await ctx.flush();
   assert(response.status === 302, "status");
   assert(response.headers.get("location") === "https://discord.gg/personal", "location");
@@ -646,11 +681,15 @@ await run("refuses unsafe route redirect targets at runtime", async () => {
 
 await run("caps long Accept-Language headers for Umami", async () => {
   const ctx = mockCtx();
-  await worker.fetch(request("/test", {
-    headers: {
-      "accept-language": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz,en;q=0.9"
-    }
-  }), env(), ctx);
+  await worker.fetch(
+    request("/test", {
+      headers: {
+        "accept-language": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz,en;q=0.9"
+      }
+    }),
+    env(),
+    ctx
+  );
   await ctx.flush();
   assert(analyticsCalls.length === 1, "analytics count");
   assert(analyticsCalls[0].body.payload.language.length === 35, "language length");
@@ -675,11 +714,15 @@ await run("supports disabling IP override", async () => {
 
 await run("uses browser-like outbound user agent for CLI requests", async () => {
   const ctx = mockCtx();
-  await worker.fetch(request("/test", {
-    headers: {
-      "user-agent": "curl/8.0.0"
-    }
-  }), env(), ctx);
+  await worker.fetch(
+    request("/test", {
+      headers: {
+        "user-agent": "curl/8.0.0"
+      }
+    }),
+    env(),
+    ctx
+  );
   await ctx.flush();
   assert(analyticsCalls.length === 1, "analytics count");
   assert(analyticsCalls[0].body.payload.name === "bot", "event is classified as bot");
@@ -691,11 +734,15 @@ await run("uses browser-like outbound user agent for CLI requests", async () => 
 
 await run("can preserve original event names for bot traffic", async () => {
   const ctx = mockCtx();
-  await worker.fetch(request("/missing", {
-    headers: {
-      "user-agent": "Googlebot/2.1"
-    }
-  }), env({ UMAMI_BOT_MODE: "original" }), ctx);
+  await worker.fetch(
+    request("/missing", {
+      headers: {
+        "user-agent": "Googlebot/2.1"
+      }
+    }),
+    env({ UMAMI_BOT_MODE: "original" }),
+    ctx
+  );
   await ctx.flush();
   assert(analyticsCalls.length === 2, "analytics count");
   assert(analyticsCalls[0].body.payload.name === "short-link-miss", "original event name");
@@ -712,10 +759,14 @@ await run("skips analytics when Umami website id is absent", async () => {
 
 await run("tracks Fathom events when configured as provider", async () => {
   const ctx = mockCtx();
-  await worker.fetch(request("/test"), env({
-    ANALYTICS_PROVIDER: "fathom",
-    FATHOM_SITE_ID: "ABCDEFG"
-  }), ctx);
+  await worker.fetch(
+    request("/test"),
+    env({
+      ANALYTICS_PROVIDER: "fathom",
+      FATHOM_SITE_ID: "ABCDEFG"
+    }),
+    ctx
+  );
   await ctx.flush();
   assert(analyticsCalls.length === 1, "analytics count");
   const url = new URL(analyticsCalls[0].url);
@@ -730,23 +781,34 @@ await run("tracks Fathom events when configured as provider", async () => {
 
 await run("can send analytics to Umami and Fathom together", async () => {
   const ctx = mockCtx();
-  await worker.fetch(request("/test"), env({
-    ANALYTICS_PROVIDER: "umami,fathom",
-    FATHOM_SITE_ID: "ABCDEFG"
-  }), ctx);
+  await worker.fetch(
+    request("/test"),
+    env({
+      ANALYTICS_PROVIDER: "umami,fathom",
+      FATHOM_SITE_ID: "ABCDEFG"
+    }),
+    ctx
+  );
   await ctx.flush();
   assert(analyticsCalls.length === 2, "analytics count");
   assert(analyticsCalls[0].url === "https://cloud.umami.is/api/send", "umami endpoint");
-  assert(new URL(analyticsCalls[1].url).origin + new URL(analyticsCalls[1].url).pathname === "https://cdn.usefathom.com/", "fathom endpoint");
+  assert(
+    new URL(analyticsCalls[1].url).origin + new URL(analyticsCalls[1].url).pathname === "https://cdn.usefathom.com/",
+    "fathom endpoint"
+  );
 });
 
 await run("supports Fathom endpoint overrides", async () => {
   const ctx = mockCtx();
-  await worker.fetch(request("/privacy"), env({
-    ANALYTICS_PROVIDER: "fathom",
-    FATHOM_SITE_ID: "ABCDEFG",
-    FATHOM_ENDPOINT: "https://stats.example.com"
-  }), ctx);
+  await worker.fetch(
+    request("/privacy"),
+    env({
+      ANALYTICS_PROVIDER: "fathom",
+      FATHOM_SITE_ID: "ABCDEFG",
+      FATHOM_ENDPOINT: "https://stats.example.com"
+    }),
+    ctx
+  );
   await ctx.flush();
   assert(analyticsCalls.length === 1, "analytics count");
   const url = new URL(analyticsCalls[0].url);
@@ -791,7 +853,10 @@ await run("tracks direct state and not-found pages", async () => {
     assert(response.headers.get("content-type").startsWith("text/html"), `${path} html`);
   }
   assert(analyticsCalls.length === 4, "state pageview count");
-  assert(analyticsCalls.every((call) => !("name" in call.body.payload)), "state pages are pageviews");
+  assert(
+    analyticsCalls.every((call) => !("name" in call.body.payload)),
+    "state pages are pageviews"
+  );
 });
 
 await run("renders custom 404 for missed short links and tracks miss", async () => {

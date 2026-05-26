@@ -6,14 +6,7 @@ import { checkTargetUrl, loadBlocklistPolicy } from "./blocklist-policy.mjs";
 const inputPath = process.argv[2] || "defaults/v8s-links.txt";
 const outputPath = process.argv[3] || "build/v8s.json";
 
-const VALID_STATES = new Set([
-  "permanent",
-  "ephemeral",
-  "expired",
-  "disabled",
-  "maintenance",
-  "deactivated"
-]);
+const VALID_STATES = new Set(["permanent", "ephemeral", "expired", "disabled", "maintenance", "deactivated"]);
 const TARGET_REDIRECT_STATES = new Set(["permanent", "ephemeral"]);
 const VALID_DAYS = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
 const SCHEDULE_SHORTCUTS = {
@@ -67,10 +60,7 @@ function isSafeRedirectUrl(value) {
 
   try {
     const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) &&
-      Boolean(url.hostname) &&
-      !url.username &&
-      !url.password;
+    return ["http:", "https:"].includes(url.protocol) && Boolean(url.hostname) && !url.username && !url.password;
   } catch {
     return false;
   }
@@ -102,7 +92,10 @@ function loadScheduleEntries() {
 }
 
 function normalizeDay(value) {
-  return String(value || "").trim().slice(0, 3).toLowerCase();
+  return String(value || "")
+    .trim()
+    .slice(0, 3)
+    .toLowerCase();
 }
 
 function isValidTime(value) {
@@ -115,9 +108,7 @@ function normalizeScheduleRule(slug, rawRule, fallbackTimezone, index, errors) {
   const timezone = String(rule.timezone || fallbackTimezone || "UTC").trim();
   const from = String(rule.from || "").trim();
   const to = String(rule.to || "").trim();
-  const days = Array.isArray(rule.days)
-    ? rule.days.map(normalizeDay).filter(Boolean)
-    : [];
+  const days = Array.isArray(rule.days) ? rule.days.map(normalizeDay).filter(Boolean) : [];
   const target = normalizeTarget(rule.target);
   const prefix = `Schedule for "${slug}" rule "${label}"`;
 
@@ -150,19 +141,29 @@ function scheduleRulesFromConfig(slug, config, errors) {
   const rules = [];
 
   if (Array.isArray(config.rules)) {
-    rules.push(...config.rules.map((rule, index) => {
-      return normalizeScheduleRule(slug, rule, timezone, index, errors);
-    }));
+    rules.push(
+      ...config.rules.map((rule, index) => {
+        return normalizeScheduleRule(slug, rule, timezone, index, errors);
+      })
+    );
   }
 
   for (const [key, shortcut] of Object.entries(SCHEDULE_SHORTCUTS)) {
     if (typeof config[key] === "string") {
-      rules.push(normalizeScheduleRule(slug, {
-        label: key,
-        timezone,
-        ...shortcut,
-        target: config[key]
-      }, timezone, rules.length, errors));
+      rules.push(
+        normalizeScheduleRule(
+          slug,
+          {
+            label: key,
+            timezone,
+            ...shortcut,
+            target: config[key]
+          },
+          timezone,
+          rules.length,
+          errors
+        )
+      );
     }
   }
 
@@ -222,17 +223,7 @@ function applyScheduleConfig(links, blocklistPolicy, errors) {
 function parseLine(line, lineNumber, blocklistPolicy, errors) {
   const parts = line.split("|").map((part) => part.trim());
 
-  const [
-    rawSlug,
-    rawTarget,
-    state,
-    title,
-    description,
-    tags,
-    owner,
-    expiresAt,
-    notes
-  ] = parts;
+  const [rawSlug, rawTarget, state, title, description, tags, owner, expiresAt, notes] = parts;
 
   const { slug, match, displaySlug } = parseSlug(rawSlug);
 

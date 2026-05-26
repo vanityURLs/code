@@ -76,7 +76,9 @@ function normalizePaths(paths) {
   const normalized = [];
 
   for (const entry of paths) {
-    const value = String(entry || "").trim().replace(/^\/+|\/+$/g, "");
+    const value = String(entry || "")
+      .trim()
+      .replace(/^\/+|\/+$/g, "");
     if (!value || value.includes("..") || path.isAbsolute(value)) {
       throw new Error(`Refusing unsafe upgrade path: ${entry}`);
     }
@@ -138,11 +140,13 @@ function ensureCleanWorktree(args) {
   if (args.allowDirty) return;
   const status = worktreeStatus();
   if (!status) return;
-  throw new Error([
-    "Worktree is not clean. Commit or stash local changes before upgrading.",
-    "Use --allow-dirty only when you are intentionally testing the upgrade script.",
-    status
-  ].join("\n"));
+  throw new Error(
+    [
+      "Worktree is not clean. Commit or stash local changes before upgrading.",
+      "Use --allow-dirty only when you are intentionally testing the upgrade script.",
+      status
+    ].join("\n")
+  );
 }
 
 function resolveRemote(args) {

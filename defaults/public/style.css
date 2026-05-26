@@ -490,12 +490,24 @@ body.redirect-return .redirected-badge {
 }
 
 @keyframes invalid-key-shake {
-  0% { transform: translateX(0); }
-  18% { transform: translateX(-8px); }
-  36% { transform: translateX(8px); }
-  54% { transform: translateX(-5px); }
-  72% { transform: translateX(4px); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  18% {
+    transform: translateX(-8px);
+  }
+  36% {
+    transform: translateX(8px);
+  }
+  54% {
+    transform: translateX(-5px);
+  }
+  72% {
+    transform: translateX(4px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 @keyframes redirect-launch-left {
@@ -513,8 +525,12 @@ body.redirect-return .redirected-badge {
 }
 
 @keyframes redirect-launch-tilt {
-  0% { transform: translate3d(0, 0, 0) skewX(0deg); }
-  100% { transform: translate3d(-4vw, 0, 0) skewX(-7deg); }
+  0% {
+    transform: translate3d(0, 0, 0) skewX(0deg);
+  }
+  100% {
+    transform: translate3d(-4vw, 0, 0) skewX(-7deg);
+  }
 }
 
 @keyframes redirect-launch-logo {
@@ -544,8 +560,12 @@ body.redirect-return .redirected-badge {
 }
 
 @keyframes redirect-return-tilt {
-  0% { transform: translate3d(-4vw, 0, 0) skewX(-7deg); }
-  100% { transform: translate3d(0, 0, 0) skewX(0deg); }
+  0% {
+    transform: translate3d(-4vw, 0, 0) skewX(-7deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) skewX(0deg);
+  }
 }
 
 @keyframes redirect-return-logo {

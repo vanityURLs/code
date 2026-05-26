@@ -16,9 +16,7 @@
       "site_config": "chore(site): update instance configuration",
       "mixed": "chore: update local vanityURLs configuration"
     },
-    "paths": [
-      "custom"
-    ]
+    "paths": ["custom"]
   },
   "registry": {
     "local_path": "~/.v8s.json"

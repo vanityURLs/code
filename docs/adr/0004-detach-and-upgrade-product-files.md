@@ -6,15 +6,18 @@ Status: Accepted
 
 ## Context
 
-Users create their own instance repository from the vanityURLs code. That repository should become theirs, with its own GitHub remote, while still being able to refresh product files from upstream.
+Users create their own instance repository from the vanityURLs code. That repository should become theirs, with its own
+GitHub remote, while still being able to refresh product files from upstream.
 
 ## Decision
 
 `npm run detach` removes upstream project metadata that should not belong to a new instance.
 
-`npm run upgrade` refreshes product-owned paths from upstream while protecting instance-owned paths such as `custom/`, `wrangler.toml`, and `.dev.vars`.
+`npm run upgrade` refreshes product-owned paths from upstream while protecting instance-owned paths such as `custom/`,
+`wrangler.toml`, and `.dev.vars`.
 
-The default upgrade path includes product files such as `defaults/`, `scripts/`, `package.json`, `package-lock.json`, `README.md`, `LICENSE`, and `cloudflare-setup.md`.
+The default upgrade path includes product files such as `defaults/`, `scripts/`, `package.json`, `package-lock.json`,
+`README.md`, `LICENSE`, and `cloudflare-setup.md`.
 
 ## Consequences
 

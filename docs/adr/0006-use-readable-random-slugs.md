@@ -6,7 +6,8 @@ Status: Accepted
 
 ## Context
 
-The `lnk` CLI can generate short slugs when the user does not provide one. Fully unrestricted random strings can include characters that are visually ambiguous or awkward to read over the phone.
+The `lnk` CLI can generate short slugs when the user does not provide one. Fully unrestricted random strings can include
+characters that are visually ambiguous or awkward to read over the phone.
 
 Different teams may also want different generated slug lengths for different tags.
 

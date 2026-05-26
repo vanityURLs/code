@@ -1,5 +1,4 @@
-const ASSET_EXT_RE =
-  /\.(html|css|js|mjs|map|json|png|svg|ico|webmanifest|txt|xml|woff2?|ttf|otf|eot)$/i;
+const ASSET_EXT_RE = /\.(html|css|js|mjs|map|json|png|svg|ico|webmanifest|txt|xml|woff2?|ttf|otf|eot)$/i;
 
 const WORKER_UA_FALLBACK =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 " +
@@ -336,14 +335,18 @@ function scannerKeywords(policy) {
   return entries
     .map((entry) => normalizeRuntimeKeyword(entry))
     .filter((entry) => {
-      return keywordAppliesToRequest(entry)
-        && entry.keyword
-        && (entry.category === "scanner-probe" || entry.source === "runtime-scanner-policy");
+      return (
+        keywordAppliesToRequest(entry) &&
+        entry.keyword &&
+        (entry.category === "scanner-probe" || entry.source === "runtime-scanner-policy")
+      );
     });
 }
 
 function keywordAppliesToRequest(entry) {
-  const scope = String(entry.scope || defaultKeywordScope(entry)).trim().toLowerCase();
+  const scope = String(entry.scope || defaultKeywordScope(entry))
+    .trim()
+    .toLowerCase();
   return scope === "request" || scope === "both" || scope === "all";
 }
 
@@ -382,7 +385,9 @@ function normalizeRuntimeKeyword(entry) {
 }
 
 function normalizeKeyword(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function resolveLink(links, slug) {
@@ -397,9 +402,7 @@ function resolveLink(links, slug) {
     };
   }
 
-  const splats = links
-    .filter((link) => link.match === "splat")
-    .sort((a, b) => b.slug.length - a.slug.length);
+  const splats = links.filter((link) => link.match === "splat").sort((a, b) => b.slug.length - a.slug.length);
 
   for (const link of splats) {
     if (slug.startsWith(`${link.slug}/`)) {
@@ -513,10 +516,7 @@ function isScheduleRuleActive(rule, date) {
     return days.has(parts.day) && parts.minute >= from && parts.minute < to;
   }
 
-  return (
-    (days.has(parts.day) && parts.minute >= from) ||
-    (days.has(previousWeekday(parts.day)) && parts.minute < to)
-  );
+  return (days.has(parts.day) && parts.minute >= from) || (days.has(previousWeekday(parts.day)) && parts.minute < to);
 }
 
 function scheduleParts(timezone, date) {
@@ -725,9 +725,7 @@ function preferredContentLanguages(request) {
     .split(",")
     .map((part) => {
       const [tag, ...params] = part.trim().split(";");
-      const quality = params
-        .map((param) => param.trim().toLowerCase())
-        .find((param) => param.startsWith("q="));
+      const quality = params.map((param) => param.trim().toLowerCase()).find((param) => param.startsWith("q="));
       return {
         language: tag.toLowerCase().split("-")[0],
         quality: quality ? Number.parseFloat(quality.slice(2)) : 1
@@ -870,7 +868,7 @@ function methodNotAllowedResponse() {
   return new Response("Method not allowed", {
     status: 405,
     headers: {
-      "allow": "GET, HEAD, OPTIONS",
+      allow: "GET, HEAD, OPTIONS",
       "content-type": "text/plain; charset=utf-8",
       "cache-control": "no-store",
       "x-robots-tag": "noindex, nofollow"
@@ -882,7 +880,7 @@ function optionsResponse() {
   return new Response(null, {
     status: 204,
     headers: {
-      "allow": "GET, HEAD, OPTIONS",
+      allow: "GET, HEAD, OPTIONS",
       "cache-control": "no-store",
       "x-robots-tag": "noindex, nofollow"
     }
@@ -928,10 +926,13 @@ async function loadAccessJwks(teamDomain, env) {
   if (env.CF_ACCESS_JWKS_JSON) return JSON.parse(env.CF_ACCESS_JWKS_JSON);
 
   if (!accessJwksPromises.has(teamDomain)) {
-    accessJwksPromises.set(teamDomain, fetch(`https://${teamDomain}/cdn-cgi/access/certs`).then(async (response) => {
-      if (!response.ok) throw new Error(`Unable to load Cloudflare Access certs: ${response.status}`);
-      return response.json();
-    }));
+    accessJwksPromises.set(
+      teamDomain,
+      fetch(`https://${teamDomain}/cdn-cgi/access/certs`).then(async (response) => {
+        if (!response.ok) throw new Error(`Unable to load Cloudflare Access certs: ${response.status}`);
+        return response.json();
+      })
+    );
   }
 
   return accessJwksPromises.get(teamDomain);
@@ -1085,7 +1086,7 @@ async function handleExpandAnalytics(request, env, ctx, correlationId) {
     return new Response("Method not allowed", {
       status: 405,
       headers: {
-        "allow": "POST",
+        allow: "POST",
         "content-type": "text/plain; charset=utf-8",
         "cache-control": "no-store"
       }
@@ -1146,16 +1147,8 @@ function buildAnalyticsEvent(env, request, data) {
   const visitorUA = request.headers.get("user-agent") || "";
   const botName = detectBot(visitorUA);
   const isPageview = data.event === "pageview";
-  const umamiName = botName && env.UMAMI_BOT_MODE !== "original"
-    ? "bot"
-    : isPageview
-      ? ""
-      : data.event;
-  const fathomName = botName && env.FATHOM_BOT_MODE !== "original"
-    ? "bot"
-    : isPageview
-      ? "pageview"
-      : data.event;
+  const umamiName = botName && env.UMAMI_BOT_MODE !== "original" ? "bot" : isPageview ? "" : data.event;
+  const fathomName = botName && env.FATHOM_BOT_MODE !== "original" ? "bot" : isPageview ? "pageview" : data.event;
 
   return {
     data,

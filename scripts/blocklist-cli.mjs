@@ -178,14 +178,17 @@ function listPolicy(format) {
   }
 
   assertTableFormat(format);
-  printTable([
-    ["Policy file", fs.existsSync(POLICY_PATH) ? POLICY_PATH : DEFAULT_POLICY_PATH],
-    ["Schema", policy.schema_version || ""],
-    ["Updated", policy.updated_at || ""],
-    ["Blocked domains", String((policy.block_domains || []).length)],
-    ["Allowed domains", String((policy.allow_domains || []).length)],
-    ["Blocked keywords", String((policy.blocked_keywords || []).length)]
-  ], ["Field", "Value"]);
+  printTable(
+    [
+      ["Policy file", fs.existsSync(POLICY_PATH) ? POLICY_PATH : DEFAULT_POLICY_PATH],
+      ["Schema", policy.schema_version || ""],
+      ["Updated", policy.updated_at || ""],
+      ["Blocked domains", String((policy.block_domains || []).length)],
+      ["Allowed domains", String((policy.allow_domains || []).length)],
+      ["Blocked keywords", String((policy.blocked_keywords || []).length)]
+    ],
+    ["Field", "Value"]
+  );
 }
 
 function listCategoriesFormatted(format) {
@@ -198,15 +201,21 @@ function listCategoriesFormatted(format) {
 
   assertTableFormat(format);
   console.log("Categories");
-  printTable(Object.entries(registry.categories || {}).map(([name, category]) => {
-    return [name, category.description || ""];
-  }), ["Category", "Description"]);
+  printTable(
+    Object.entries(registry.categories || {}).map(([name, category]) => {
+      return [name, category.description || ""];
+    }),
+    ["Category", "Description"]
+  );
 
   console.log("");
   console.log("Severities");
-  printTable(Object.entries(registry.severities || {}).map(([name, severity]) => {
-    return [name, severity.description || ""];
-  }), ["Severity", "Description"]);
+  printTable(
+    Object.entries(registry.severities || {}).map(([name, severity]) => {
+      return [name, severity.description || ""];
+    }),
+    ["Severity", "Description"]
+  );
 }
 
 function listDomains(format, filter) {
@@ -238,9 +247,12 @@ function listDomains(format, filter) {
     return;
   }
 
-  printTable(rows.map((row) => {
-    return [row.type, row.domain, row.category || "", row.severity || "", row.reason || ""];
-  }), ["Type", "Domain", "Category", "Severity", "Reason"]);
+  printTable(
+    rows.map((row) => {
+      return [row.type, row.domain, row.category || "", row.severity || "", row.reason || ""];
+    }),
+    ["Type", "Domain", "Category", "Severity", "Reason"]
+  );
 }
 
 function domainRow(type, entry) {
@@ -265,23 +277,25 @@ function domainRow(type, entry) {
 
 function listKeywords(format) {
   const policy = readEffectivePolicy();
-  const rows = (policy.blocked_keywords || []).map((entry) => {
-    if (typeof entry === "string") {
-      return {
-        keyword: normalizeKeyword(entry),
-        category: "",
-        severity: "",
-        reason: ""
-      };
-    }
+  const rows = (policy.blocked_keywords || [])
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return {
+          keyword: normalizeKeyword(entry),
+          category: "",
+          severity: "",
+          reason: ""
+        };
+      }
 
-    return {
-      keyword: normalizeKeyword(entry.keyword || ""),
-      category: entry.category || "",
-      severity: entry.severity || "",
-      reason: entry.reason || ""
-    };
-  }).sort((a, b) => a.keyword.localeCompare(b.keyword));
+      return {
+        keyword: normalizeKeyword(entry.keyword || ""),
+        category: entry.category || "",
+        severity: entry.severity || "",
+        reason: entry.reason || ""
+      };
+    })
+    .sort((a, b) => a.keyword.localeCompare(b.keyword));
 
   if (format === "json") {
     console.log(JSON.stringify(rows, null, 2));
@@ -294,9 +308,12 @@ function listKeywords(format) {
     return;
   }
 
-  printTable(rows.map((row) => {
-    return [row.keyword, row.category, row.severity, row.reason];
-  }), ["Keyword", "Category", "Severity", "Reason"]);
+  printTable(
+    rows.map((row) => {
+      return [row.keyword, row.category, row.severity, row.reason];
+    }),
+    ["Keyword", "Category", "Severity", "Reason"]
+  );
 }
 
 function assertTableFormat(format) {
@@ -403,7 +420,9 @@ function addBlock(domainInput, options) {
 }
 
 function normalizeKeyword(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function addKeyword(keywordInput, options) {
@@ -473,7 +492,10 @@ function addAllow(domainInput, options) {
   for (const item of policy.allow_domains || []) {
     const itemDomain = normalizeHostname(typeof item === "string" ? item : item.domain);
     if (!itemDomain) continue;
-    allowDomains.set(itemDomain, typeof item === "string" ? { domain: itemDomain, enabled: true } : { ...item, domain: itemDomain });
+    allowDomains.set(
+      itemDomain,
+      typeof item === "string" ? { domain: itemDomain, enabled: true } : { ...item, domain: itemDomain }
+    );
   }
 
   allowDomains.set(domain, {

@@ -14,9 +14,10 @@ export function loadBlocklistPolicy(path = DEFAULT_POLICY_PATH) {
   const customPath = resolvePolicyPath(DEFAULT_CUSTOM_POLICY_PATH, LEGACY_CUSTOM_POLICY_PATH);
   const hasCustom = isDefaultPolicy && fs.existsSync(customPath);
   const custom = hasCustom ? JSON.parse(fs.readFileSync(customPath, "utf8")) : {};
-  const generated = isDefaultPolicy && fs.existsSync(DEFAULT_GENERATED_POLICY_PATH)
-    ? JSON.parse(fs.readFileSync(DEFAULT_GENERATED_POLICY_PATH, "utf8"))
-    : {};
+  const generated =
+    isDefaultPolicy && fs.existsSync(DEFAULT_GENERATED_POLICY_PATH)
+      ? JSON.parse(fs.readFileSync(DEFAULT_GENERATED_POLICY_PATH, "utf8"))
+      : {};
   const ownerPolicy = isDefaultPolicy && hasCustom ? custom : raw;
 
   return normalizePolicy(mergePolicy(ownerPolicy, generated));
@@ -64,7 +65,9 @@ export function checkTargetUrl(target, policy = loadBlocklistPolicy()) {
 
   const blockedDomain = findBlockedDomain(hostname, policy);
   if (blockedDomain) {
-    violations.push(`hostname '${hostname}' matches blocklist domain '${blockedDomain.domain}' (${blockedDomain.category})`);
+    violations.push(
+      `hostname '${hostname}' matches blocklist domain '${blockedDomain.domain}' (${blockedDomain.category})`
+    );
   }
 
   const blockedKeyword = findBlockedKeyword(url, policy);
@@ -97,9 +100,7 @@ function normalizePolicy(raw) {
     allowDomains: allowDomains
       .map((entry) => normalizeAllowDomainEntry(entry))
       .filter((entry) => entry.domain && entry.enabled !== false),
-    blockedKeywords: blockedKeywords
-      .map((entry) => normalizeKeywordEntry(entry))
-      .filter((entry) => entry.keyword),
+    blockedKeywords: blockedKeywords.map((entry) => normalizeKeywordEntry(entry)).filter((entry) => entry.keyword),
     blockDomains: blockDomains
       .map((entry) => ({
         ...entry,
@@ -121,7 +122,10 @@ function mergePolicy(localPolicy, generatedPolicy) {
       ...generatedDefaults,
       ...localDefaults,
       allowed_protocols: mergeArray(generatedDefaults.allowed_protocols, localDefaults.allowed_protocols),
-      blocked_file_extensions: mergeArray(generatedDefaults.blocked_file_extensions, localDefaults.blocked_file_extensions)
+      blocked_file_extensions: mergeArray(
+        generatedDefaults.blocked_file_extensions,
+        localDefaults.blocked_file_extensions
+      )
     },
     allow_domains: mergeAllowDomains(generatedPolicy.allow_domains, localPolicy.allow_domains),
     blocked_keywords: mergeKeywordEntries(generatedPolicy.blocked_keywords, localPolicy.blocked_keywords),
@@ -250,7 +254,9 @@ function findBlockedKeyword(url, policy) {
 }
 
 function keywordAppliesToTarget(entry) {
-  const scope = String(entry.scope || defaultKeywordScope(entry)).trim().toLowerCase();
+  const scope = String(entry.scope || defaultKeywordScope(entry))
+    .trim()
+    .toLowerCase();
   return scope === "target" || scope === "both" || scope === "all";
 }
 

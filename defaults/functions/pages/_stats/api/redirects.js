@@ -3,31 +3,31 @@ export async function onRequest(context) {
 
   // Load redirect data from static asset
   const url = new URL(request.url);
-  const dataUrl = new URL('/v8s.json', url);
+  const dataUrl = new URL("/v8s.json", url);
 
   const res = await env.ASSETS.fetch(new Request(dataUrl));
 
   if (!res.ok) {
-    return new Response('Unable to load redirect data', { status: 500 });
+    return new Response("Unable to load redirect data", { status: 500 });
   }
 
   const data = await res.json();
 
   // Normalize entries
   const staticEntries = Object.entries(data.static || {}).map(([source, v]) => ({
-    type: 'static',
+    type: "static",
     source,
     target: v.target,
     status: v.status,
-    description: v.description || ''
+    description: v.description || ""
   }));
 
   const dynamicEntries = (data.dynamic || []).map((v) => ({
-    type: 'dynamic',
+    type: "dynamic",
     source: v.source,
     target: v.target,
     status: v.status,
-    description: v.description || ''
+    description: v.description || ""
   }));
 
   const all = [...staticEntries, ...dynamicEntries];
@@ -51,16 +51,14 @@ export async function onRequest(context) {
     .map(([target, sources]) => ({ target, sources }));
 
   // Missing descriptions
-  const missingDescriptions = all.filter(r => !r.description);
+  const missingDescriptions = all.filter((r) => !r.description);
 
   // Dynamic routes
-  const dynamicRoutes = all.filter(r => r.type === 'dynamic');
+  const dynamicRoutes = all.filter((r) => r.type === "dynamic");
 
   // Reserved path violations
-  const reservedPrefixes = ['/_stats', '/api', '/_worker', '/v8s.json', '/v8s-blocklist.json', '/v8s-site-config.json'];
-  const reservedViolations = all.filter(r =>
-    reservedPrefixes.some(prefix => r.source.startsWith(prefix))
-  );
+  const reservedPrefixes = ["/_stats", "/api", "/_worker", "/v8s.json", "/v8s-blocklist.json", "/v8s-site-config.json"];
+  const reservedViolations = all.filter((r) => reservedPrefixes.some((prefix) => r.source.startsWith(prefix)));
 
   // Status counts
   const statusCounts = {};

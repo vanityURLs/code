@@ -22,7 +22,7 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const vars = {
-  ...await wranglerVars(),
+  ...(await wranglerVars()),
   ...envOverrides()
 };
 
@@ -69,11 +69,17 @@ for (const scenario of scenarios) {
 
 globalThis.fetch = originalFetch;
 
-console.log(JSON.stringify({
-  provider: vars.ANALYTICS_PROVIDER || "",
-  note: "Dry run only: analytics requests were intercepted and not sent.",
-  results
-}, null, 2));
+console.log(
+  JSON.stringify(
+    {
+      provider: vars.ANALYTICS_PROVIDER || "",
+      note: "Dry run only: analytics requests were intercepted and not sent.",
+      results
+    },
+    null,
+    2
+  )
+);
 
 function env(vars) {
   return {
@@ -100,7 +106,7 @@ function requestFor(scenario) {
   const headers = {
     "accept-language": "fr-CA,fr;q=0.9,en;q=0.8",
     "cf-connecting-ip": "203.0.113.42",
-    "referer": "https://example.com/source",
+    referer: "https://example.com/source",
     "user-agent": "Mozilla/5.0 analytics-smoke"
   };
 
@@ -182,11 +188,7 @@ function envOverrides() {
     "FATHOM_BOT_MODE"
   ];
 
-  return Object.fromEntries(
-    names
-      .filter((name) => process.env[name])
-      .map((name) => [name, process.env[name]])
-  );
+  return Object.fromEntries(names.filter((name) => process.env[name]).map((name) => [name, process.env[name]]));
 }
 
 function providerEnabled(vars, provider) {

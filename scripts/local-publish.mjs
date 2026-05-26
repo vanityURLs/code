@@ -111,7 +111,10 @@ function hasStagedChanges(paths) {
 function stagedFiles(paths) {
   const result = run("git", ["diff", "--cached", "--name-only", "--", ...paths], { capture: true });
   if (result.status !== 0) process.exit(result.status ?? 1);
-  return result.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return result.stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 function selectCommitMessage(args, config, files) {
@@ -130,9 +133,7 @@ function selectCommitMessage(args, config, files) {
     }
   }
 
-  return messages.mixed
-    || config.local_publish?.commit_message
-    || "chore: update local vanityURLs configuration";
+  return messages.mixed || config.local_publish?.commit_message || "chore: update local vanityURLs configuration";
 }
 
 function main() {
@@ -143,9 +144,10 @@ function main() {
     : Array.isArray(config.local_publish?.paths) && config.local_publish.paths.length
       ? config.local_publish.paths
       : ["custom"];
-  const fallbackMessage = config.local_publish?.commit_messages?.mixed
-    || config.local_publish?.commit_message
-    || "chore: update local vanityURLs configuration";
+  const fallbackMessage =
+    config.local_publish?.commit_messages?.mixed ||
+    config.local_publish?.commit_message ||
+    "chore: update local vanityURLs configuration";
 
   if (!assertCleanEnough(paths)) return;
 

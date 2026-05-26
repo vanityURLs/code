@@ -103,9 +103,7 @@ async function runPool(entries) {
     }
   }
 
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, entries.length) }, () => worker())
-  );
+  await Promise.all(Array.from({ length: Math.min(concurrency, entries.length) }, () => worker()));
 
   return results;
 }
@@ -123,9 +121,7 @@ async function main() {
 
   const entries = uniqueTargets(registry.links);
   const results = await runPool(entries);
-  const broken = results
-    .filter((result) => !result.ok)
-    .sort((a, b) => a.target.localeCompare(b.target));
+  const broken = results.filter((result) => !result.ok).sort((a, b) => a.target.localeCompare(b.target));
 
   console.log(`Checked ${results.length} unique active web target(s).`);
 

@@ -1,269 +1,283 @@
 <!doctype html>
 <html lang="it">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Espandi link breve | VanityURLs</title>
-  <meta name="description" content="Visualizza la destinazione di un link breve VanityURLs prima di aprirlo">
-  <meta name="robots" content="noindex,nofollow">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=20260504">
-  <style>
-    .expand-result {
-      display: none;
-      width: min(100%, 620px);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--panel);
-      padding: 18px 20px;
-      box-shadow: var(--shadow);
-      text-align: left;
-    }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Espandi link breve | VanityURLs</title>
+    <meta name="description" content="Visualizza la destinazione di un link breve VanityURLs prima di aprirlo" />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/style.css?v=20260504" />
+    <style>
+      .expand-result {
+        display: none;
+        width: min(100%, 620px);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 18px 20px;
+        box-shadow: var(--shadow);
+        text-align: left;
+      }
 
-    .expand-result.is-visible {
-      display: block;
-    }
+      .expand-result.is-visible {
+        display: block;
+      }
 
-    .expand-label {
-      margin: 0 0 8px;
-      color: var(--muted);
-      font-size: 0.82rem;
-      font-weight: 700;
-      letter-spacing: 0;
-      text-transform: uppercase;
-    }
+      .expand-label {
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
 
-    .expand-target {
-      margin: 0;
-      overflow-wrap: anywhere;
-      color: var(--text);
-      font-size: 1rem;
-      line-height: 1.55;
-    }
+      .expand-target {
+        margin: 0;
+        overflow-wrap: anywhere;
+        color: var(--text);
+        font-size: 1rem;
+        line-height: 1.55;
+      }
 
-    .expand-target a {
-      color: var(--brand);
-      font-weight: 650;
-      text-decoration: underline;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 3px;
-    }
+      .expand-target a {
+        color: var(--brand);
+        font-weight: 650;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
 
-    .expand-meta {
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.82rem;
-      line-height: 1.45;
-    }
-  </style>
-</head>
-<body>
-  <main class="page-shell">
-    <section class="search-home" aria-labelledby="brand-title">
-      <a class="wordmark" href="/" aria-label="VanityURLs">
-        <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
-      </a>
+      .expand-meta {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="search-home" aria-labelledby="brand-title">
+        <a class="wordmark" href="/" aria-label="VanityURLs">
+          <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
+        </a>
 
-      <form class="redirect-form" id="expandForm">
-        <label class="sr-only" for="expandKey">Link breve</label>
-        <div class="search-box">
-          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
-          </svg>
-          <input id="expandKey" type="text" maxlength="99" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="Inserisci un link breve per visualizzarne la destinazione" required>
-          <button type="submit" aria-label="Espandi link breve">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M5 12h12M13 6l6 6-6 6" />
+        <form class="redirect-form" id="expandForm">
+          <label class="sr-only" for="expandKey">Link breve</label>
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
             </svg>
-          </button>
-        </div>
-      </form>
+            <input
+              id="expandKey"
+              type="text"
+              maxlength="99"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              inputmode="url"
+              placeholder="Inserisci un link breve per visualizzarne la destinazione"
+              required
+            />
+            <button type="submit" aria-label="Espandi link breve">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M5 12h12M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+        </form>
 
-      <div class="expand-result" id="expandResult" aria-live="polite"></div>
+        <div class="expand-result" id="expandResult" aria-live="polite"></div>
 
-      <a class="redirected-badge" href="https://vanityURLs.link" target="_blank" rel="noreferrer" aria-label="VanityURLs">
-        <picture>
-          <source srcset="/it/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)">
-          <img src="/it/v8s-redirected.svg" alt="V8S reindirizzato da VanityURLs">
-        </picture>
-      </a>
-    </section>
-  </main>
+        <a
+          class="redirected-badge"
+          href="https://vanityURLs.link"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="VanityURLs"
+        >
+          <picture>
+            <source srcset="/it/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)" />
+            <img src="/it/v8s-redirected.svg" alt="V8S reindirizzato da VanityURLs" />
+          </picture>
+        </a>
+      </section>
+    </main>
 
-  <script>
-    const form = document.getElementById("expandForm");
-    const input = document.getElementById("expandKey");
-    const result = document.getElementById("expandResult");
-    const labels = {
-      empty: "Inserisci un link breve per visualizzarne la destinazione",
-      miss: "Non è stato trovato alcun link breve corrispondente",
-      notRedirecting: "Questo link breve al momento non reindirizza",
-      error: "Impossibile caricare i dati dei link brevi",
-      preview: "Anteprima",
-      destination: "Destinazione"
-    };
+    <script>
+      const form = document.getElementById("expandForm");
+      const input = document.getElementById("expandKey");
+      const result = document.getElementById("expandResult");
+      const labels = {
+        empty: "Inserisci un link breve per visualizzarne la destinazione",
+        miss: "Non è stato trovato alcun link breve corrispondente",
+        notRedirecting: "Questo link breve al momento non reindirizza",
+        error: "Impossibile caricare i dati dei link brevi",
+        preview: "Anteprima",
+        destination: "Destinazione"
+      };
 
-    let registryPromise = null;
+      let registryPromise = null;
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
 
-      const slug = normalizeSlug(input.value);
-      input.value = slug;
-      syncFormState();
+        const slug = normalizeSlug(input.value);
+        input.value = slug;
+        syncFormState();
 
-      if (!slug) {
-        renderMessage(labels.empty);
-        return;
-      }
-
-      try {
-        const registry = await loadRegistry();
-        const resolved = resolveLink(registry.links || [], slug);
-
-        if (!resolved) {
-          renderMessage(labels.miss);
-          trackExpand(slug, "", "", "miss");
+        if (!slug) {
+          renderMessage(labels.empty);
           return;
         }
 
-        const state = effectiveState(resolved.link, registry);
-        const target = resolveTarget(registry.routing?.[state], resolved.link, resolved.splat);
-        if (!target) {
-          renderMessage(labels.notRedirecting);
-          trackExpand(slug, state, "", "not-redirecting");
-          return;
+        try {
+          const registry = await loadRegistry();
+          const resolved = resolveLink(registry.links || [], slug);
+
+          if (!resolved) {
+            renderMessage(labels.miss);
+            trackExpand(slug, "", "", "miss");
+            return;
+          }
+
+          const state = effectiveState(resolved.link, registry);
+          const target = resolveTarget(registry.routing?.[state], resolved.link, resolved.splat);
+          if (!target) {
+            renderMessage(labels.notRedirecting);
+            trackExpand(slug, state, "", "not-redirecting");
+            return;
+          }
+
+          renderTarget(slug, target, state);
+          trackExpand(slug, state, target, "resolved");
+        } catch {
+          renderMessage(labels.error);
+          trackExpand(slug, "", "", "error");
+        }
+      });
+
+      input.addEventListener("input", (event) => {
+        event.target.value = event.target.value.replace(/[^a-zA-Z0-9\-_\/]/g, "");
+        syncFormState();
+      });
+
+      input.addEventListener("paste", (event) => {
+        event.preventDefault();
+        const pasted = (event.clipboardData || window.clipboardData).getData("text");
+        input.value = normalizeSlug(pasted);
+        syncFormState();
+      });
+
+      syncFormState();
+
+      function syncFormState() {
+        form.classList.toggle("has-value", input.value.trim().length > 0);
+      }
+
+      function normalizeSlug(value) {
+        return String(value || "")
+          .trim()
+          .replace(/^https?:\/\/[^/]+\//i, "")
+          .replace(/^\/+/, "")
+          .replace(/\/+$/, "")
+          .replace(/\/{2,}/g, "/")
+          .replace(/[^a-zA-Z0-9\-_\/]/g, "")
+          .slice(0, 99);
+      }
+
+      async function loadRegistry() {
+        if (!registryPromise) {
+          registryPromise = fetch("/_stats/api/v8s.json", { cache: "no-store" }).then((response) => {
+            if (!response.ok) throw new Error("Unable to load registry");
+            return response.json();
+          });
         }
 
-        renderTarget(slug, target, state);
-        trackExpand(slug, state, target, "resolved");
-      } catch {
-        renderMessage(labels.error);
-        trackExpand(slug, "", "", "error");
-      }
-    });
-
-    input.addEventListener("input", (event) => {
-      event.target.value = event.target.value.replace(/[^a-zA-Z0-9\-_\/]/g, "");
-      syncFormState();
-    });
-
-    input.addEventListener("paste", (event) => {
-      event.preventDefault();
-      const pasted = (event.clipboardData || window.clipboardData).getData("text");
-      input.value = normalizeSlug(pasted);
-      syncFormState();
-    });
-
-    syncFormState();
-
-    function syncFormState() {
-      form.classList.toggle("has-value", input.value.trim().length > 0);
-    }
-
-    function normalizeSlug(value) {
-      return String(value || "")
-        .trim()
-        .replace(/^https?:\/\/[^/]+\//i, "")
-        .replace(/^\/+/, "")
-        .replace(/\/+$/, "")
-        .replace(/\/{2,}/g, "/")
-        .replace(/[^a-zA-Z0-9\-_\/]/g, "")
-        .slice(0, 99);
-    }
-
-    async function loadRegistry() {
-      if (!registryPromise) {
-        registryPromise = fetch("/_stats/api/v8s.json", { cache: "no-store" }).then((response) => {
-          if (!response.ok) throw new Error("Unable to load registry");
-          return response.json();
-        });
+        return registryPromise;
       }
 
-      return registryPromise;
-    }
+      function resolveLink(links, slug) {
+        const exact = links.find((link) => (link.match || "exact") === "exact" && link.slug === slug);
+        if (exact) return { link: exact, splat: "" };
 
-    function resolveLink(links, slug) {
-      const exact = links.find((link) => (link.match || "exact") === "exact" && link.slug === slug);
-      if (exact) return { link: exact, splat: "" };
+        const splats = links.filter((link) => link.match === "splat").sort((a, b) => b.slug.length - a.slug.length);
 
-      const splats = links
-        .filter((link) => link.match === "splat")
-        .sort((a, b) => b.slug.length - a.slug.length);
-
-      for (const link of splats) {
-        if (slug.startsWith(`${link.slug}/`)) {
-          return { link, splat: slug.slice(link.slug.length + 1) };
+        for (const link of splats) {
+          if (slug.startsWith(`${link.slug}/`)) {
+            return { link, splat: slug.slice(link.slug.length + 1) };
+          }
         }
+
+        return null;
       }
 
-      return null;
-    }
+      function effectiveState(link, registry) {
+        if (link.expires_at) {
+          const expiry = new Date(link.expires_at);
+          if (!Number.isNaN(expiry.getTime()) && expiry < new Date()) return "expired";
+        }
 
-    function effectiveState(link, registry) {
-      if (link.expires_at) {
-        const expiry = new Date(link.expires_at);
-        if (!Number.isNaN(expiry.getTime()) && expiry < new Date()) return "expired";
+        return link.state || registry.default_state || "permanent";
       }
 
-      return link.state || registry.default_state || "permanent";
-    }
+      function resolveTarget(route, link, splat) {
+        if (!route || route.type !== "redirect" || route.target !== "link.target") return "";
 
-    function resolveTarget(route, link, splat) {
-      if (!route || route.type !== "redirect" || route.target !== "link.target") return "";
+        const target = route.target === "link.target" ? link.target : route.target;
+        return splat ? target.replaceAll(":splat", splat) : target;
+      }
 
-      const target = route.target === "link.target" ? link.target : route.target;
-      return splat ? target.replaceAll(":splat", splat) : target;
-    }
-
-    function renderMessage(message) {
-      result.classList.add("is-visible");
-      result.innerHTML = `
+      function renderMessage(message) {
+        result.classList.add("is-visible");
+        result.innerHTML = `
         <p class="expand-label">${escapeHtml(labels.preview)}</p>
         <p class="expand-target">${escapeHtml(message)}</p>
       `;
-    }
+      }
 
-    function renderTarget(slug, target, state) {
-      result.classList.add("is-visible");
-      result.innerHTML = `
+      function renderTarget(slug, target, state) {
+        result.classList.add("is-visible");
+        result.innerHTML = `
         <p class="expand-label">${escapeHtml(labels.destination)}</p>
         <p class="expand-target"><a href="${escapeAttr(target)}" target="_blank" rel="noreferrer">${escapeHtml(target)}</a></p>
         <p class="expand-meta">/${escapeHtml(slug)} · ${escapeHtml(state)}</p>
       `;
-    }
-
-    function trackExpand(slug, state, target, result) {
-      const body = JSON.stringify({ slug, state, target, result });
-
-      if (navigator.sendBeacon) {
-        const blob = new Blob([body], { type: "application/json" });
-        navigator.sendBeacon("/_analytics/expand", blob);
-        return;
       }
 
-      fetch("/_analytics/expand", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body,
-        keepalive: true
-      }).catch(() => {});
-    }
+      function trackExpand(slug, state, target, result) {
+        const body = JSON.stringify({ slug, state, target, result });
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
+        if (navigator.sendBeacon) {
+          const blob = new Blob([body], { type: "application/json" });
+          navigator.sendBeacon("/_analytics/expand", blob);
+          return;
+        }
 
-    function escapeAttr(value) {
-      return escapeHtml(value);
-    }
-  </script>
-</body>
+        fetch("/_analytics/expand", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body,
+          keepalive: true
+        }).catch(() => {});
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value);
+      }
+    </script>
+  </body>
 </html>

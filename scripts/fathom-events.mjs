@@ -18,16 +18,22 @@ const existing = await listEvents(siteId);
 const existingNames = new Set(existing.map((event) => event.name));
 const missing = events.filter((name) => !existingNames.has(name));
 
-console.log(JSON.stringify({
-  site: siteId,
-  mode: apply ? "apply" : "dry-run",
-  desired_events: events,
-  existing_events: existing.map((event) => ({
-    id: event.id,
-    name: event.name
-  })),
-  missing_events: missing
-}, null, 2));
+console.log(
+  JSON.stringify(
+    {
+      site: siteId,
+      mode: apply ? "apply" : "dry-run",
+      desired_events: events,
+      existing_events: existing.map((event) => ({
+        id: event.id,
+        name: event.name
+      })),
+      missing_events: missing
+    },
+    null,
+    2
+  )
+);
 
 if (!apply) {
   console.log("\nDry run only. Add --apply to create missing events.");

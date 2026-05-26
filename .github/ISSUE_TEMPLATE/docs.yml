@@ -5,9 +5,9 @@ labels: [docs, needs-triage]
 assignees:
   - bhdicaire
 body:
-- type: textarea
-  attributes:
-    label: Docs/README.md Part to update
-    description: A concise description of what you thing should be updated
-  validations:
-    required: true
+  - type: textarea
+    attributes:
+      label: Docs/README.md Part to update
+      description: A concise description of what you thing should be updated
+    validations:
+      required: true

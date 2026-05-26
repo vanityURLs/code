@@ -193,13 +193,15 @@ function findForcedAllowlistOverrides(generatedEntries, allowDomains) {
 function notifyForcedAllowlistOverrides(forcedOverrides) {
   if (!forcedOverrides.length) return;
 
-  console.warn(`::warning::${forcedOverrides.length} generated blocklist item(s) are force-allowed by custom/default allow_domains`);
+  console.warn(
+    `::warning::${forcedOverrides.length} generated blocklist item(s) are force-allowed by custom/default allow_domains`
+  );
 
   for (const override of forcedOverrides.slice(0, MAX_FORCE_NOTICES)) {
     console.warn(
       `Forced allowlist override: ${override.domain} ` +
-      `from ${override.generated_source} (${override.category}/${override.severity}) ` +
-      `allowed by ${override.allowed_domain}: ${override.reason}`
+        `from ${override.generated_source} (${override.category}/${override.severity}) ` +
+        `allowed by ${override.allowed_domain}: ${override.reason}`
     );
   }
 
@@ -252,7 +254,9 @@ async function main() {
     recursive: true
   });
   fs.writeFileSync(outputPath, `${JSON.stringify(policy, null, 2)}\n`);
-  console.log(`Generated ${OUTPUT_PATH} with ${policy.block_domains.length} blocked domains from ${sourceSummaries.length} source(s)`);
+  console.log(
+    `Generated ${OUTPUT_PATH} with ${policy.block_domains.length} blocked domains from ${sourceSummaries.length} source(s)`
+  );
 }
 
 main().catch((error) => {

@@ -1,71 +1,89 @@
 <!doctype html>
 <html lang="it">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Link brevi VanityURLs</title>
-  <script>
-    (function () {
-      var pathname = window.location.pathname || "/";
-      if (pathname === "/") return;
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Link brevi VanityURLs</title>
+    <script>
+      (function () {
+        var pathname = window.location.pathname || "/";
+        if (pathname === "/") return;
 
-      try {
-        window.__initialInvalidRedirectKey = decodeURIComponent(pathname.replace(/^\//, ""));
-      } catch {
-        window.__initialInvalidRedirectKey = pathname.replace(/^\//, "");
-      }
-    })();
-  </script>
-  <link rel="stylesheet" href="/style.css?v=20260504">
-</head>
-<body>
-  <main class="page-shell">
-    <section class="search-home" aria-labelledby="brand-title">
-      <a class="wordmark" href="https://vanityurls.link/" target="_blank" rel="noreferrer" aria-label="VanityURLs">
-        <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
-      </a>
+        try {
+          window.__initialInvalidRedirectKey = decodeURIComponent(pathname.replace(/^\//, ""));
+        } catch {
+          window.__initialInvalidRedirectKey = pathname.replace(/^\//, "");
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/style.css?v=20260504" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="search-home" aria-labelledby="brand-title">
+        <a class="wordmark" href="https://vanityurls.link/" target="_blank" rel="noreferrer" aria-label="VanityURLs">
+          <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
+        </a>
 
-      <form class="redirect-form" onsubmit="redirect(event)">
-        <label class="sr-only" for="redirectKey">Link breve</label>
-        <div class="search-box">
-          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
-          </svg>
-          <input id="redirectKey" type="text" maxlength="99" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="Inserisci un link breve, reindirizzato dal motore VanityURLs" required>
-          <script>
-            (function () {
-              var initialInvalidKey = window.__initialInvalidRedirectKey;
-              if (!initialInvalidKey) return;
-
-              var input = document.getElementById("redirectKey");
-              var form = document.querySelector(".redirect-form");
-
-              if (input) input.value = initialInvalidKey;
-              if (form) form.classList.add("has-value");
-            })();
-          </script>
-          <button type="submit" aria-label="Apri link breve">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M5 12h12M13 6l6 6-6 6" />
+        <form class="redirect-form" onsubmit="redirect(event)">
+          <label class="sr-only" for="redirectKey">Link breve</label>
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
             </svg>
-          </button>
-        </div>
-      </form>
+            <input
+              id="redirectKey"
+              type="text"
+              maxlength="99"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              inputmode="url"
+              placeholder="Inserisci un link breve, reindirizzato dal motore VanityURLs"
+              required
+            />
+            <script>
+              (function () {
+                var initialInvalidKey = window.__initialInvalidRedirectKey;
+                if (!initialInvalidKey) return;
 
-      <a class="redirected-badge" href="https://vanityURLs.link" target="_blank" rel="noreferrer" aria-label="VanityURLs">
-        <picture>
-          <source srcset="/it/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)">
-          <img src="/it/v8s-redirected.svg" alt="V8S reindirizzato da VanityURLs">
-        </picture>
-      </a>
-    </section>
-  </main>
+                var input = document.getElementById("redirectKey");
+                var form = document.querySelector(".redirect-form");
 
-  <noscript>
-    <p>JavaScript è disattivato</p>
-    <p><span>Apri i link brevi direttamente nella barra degli indirizzi, ad esempio:</span> <a href="/test">/test</a></p>
-  </noscript>
+                if (input) input.value = initialInvalidKey;
+                if (form) form.classList.add("has-value");
+              })();
+            </script>
+            <button type="submit" aria-label="Apri link breve">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M5 12h12M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+        </form>
 
-  <script src="/script.js"></script>
-</body>
+        <a
+          class="redirected-badge"
+          href="https://vanityURLs.link"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="VanityURLs"
+        >
+          <picture>
+            <source srcset="/it/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)" />
+            <img src="/it/v8s-redirected.svg" alt="V8S reindirizzato da VanityURLs" />
+          </picture>
+        </a>
+      </section>
+    </main>
+
+    <noscript>
+      <p>JavaScript è disattivato</p>
+      <p>
+        <span>Apri i link brevi direttamente nella barra degli indirizzi, ad esempio:</span> <a href="/test">/test</a>
+      </p>
+    </noscript>
+
+    <script src="/script.js"></script>
+  </body>
 </html>

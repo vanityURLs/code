@@ -5,22 +5,8 @@
     "block_private_networks": true,
     "block_localhost": true,
     "block_auth_in_url": true,
-    "allowed_protocols": [
-      "http:",
-      "https:"
-    ],
-    "blocked_file_extensions": [
-      ".exe",
-      ".scr",
-      ".bat",
-      ".cmd",
-      ".com",
-      ".msi",
-      ".ps1",
-      ".vbs",
-      ".js",
-      ".jar"
-    ]
+    "allowed_protocols": ["http:", "https:"],
+    "blocked_file_extensions": [".exe", ".scr", ".bat", ".cmd", ".com", ".msi", ".ps1", ".vbs", ".js", ".jar"]
   },
   "allow_domains": [
     {

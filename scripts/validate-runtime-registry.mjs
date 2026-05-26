@@ -9,9 +9,15 @@ const requiredStates = ["permanent", "ephemeral", "expired", "disabled", "mainte
 const allowedRouteTypes = new Set(["redirect", "error"]);
 const allowedMatches = new Set(["exact", "splat"]);
 
-function fail(message) { errors.push(message); }
-function warn(message) { warnings.push(message); }
-function annotate(kind, message) { console.error(`::${kind}::${message}`); }
+function fail(message) {
+  errors.push(message);
+}
+function warn(message) {
+  warnings.push(message);
+}
+function annotate(kind, message) {
+  console.error(`::${kind}::${message}`);
+}
 function validUrl(value) {
   try {
     const url = new URL(value);
@@ -76,7 +82,8 @@ try {
 
 if (registry.schema_version !== "3.0") fail("schema_version must be 3.0");
 if (registry.default_state !== "permanent") fail("default_state must be permanent");
-if (!registry.routing || typeof registry.routing !== "object" || Array.isArray(registry.routing)) fail("routing must be an object");
+if (!registry.routing || typeof registry.routing !== "object" || Array.isArray(registry.routing))
+  fail("routing must be an object");
 for (const state of requiredStates) {
   if (!registry.routing?.[state]) fail(`routing.${state} is required`);
 }

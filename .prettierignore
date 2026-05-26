@@ -1,0 +1,17 @@
+.git/
+.wrangler/
+build/
+node_modules/
+src/
+
+*.png
+*.svg
+*.woff2
+
+CHANGELOG.txt
+custom/v8s-links.txt
+defaults/v8s-links.txt
+defaults/public/_headers
+defaults/public/llms.txt
+defaults/public/llms-full.txt
+defaults/public/robots.txt

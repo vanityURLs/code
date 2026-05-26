@@ -6,7 +6,8 @@ Status: Accepted
 
 ## Context
 
-The policy layer blocks scanner probes such as WordPress and PHP endpoint scans. Some strings, such as `.php`, are unsafe as requested paths on a non-PHP redirector but can be legitimate in long-link destinations.
+The policy layer blocks scanner probes such as WordPress and PHP endpoint scans. Some strings, such as `.php`, are
+unsafe as requested paths on a non-PHP redirector but can be legitimate in long-link destinations.
 
 Blocking those strings everywhere can reject valid redirects.
 

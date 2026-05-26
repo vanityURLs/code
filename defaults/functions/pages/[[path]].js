@@ -185,9 +185,7 @@ function resolveLink(links, slug) {
     };
   }
 
-  const splats = links
-    .filter((link) => link.match === "splat")
-    .sort((a, b) => b.slug.length - a.slug.length);
+  const splats = links.filter((link) => link.match === "splat").sort((a, b) => b.slug.length - a.slug.length);
 
   for (const link of splats) {
     if (slug.startsWith(`${link.slug}/`)) {
@@ -359,9 +357,7 @@ async function logAnalyticsEvent(env, request, data) {
     if (env.ANALYTICS_PROVIDER !== "umami") return;
     if (!env.UMAMI_WEBSITE_ID) return;
 
-    const endpoint = normalizeUmamiEndpoint(
-      env.UMAMI_ENDPOINT || "https://cloud.umami.is/api/send"
-    );
+    const endpoint = normalizeUmamiEndpoint(env.UMAMI_ENDPOINT || "https://cloud.umami.is/api/send");
 
     const requestUrl = new URL(request.url);
 

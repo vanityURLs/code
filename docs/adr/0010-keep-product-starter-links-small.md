@@ -6,9 +6,11 @@ Status: Accepted
 
 ## Context
 
-New instances need a clear first `custom/v8s-links.txt` file. The previous product default link file mixed starter links, project links, personal-style examples, lifecycle probes, and namespace examples.
+New instances need a clear first `custom/v8s-links.txt` file. The previous product default link file mixed starter
+links, project links, personal-style examples, lifecycle probes, and namespace examples.
 
-That made setup confusing because the installer created a small hard-coded starter list while `defaults/v8s-links.txt` contained a much larger example inventory.
+That made setup confusing because the installer created a small hard-coded starter list while `defaults/v8s-links.txt`
+contained a much larger example inventory.
 
 ## Decision
 
@@ -18,7 +20,8 @@ Keep `defaults/v8s-links.txt` as the product starter source with only:
 - `status`
 - `docs`
 
-When `custom/v8s-links.txt` is missing, setup creates it from `defaults/v8s-links.txt` and adapts the starter home, status, and owner values for the instance.
+When `custom/v8s-links.txt` is missing, setup creates it from `defaults/v8s-links.txt` and adapts the starter home,
+status, and owner values for the instance.
 
 Larger example inventories belong in demo instances or documentation, not in the product starter file.
 

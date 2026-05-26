@@ -9,15 +9,39 @@ const blocklistPolicy = loadBlocklistPolicy();
 
 const allowedStates = new Set(["permanent", "ephemeral", "expired", "disabled", "maintenance", "deactivated"]);
 const targetRedirectStates = new Set(["permanent", "ephemeral"]);
-const reservedTopLevel = new Set(["_stats", "assets", "expand", "404", "404.html", "v8s.json", "v8s-blocklist.json", "v8s-site-config.json", "expired", "disabled", "maintenance", "deactivated"]);
+const reservedTopLevel = new Set([
+  "_stats",
+  "assets",
+  "expand",
+  "404",
+  "404.html",
+  "v8s.json",
+  "v8s-blocklist.json",
+  "v8s-site-config.json",
+  "expired",
+  "disabled",
+  "maintenance",
+  "deactivated"
+]);
 
-function fail(message) { errors.push(message); }
-function warn(message) { warnings.push(message); }
-function annotate(kind, message) { console.error(`::${kind}::${message}`); }
+function fail(message) {
+  errors.push(message);
+}
+function warn(message) {
+  warnings.push(message);
+}
+function annotate(kind, message) {
+  console.error(`::${kind}::${message}`);
+}
 
-function clean(value) { return String(value ?? "").trim(); }
+function clean(value) {
+  return String(value ?? "").trim();
+}
 function normalizePath(value) {
-  return clean(value).replace(/^\/+/, "").replace(/\/+$/, "").replace(/\/{2,}/g, "/");
+  return clean(value)
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "")
+    .replace(/\/{2,}/g, "/");
 }
 function normalizeTarget(value) {
   const target = clean(value);
@@ -71,9 +95,11 @@ if (!fs.existsSync(file)) {
     const displayPath = isSplat ? `${path}/*` : path;
 
     if (!path) fail(`Line ${lineNumber}: path is empty`);
-    if (rawPath.startsWith("/") || rawPath.endsWith("/") && !rawPath.endsWith("/*")) fail(`${displayPath}: no leading or trailing slash allowed`);
+    if (rawPath.startsWith("/") || (rawPath.endsWith("/") && !rawPath.endsWith("/*")))
+      fail(`${displayPath}: no leading or trailing slash allowed`);
     if (rawPath.includes("//")) fail(`${displayPath}: double slash is not allowed`);
-    if (path.includes("?") || path.includes("#")) fail(`${displayPath}: query strings and fragments are not allowed in paths`);
+    if (path.includes("?") || path.includes("#"))
+      fail(`${displayPath}: query strings and fragments are not allowed in paths`);
 
     const segments = path.split("/");
     for (const segment of segments) {

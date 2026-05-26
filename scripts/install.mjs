@@ -16,7 +16,8 @@ const DEFAULT_SITE_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-site-config.js
 const DEFAULT_LINKS_PATH = path.join(ROOT, "defaults", "v8s-links.txt");
 const DEFAULT_PUBLIC_DIR = path.join(ROOT, "defaults", "public");
 const DEFAULT_DOMAIN = "v8s.link";
-const DEFAULT_LANGUAGES = ["en", "fr", "es", "it", "de"];
+const DEFAULT_LANGUAGE = "en";
+const DEFAULT_LANGUAGES = ["de", "en", "es", "fr", "it"];
 const DEFAULT_RANDOM_SLUG_LENGTH = 3;
 const MAX_RANDOM_SLUG_LENGTH = 64;
 const MAX_WORKER_NAME_LENGTH = 63;
@@ -73,8 +74,10 @@ async function promptForMissing(args) {
   const configuredDomain = siteConfig.branding?.domain || args.domain || wranglerConfig.routeDomain || DEFAULT_DOMAIN;
   const configuredWorkerName = args.workerName || wranglerConfig.name || slugifyWorker(configuredDomain);
   const configuredOwner = args.owner === "owner" ? inferOwnerFromLinks() || args.owner : args.owner;
-  const configuredRandomSlugLength = args.randomSlugLength || siteConfig.links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH;
-  const configuredAnalytics = args.analytics === "disabled" ? wranglerConfig.analyticsProvider || args.analytics : args.analytics;
+  const configuredRandomSlugLength =
+    args.randomSlugLength || siteConfig.links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH;
+  const configuredAnalytics =
+    args.analytics === "disabled" ? wranglerConfig.analyticsProvider || args.analytics : args.analytics;
   const configuredAccessTeamDomain = args.accessTeamDomain || wranglerConfig.accessTeamDomain || "";
   const configuredOperator = siteConfig.operator || {};
   const configuredBranding = siteConfig.branding || {};
@@ -82,41 +85,107 @@ async function promptForMissing(args) {
 
   const rl = readline.createInterface({ input, output });
   try {
-    args.domain = args.domain || await question(rl, "Short domain", configuredDomain);
+    args.domain = args.domain || (await question(rl, "Short domain", configuredDomain));
     args.workerName = await question(rl, "Worker name", configuredWorkerName);
     args.owner = await question(rl, "Owner label", configuredOwner);
     args.randomSlugLength = await question(rl, "Random slug length", configuredRandomSlugLength);
     args.analytics = await question(rl, "Analytics provider", configuredAnalytics);
     const analyticsEnabled = !isAnalyticsDisabled(args.analytics);
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
-    args.languages = normalizeLanguages(await question(rl, "Supported languages", args.languages || configuredLanguages));
-    args.configureLegalPages = await confirm(rl, "Configure privacy, terms, and security pages now?", configuredOperator.legal_pages_enabled !== false && hasConfiguredLegalPages(configuredOperator));
-    args.operatorLegalName = await question(rl, "Operator legal name", args.operatorLegalName || configuredOperator.legal_name || "");
+    args.languages = normalizeLanguages(
+      await question(rl, "Supported languages", args.languages || configuredLanguages)
+    );
+    args.configureLegalPages = await confirm(
+      rl,
+      "Configure privacy, terms, and security pages now?",
+      configuredOperator.legal_pages_enabled !== false && hasConfiguredLegalPages(configuredOperator)
+    );
+    args.operatorLegalName = await question(
+      rl,
+      "Operator legal name",
+      args.operatorLegalName || configuredOperator.legal_name || ""
+    );
     args.operatorShortDomain = args.operatorShortDomain || args.domain;
-    args.operatorDomain = await question(rl, "Operator domain for contact emails", args.operatorDomain || configuredOperator.operator_domain || "");
+    args.operatorDomain = await question(
+      rl,
+      "Operator domain for contact emails",
+      args.operatorDomain || configuredOperator.operator_domain || ""
+    );
     const operatorEmailDomain = args.operatorDomain || args.domain;
     if (args.configureLegalPages) {
-      args.operatorJurisdiction = await question(rl, "Operator jurisdiction, for example Canada", args.operatorJurisdiction || configuredOperator.jurisdiction || "");
-      args.operatorGoverningLaw = await question(rl, "Governing law", args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "");
-      args.operatorContactEmail = await question(rl, "Operator contact email", args.operatorContactEmail || configuredOperator.contact_email || defaultContactEmail("hello", operatorEmailDomain));
-      args.operatorPrivacyContact = await question(rl, "Privacy contact", args.operatorPrivacyContact || configuredOperator.privacy_contact || defaultContactEmail("privacy", operatorEmailDomain));
+      args.operatorJurisdiction = await question(
+        rl,
+        "Operator jurisdiction, for example Canada",
+        args.operatorJurisdiction || configuredOperator.jurisdiction || ""
+      );
+      args.operatorGoverningLaw = await question(
+        rl,
+        "Governing law",
+        args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || ""
+      );
+      args.operatorContactEmail = await question(
+        rl,
+        "Operator contact email",
+        args.operatorContactEmail ||
+          configuredOperator.contact_email ||
+          defaultContactEmail("hello", operatorEmailDomain)
+      );
+      args.operatorPrivacyContact = await question(
+        rl,
+        "Privacy contact",
+        args.operatorPrivacyContact ||
+          configuredOperator.privacy_contact ||
+          defaultContactEmail("privacy", operatorEmailDomain)
+      );
     } else {
       args.operatorJurisdiction = args.operatorJurisdiction || configuredOperator.jurisdiction || "";
-      args.operatorGoverningLaw = args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "";
+      args.operatorGoverningLaw =
+        args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || "";
       args.operatorContactEmail = args.operatorContactEmail || configuredOperator.contact_email || "";
       args.operatorPrivacyContact = args.operatorPrivacyContact || configuredOperator.privacy_contact || "";
     }
-    args.operatorAbuseContact = await question(rl, "Trust & Safety contact", args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", operatorEmailDomain));
-    args.operatorAbuseResponseWindow = await question(rl, "Trust & Safety response window", args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days");
-    args.operatorSecurityContact = await question(rl, "Security contact", args.operatorSecurityContact || configuredOperator.security_contact || defaultContactEmail("security", operatorEmailDomain));
+    args.operatorAbuseContact = await question(
+      rl,
+      "Trust & Safety contact",
+      args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", operatorEmailDomain)
+    );
+    args.operatorAbuseResponseWindow = await question(
+      rl,
+      "Trust & Safety response window",
+      args.operatorAbuseResponseWindow || configuredOperator.abuse_response_window || "5 business days"
+    );
+    args.operatorSecurityContact = await question(
+      rl,
+      "Security contact",
+      args.operatorSecurityContact ||
+        configuredOperator.security_contact ||
+        defaultContactEmail("security", operatorEmailDomain)
+    );
     if (args.configureLegalPages) {
-      args.operatorLastUpdated = await question(rl, "Legal pages last updated date", args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate());
+      args.operatorLastUpdated = await question(
+        rl,
+        "Legal pages last updated date",
+        args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate()
+      );
     } else {
-      args.operatorLastUpdated = args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate();
+      args.operatorLastUpdated =
+        args.operatorLastUpdated || configuredOperator.last_updated || gitLastUpdatedDate() || todayIsoDate();
     }
     if (analyticsEnabled) {
-      args.operatorAnalyticsDisclosure = await question(rl, "Analytics disclosure", args.operatorAnalyticsDisclosure || configuredOperator.analytics_disclosure || analyticsDisclosureDefault(args.analytics));
-      args.operatorAnalyticsRetention = await question(rl, "Analytics retention", args.operatorAnalyticsRetention || configuredOperator.analytics_retention || analyticsRetentionDefault(args.analytics));
+      args.operatorAnalyticsDisclosure = await question(
+        rl,
+        "Analytics disclosure",
+        args.operatorAnalyticsDisclosure ||
+          configuredOperator.analytics_disclosure ||
+          analyticsDisclosureDefault(args.analytics)
+      );
+      args.operatorAnalyticsRetention = await question(
+        rl,
+        "Analytics retention",
+        args.operatorAnalyticsRetention ||
+          configuredOperator.analytics_retention ||
+          analyticsRetentionDefault(args.analytics)
+      );
     } else {
       args.operatorAnalyticsDisclosure = args.operatorAnalyticsDisclosure || analyticsDisclosureDefault(args.analytics);
       args.operatorAnalyticsRetention = args.operatorAnalyticsRetention || "";
@@ -131,9 +200,21 @@ async function promptForMissing(args) {
       args.brandingSlogans = args.brandingSloganEnabled
         ? await promptForBrandingSlogans(rl, args, configuredBranding.slogan)
         : {};
-      args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
-      args.wordmarkBlack = await question(rl, "Black wordmark portion", args.wordmarkBlack || configuredBrand?.black || suggested.black);
-      args.wordmarkGreen = await question(rl, "Green wordmark portion", args.wordmarkGreen || configuredBrand?.green || suggested.green);
+      args.customizePublic = await confirm(
+        rl,
+        "Copy default web pages to custom/public with a split-color domain wordmark?",
+        siteConfig.branding?.custom_public !== false
+      );
+      args.wordmarkBlack = await question(
+        rl,
+        "Black wordmark portion",
+        args.wordmarkBlack || configuredBrand?.black || suggested.black
+      );
+      args.wordmarkGreen = await question(
+        rl,
+        "Green wordmark portion",
+        args.wordmarkGreen || configuredBrand?.green || suggested.green
+      );
     } else {
       args.customizePublic = args.customizePublic ?? siteConfig.branding?.custom_public === true;
       args.brandingSlogans = normalizeSloganMap(configuredBranding.slogan, args.languages, args);
@@ -153,13 +234,13 @@ function normalizeArgs(args) {
   args.owner = slugifyOwner(args.owner);
   args.randomSlugLength = normalizeRandomSlugLength(args.randomSlugLength || DEFAULT_RANDOM_SLUG_LENGTH);
   args.languages = normalizeLanguages(args.languages);
-  args.configureBranding = args.configureBranding ?? (
-    args.customizePublic != null
-    || args.brandingSlogan != null
-    || args.brandingSlogans != null
-    || args.wordmarkBlack != null
-    || args.wordmarkGreen != null
-  );
+  args.configureBranding =
+    args.configureBranding ??
+    (args.customizePublic != null ||
+      args.brandingSlogan != null ||
+      args.brandingSlogans != null ||
+      args.wordmarkBlack != null ||
+      args.wordmarkGreen != null);
   args.configureBranding = normalizeBoolean(args.configureBranding);
   args.customizePublic = normalizeBoolean(args.customizePublic);
   args.brandingSlogans = normalizeSloganMap(args.brandingSlogans ?? args.brandingSlogan, args.languages, args);
@@ -198,16 +279,20 @@ function slugifyWorker(value) {
 
 function validateWorkerName(value) {
   if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(value)) {
-    throw new Error("Worker name must use lowercase letters, numbers, and hyphens; it must start and end with a letter or number.");
+    throw new Error(
+      "Worker name must use lowercase letters, numbers, and hyphens; it must start and end with a letter or number."
+    );
   }
 }
 
 function slugifyOwner(value) {
-  return String(value || "owner")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "owner";
+  return (
+    String(value || "owner")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "owner"
+  );
 }
 
 function normalizeAnalyticsProviders(value) {
@@ -285,7 +370,8 @@ function normalizeLanguages(value) {
     .map((language) => language.trim().toLowerCase().split("-")[0])
     .filter(Boolean);
   const unique = [...new Set(languages)];
-  return unique.includes("en") ? unique : ["en", ...unique];
+  if (!unique.includes(DEFAULT_LANGUAGE)) unique.push(DEFAULT_LANGUAGE);
+  return unique.sort((a, b) => a.localeCompare(b));
 }
 
 function normalizeBoolean(value) {
@@ -343,39 +429,36 @@ function normalizeOperator(args) {
 
 function hasConfiguredLegalPages(operator) {
   return Boolean(
-    String(operator?.jurisdiction || "").trim()
-    && String(operator?.governing_law || "").trim()
-    && String(operator?.contact_email || "").trim()
-    && String(operator?.privacy_contact || "").trim()
+    String(operator?.jurisdiction || "").trim() &&
+    String(operator?.governing_law || "").trim() &&
+    String(operator?.contact_email || "").trim() &&
+    String(operator?.privacy_contact || "").trim()
   );
 }
 
 function validateOperator(operator) {
-  const required = operator.legal_pages_enabled === true ? [
-    "legal_name",
-    "short_domain",
-    "jurisdiction",
-    "governing_law",
-    "contact_email",
-    "privacy_contact",
-    "abuse_contact",
-    "security_contact",
-    "last_updated",
-    "analytics_disclosure",
-    "abuse_response_window"
-  ] : [
-    "short_domain",
-    "abuse_contact",
-    "security_contact",
-    "last_updated",
-    "abuse_response_window"
-  ];
+  const required =
+    operator.legal_pages_enabled === true
+      ? [
+          "legal_name",
+          "short_domain",
+          "jurisdiction",
+          "governing_law",
+          "contact_email",
+          "privacy_contact",
+          "abuse_contact",
+          "security_contact",
+          "last_updated",
+          "analytics_disclosure",
+          "abuse_response_window"
+        ]
+      : ["short_domain", "abuse_contact", "security_contact", "last_updated", "abuse_response_window"];
   const missing = required.filter((field) => !String(operator[field] || "").trim());
-  const emailFields = operator.legal_pages_enabled === true
-    ? ["contact_email", "privacy_contact", "abuse_contact", "security_contact"]
-    : ["abuse_contact", "security_contact"];
-  const invalidEmails = emailFields
-    .filter((field) => !isEmail(operator[field]));
+  const emailFields =
+    operator.legal_pages_enabled === true
+      ? ["contact_email", "privacy_contact", "abuse_contact", "security_contact"]
+      : ["abuse_contact", "security_contact"];
+  const invalidEmails = emailFields.filter((field) => !isEmail(operator[field]));
   const invalidDate = /^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated || "")) ? [] : ["last_updated"];
   const issues = [...new Set([...missing, ...invalidEmails, ...invalidDate])];
 
@@ -413,9 +496,7 @@ function analyticsDisclosureDefault(providers) {
 
 function analyticsRetentionDefault(providers) {
   const normalized = String(providers || "disabled").toLowerCase();
-  return normalized === "disabled" || normalized.includes("none") || normalized.includes("off")
-    ? ""
-    : "180 days";
+  return normalized === "disabled" || normalized.includes("none") || normalized.includes("off") ? "" : "180 days";
 }
 
 function suggestWordmarkSplit(domain) {
@@ -431,10 +512,10 @@ function suggestWordmarkSplit(domain) {
 
 function hasConfiguredBranding(branding) {
   return Boolean(
-    branding?.custom_public === true
-    || hasConfiguredSlogan(branding?.slogan)
-    || String(branding?.wordmark?.black || "").trim()
-    || String(branding?.wordmark?.green || "").trim()
+    branding?.custom_public === true ||
+    hasConfiguredSlogan(branding?.slogan) ||
+    String(branding?.wordmark?.black || "").trim() ||
+    String(branding?.wordmark?.green || "").trim()
   );
 }
 
@@ -481,22 +562,26 @@ function normalizeSloganMap(value, languages, args) {
 function defaultBrandingSlogan(args, language = "en") {
   const operatorName = String(args.operatorLegalName || "").trim();
   if (!operatorName) {
-    return {
-      en: "A short-link service powered by vanityURLs",
-      fr: "Un service de liens courts propulsé par vanityURLs",
-      es: "Un servicio de enlaces cortos impulsado por vanityURLs",
-      it: "Un servizio di link brevi alimentato da vanityURLs",
-      de: "Ein Kurzlink-Dienst, betrieben mit vanityURLs"
-    }[language] || "A short-link service powered by vanityURLs";
+    return (
+      {
+        en: "A short-link service powered by vanityURLs",
+        fr: "Un service de liens courts propulsé par vanityURLs",
+        es: "Un servicio de enlaces cortos impulsado por vanityURLs",
+        it: "Un servizio di link brevi alimentato da vanityURLs",
+        de: "Ein Kurzlink-Dienst, betrieben mit vanityURLs"
+      }[language] || "A short-link service powered by vanityURLs"
+    );
   }
 
-  return {
-    en: `A short-link service for ${operatorName}'s projects`,
-    fr: `Un service de liens courts pour les projets de ${operatorName}`,
-    es: `Un servicio de enlaces cortos para los proyectos de ${operatorName}`,
-    it: `Un servizio di link brevi per i progetti di ${operatorName}`,
-    de: `Ein Kurzlink-Dienst fuer die Projekte von ${operatorName}`
-  }[language] || `A short-link service for ${operatorName}'s projects`;
+  return (
+    {
+      en: `A short-link service for ${operatorName}'s projects`,
+      fr: `Un service de liens courts pour les projets de ${operatorName}`,
+      es: `Un servicio de enlaces cortos para los proyectos de ${operatorName}`,
+      it: `Un servizio di link brevi per i progetti di ${operatorName}`,
+      de: `Ein Kurzlink-Dienst fuer die Projekte von ${operatorName}`
+    }[language] || `A short-link service for ${operatorName}'s projects`
+  );
 }
 
 async function confirm(rl, label, defaultValue) {
@@ -541,7 +626,7 @@ function updateSiteConfig(args) {
   const existingSiteConfig = loadSiteConfig();
   const siteConfig = mergeSiteConfig(loadSiteConfig(), {
     i18n: {
-      default_language: args.languages[0] || "en",
+      default_language: DEFAULT_LANGUAGE,
       supported_languages: args.languages
     },
     operator: args.operator,
@@ -551,20 +636,20 @@ function updateSiteConfig(args) {
     },
     branding: args.configureBranding
       ? {
-        domain: args.domain,
-        slogan: args.brandingSlogans,
-        custom_public: args.customizePublic === true,
-        wordmark: args.customizePublic
-          ? {
-            black: args.wordmarkBlack,
-            green: args.wordmarkGreen
-          }
-          : undefined
-      }
+          domain: args.domain,
+          slogan: args.brandingSlogans,
+          custom_public: args.customizePublic === true,
+          wordmark: args.customizePublic
+            ? {
+                black: args.wordmarkBlack,
+                green: args.wordmarkGreen
+              }
+            : undefined
+        }
       : {
-        ...(existingSiteConfig.branding || {}),
-        domain: args.domain
-      }
+          ...(existingSiteConfig.branding || {}),
+          domain: args.domain
+        }
   });
 
   writeJson(CUSTOM_SITE_CONFIG_PATH, siteConfig, args);
@@ -645,10 +730,15 @@ function applyBranding(html, args, language = "en") {
   const slogan = renderBrandingSlogan(localizedSlogan(args.brandingSlogans, language), args.operator);
 
   return html
-    .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) => wordmark.replace("$1", attributes))
+    .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) =>
+      wordmark.replace("$1", attributes)
+    )
     .replace(/<title>([^<]*?)VanityURLs([^<]*?)<\/title>/gi, `<title>$1${escapeHtml(brandLabel)}$2</title>`)
     .replace(/aria-label="VanityURLs"/g, `aria-label="${escapeHtmlAttribute(brandLabel)}"`)
-    .replace(/(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi, `$1"https://${escapeHtmlAttribute(args.domain)}/"`)
+    .replace(
+      /(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi,
+      `$1"https://${escapeHtmlAttribute(args.domain)}/"`
+    )
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityURLs\.link"/g, `$1"${PROJECT_SITE_URL}"`)
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityurls\.link\/?"/gi, `$1"${PROJECT_SITE_URL}"`)
     .replace(/(<a class="redirected-badge"[^>]*aria-label=)"[^"]*"/g, '$1"VanityURLs"')

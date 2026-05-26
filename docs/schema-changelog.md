@@ -1,8 +1,10 @@
 # Schema changelog
 
-This changelog records field-level schema changes for vanityURLs configuration files, including additive changes that do not bump `schema_version`.
+This changelog records field-level schema changes for vanityURLs configuration files, including additive changes that do
+not bump `schema_version`.
 
-`schema_version` is reserved for incompatible stored-config changes that need migration. See `docs/adr/0008-site-config-schema-versioning.md`.
+`schema_version` is reserved for incompatible stored-config changes that need migration. See
+`docs/adr/0008-site-config-schema-versioning.md`.
 
 ## 2026-05-26
 
@@ -14,7 +16,9 @@ Added optional field under `operator`:
 
 Compatibility: additive, no `schema_version` bump
 
-Migration: none required. When `operator.operator_domain` is blank or absent, setup defaults role-based email addresses from the short domain. When it is set, setup defaults operator, privacy, Trust & Safety, and security email addresses from the operator domain.
+Migration: none required. When `operator.operator_domain` is blank or absent, setup defaults role-based email addresses
+from the short domain. When it is set, setup defaults operator, privacy, Trust & Safety, and security email addresses
+from the operator domain.
 
 ### v8s-site-config.json
 
@@ -40,9 +44,11 @@ Added installer-managed branding fields:
 
 Compatibility: additive, no `schema_version` bump
 
-Follow-up: `branding.slogan` now supports localized slogan maps such as `{ "en": "...", "fr": "..." }`. Existing string values remain valid and are treated as the English fallback.
+Follow-up: `branding.slogan` now supports localized slogan maps such as `{ "en": "...", "fr": "..." }`. Existing string
+values remain valid and are treated as the English fallback.
 
-Migration: none required. Existing instances without `branding` continue to use default public assets or custom public files.
+Migration: none required. Existing instances without `branding` continue to use default public assets or custom public
+files.
 
 ### v8s-site-config.json
 
@@ -52,7 +58,8 @@ Added deferred legal-page mode:
 
 Compatibility: additive, no `schema_version` bump
 
-Migration: none required. Missing values behave like enabled legal pages only when the operator fields are fully configured.
+Migration: none required. Missing values behave like enabled legal pages only when the operator fields are fully
+configured.
 
 ### v8s-site-config.json
 
@@ -146,7 +153,8 @@ Replaced legacy blocklist naming with the broader policy source:
 
 Compatibility: additive and rename-compatible, no `schema_version` bump
 
-Migration: legacy `v8s-blocklist.json` filenames are still recognized for migration compatibility, but new instances should use `v8s-policies.json`.
+Migration: legacy `v8s-blocklist.json` filenames are still recognized for migration compatibility, but new instances
+should use `v8s-policies.json`.
 
 ### v8s-schedules.json
 

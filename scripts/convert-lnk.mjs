@@ -115,7 +115,7 @@ function stripComment(line) {
       continue;
     }
 
-    if (character === "\"" || character === "'") {
+    if (character === '"' || character === "'") {
       quote = character;
       output += character;
       continue;
@@ -156,7 +156,7 @@ function tokenize(line, lineNumber) {
       continue;
     }
 
-    if (character === "\"" || character === "'") {
+    if (character === '"' || character === "'") {
       quote = character;
       continue;
     }
@@ -258,17 +258,7 @@ function parseLegacyLine(rawLine, lineNumber, options) {
 
   assertNoPipes([slug, rawTarget, state, title, description, options.tags, options.owner], lineNumber);
 
-  return [
-    slug,
-    rawTarget.trim(),
-    state,
-    title,
-    description,
-    options.tags,
-    options.owner,
-    "",
-    ""
-  ].join("|");
+  return [slug, rawTarget.trim(), state, title, description, options.tags, options.owner, "", ""].join("|");
 }
 
 function convert(inputPath, options) {
@@ -312,15 +302,15 @@ function writeOutput(outputPath, content, options) {
   if (options.append) {
     const rows = content.split(/\r?\n/).filter((line) => line && !line.startsWith("#"));
     const existing = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "";
-    const existingSlugs = new Set(existing
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith("#"))
-      .map((line) => line.split("|")[0]?.trim())
-      .filter(Boolean));
-    const duplicate = rows
-      .map((line) => line.split("|")[0]?.trim())
-      .find((slug) => existingSlugs.has(slug));
+    const existingSlugs = new Set(
+      existing
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith("#"))
+        .map((line) => line.split("|")[0]?.trim())
+        .filter(Boolean)
+    );
+    const duplicate = rows.map((line) => line.split("|")[0]?.trim()).find((slug) => existingSlugs.has(slug));
 
     if (duplicate) {
       throw new Error(`Output already contains slug '${duplicate}'. Remove the existing row before using --append.`);

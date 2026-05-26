@@ -10,25 +10,11 @@ if (!filePath) {
   process.exit(1);
 }
 
-const VALID_STATES = new Set([
-  "permanent",
-  "ephemeral",
-  "expired",
-  "disabled",
-  "maintenance",
-  "deactivated"
-]);
+const VALID_STATES = new Set(["permanent", "ephemeral", "expired", "disabled", "maintenance", "deactivated"]);
 const TARGET_REDIRECT_STATES = new Set(["permanent", "ephemeral"]);
 const VALID_DAYS = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
 
-const REQUIRED_ROUTES = [
-  "permanent",
-  "ephemeral",
-  "expired",
-  "disabled",
-  "maintenance",
-  "deactivated"
-];
+const REQUIRED_ROUTES = ["permanent", "ephemeral", "expired", "disabled", "maintenance", "deactivated"];
 
 function error(errors, message) {
   errors.push(message);
@@ -39,10 +25,7 @@ function isValidUrl(value) {
 
   try {
     const url = new URL(value);
-    return ["http:", "https:"].includes(url.protocol) &&
-      Boolean(url.hostname) &&
-      !url.username &&
-      !url.password;
+    return ["http:", "https:"].includes(url.protocol) && Boolean(url.hostname) && !url.username && !url.password;
   } catch {
     return false;
   }

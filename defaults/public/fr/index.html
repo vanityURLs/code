@@ -1,79 +1,97 @@
 <!doctype html>
 <html lang="fr-CA">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Liens courts VanityURLs</title>
-  <script>
-    (function () {
-      var pathname = window.location.pathname || "/";
-      if (pathname === "/") return;
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Liens courts VanityURLs</title>
+    <script>
+      (function () {
+        var pathname = window.location.pathname || "/";
+        if (pathname === "/") return;
 
-      try {
-        window.__initialInvalidRedirectKey = decodeURIComponent(pathname.replace(/^\//, ""));
-      } catch {
-        window.__initialInvalidRedirectKey = pathname.replace(/^\//, "");
-      }
-    })();
-  </script>
-  <link rel="stylesheet" href="/style.css?v=20260504">
-</head>
-<body>
-  <main class="page-shell">
-    <section class="search-home" aria-labelledby="brand-title">
-      <a class="wordmark" href="https://vanityurls.link/" target="_blank" rel="noreferrer" aria-label="VanityURLs">
-        <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
-      </a>
+        try {
+          window.__initialInvalidRedirectKey = decodeURIComponent(pathname.replace(/^\//, ""));
+        } catch {
+          window.__initialInvalidRedirectKey = pathname.replace(/^\//, "");
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/style.css?v=20260504" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="search-home" aria-labelledby="brand-title">
+        <a class="wordmark" href="https://vanityurls.link/" target="_blank" rel="noreferrer" aria-label="VanityURLs">
+          <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
+        </a>
 
-      <form class="redirect-form" onsubmit="redirect(event)">
-        <label class="sr-only" for="redirectKey">Lien court</label>
-        <div class="search-box">
-          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
-          </svg>
-          <input id="redirectKey" type="text" maxlength="99" autocomplete="off" autocapitalize="none" spellcheck="false" inputmode="url" placeholder="Saisir un lien court, redirigé par le moteur VanityURLs" required>
-          <script>
-            (function () {
-              var initialInvalidKey = window.__initialInvalidRedirectKey;
-              if (!initialInvalidKey) return;
-
-              var input = document.getElementById("redirectKey");
-              var form = document.querySelector(".redirect-form");
-
-              if (input) input.value = initialInvalidKey;
-              if (form) form.classList.add("has-value");
-            })();
-          </script>
-          <button type="submit" aria-label="Ouvrir le lien court">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M5 12h12M13 6l6 6-6 6" />
+        <form class="redirect-form" onsubmit="redirect(event)">
+          <label class="sr-only" for="redirectKey">Lien court</label>
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
             </svg>
-          </button>
-        </div>
-      </form>
+            <input
+              id="redirectKey"
+              type="text"
+              maxlength="99"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              inputmode="url"
+              placeholder="Saisir un lien court, redirigé par le moteur VanityURLs"
+              required
+            />
+            <script>
+              (function () {
+                var initialInvalidKey = window.__initialInvalidRedirectKey;
+                if (!initialInvalidKey) return;
 
-      <a class="redirected-badge" href="https://vanityURLs.link" target="_blank" rel="noreferrer" aria-label="VanityURLs">
-        <picture>
-          <source srcset="/fr/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)">
-          <img src="/fr/v8s-redirected.svg" alt="V8S redirigé par VanityURLs">
-        </picture>
-      </a>
+                var input = document.getElementById("redirectKey");
+                var form = document.querySelector(".redirect-form");
 
-      <nav class="page-links" aria-label="Pages de l'instance">
-        <a href="/fr/privacy.html">Confidentialité</a>
-        <a href="/fr/terms.html">Conditions</a>
-        <a href="/fr/abuse.html">Confiance et sécurité</a>
-        <a href="/fr/security.html">Sécurité</a>
-      </nav>
+                if (input) input.value = initialInvalidKey;
+                if (form) form.classList.add("has-value");
+              })();
+            </script>
+            <button type="submit" aria-label="Ouvrir le lien court">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M5 12h12M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+        </form>
 
-    </section>
-  </main>
+        <a
+          class="redirected-badge"
+          href="https://vanityURLs.link"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="VanityURLs"
+        >
+          <picture>
+            <source srcset="/fr/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)" />
+            <img src="/fr/v8s-redirected.svg" alt="V8S redirigé par VanityURLs" />
+          </picture>
+        </a>
 
-  <noscript>
-    <p>JavaScript est désactivé</p>
-    <p><span>Ouvrez les liens courts directement dans la barre d'adresse, par exemple :</span> <a href="/test">/test</a></p>
-  </noscript>
+        <nav class="page-links" aria-label="Pages de l'instance">
+          <a href="/fr/privacy.html">Confidentialité</a>
+          <a href="/fr/terms.html">Conditions</a>
+          <a href="/fr/abuse.html">Confiance et sécurité</a>
+          <a href="/fr/security.html">Sécurité</a>
+        </nav>
+      </section>
+    </main>
 
-  <script src="/script.js"></script>
-</body>
+    <noscript>
+      <p>JavaScript est désactivé</p>
+      <p>
+        <span>Ouvrez les liens courts directement dans la barre d'adresse, par exemple :</span>
+        <a href="/test">/test</a>
+      </p>
+    </noscript>
+
+    <script src="/script.js"></script>
+  </body>
 </html>

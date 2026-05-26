@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "i18n": {
     "default_language": "en",
-    "supported_languages": ["en", "fr", "es", "it", "de"]
+    "supported_languages": ["de", "en", "es", "fr", "it"]
   },
   "links": {
     "random_slug_length": 3,
