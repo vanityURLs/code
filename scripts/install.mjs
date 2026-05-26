@@ -76,6 +76,7 @@ async function promptForMissing(args) {
   const configuredAnalytics = args.analytics === "disabled" ? wranglerConfig.analyticsProvider || args.analytics : args.analytics;
   const configuredAccessTeamDomain = args.accessTeamDomain || wranglerConfig.accessTeamDomain || "";
   const configuredOperator = siteConfig.operator || {};
+  const configuredBranding = siteConfig.branding || {};
   const suggested = suggestWordmarkSplit(configuredDomain);
 
   const rl = readline.createInterface({ input, output });
@@ -119,11 +120,15 @@ async function promptForMissing(args) {
       args.operatorAnalyticsDisclosure = args.operatorAnalyticsDisclosure || analyticsDisclosureDefault(args.analytics);
       args.operatorAnalyticsRetention = args.operatorAnalyticsRetention || "";
     }
-    args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
-
-    if (args.customizePublic) {
+    args.configureBranding = await confirm(rl, "Configure branding now?", hasConfiguredBranding(configuredBranding));
+    if (args.configureBranding) {
+      args.brandingSlogan = await question(rl, "Brand slogan", args.brandingSlogan || configuredBranding.slogan || defaultBrandingSlogan(args));
+      args.customizePublic = await confirm(rl, "Copy default web pages to custom/public with a split-color domain wordmark?", siteConfig.branding?.custom_public !== false);
       args.wordmarkBlack = await question(rl, "Black wordmark portion", args.wordmarkBlack || configuredBrand?.black || suggested.black);
       args.wordmarkGreen = await question(rl, "Green wordmark portion", args.wordmarkGreen || configuredBrand?.green || suggested.green);
+    } else {
+      args.customizePublic = args.customizePublic ?? siteConfig.branding?.custom_public === true;
+      args.brandingSlogan = args.brandingSlogan ?? configuredBranding.slogan ?? "";
     }
   } finally {
     rl.close();
@@ -140,7 +145,15 @@ function normalizeArgs(args) {
   args.owner = slugifyOwner(args.owner);
   args.randomSlugLength = normalizeRandomSlugLength(args.randomSlugLength || DEFAULT_RANDOM_SLUG_LENGTH);
   args.languages = normalizeLanguages(args.languages);
+  args.configureBranding = args.configureBranding ?? (
+    args.customizePublic != null
+    || args.brandingSlogan != null
+    || args.wordmarkBlack != null
+    || args.wordmarkGreen != null
+  );
+  args.configureBranding = normalizeBoolean(args.configureBranding);
   args.customizePublic = normalizeBoolean(args.customizePublic);
+  args.brandingSlogan = String(args.brandingSlogan || "").trim();
   args.operator = normalizeOperator(args);
 
   if (!args.domain) throw new Error("Domain cannot be empty.");
@@ -407,6 +420,22 @@ function suggestWordmarkSplit(domain) {
   };
 }
 
+function hasConfiguredBranding(branding) {
+  return Boolean(
+    branding?.custom_public === true
+    || String(branding?.slogan || "").trim()
+    || String(branding?.wordmark?.black || "").trim()
+    || String(branding?.wordmark?.green || "").trim()
+  );
+}
+
+function defaultBrandingSlogan(args) {
+  const operatorName = String(args.operatorLegalName || "").trim();
+  return operatorName
+    ? `A short-link service for ${operatorName}'s projects`
+    : "A short-link service powered by vanityURLs";
+}
+
 async function confirm(rl, label, defaultValue) {
   const suffix = defaultValue ? "Y/n" : "y/N";
   const answer = (await rl.question(`${label} (${suffix}): `)).trim().toLowerCase();
@@ -439,6 +468,7 @@ function createCustomFiles(args) {
 }
 
 function updateSiteConfig(args) {
+  const existingSiteConfig = loadSiteConfig();
   const siteConfig = mergeSiteConfig(loadSiteConfig(), {
     i18n: {
       default_language: args.languages[0] || "en",
@@ -446,19 +476,25 @@ function updateSiteConfig(args) {
     },
     operator: args.operator,
     links: {
-      ...(loadSiteConfig().links || {}),
+      ...(existingSiteConfig.links || {}),
       random_slug_length: args.randomSlugLength
     },
-    branding: {
-      domain: args.domain,
-      custom_public: args.customizePublic === true,
-      wordmark: args.customizePublic
-        ? {
-          black: args.wordmarkBlack,
-          green: args.wordmarkGreen
-        }
-        : undefined
-    }
+    branding: args.configureBranding
+      ? {
+        domain: args.domain,
+        slogan: args.brandingSlogan,
+        custom_public: args.customizePublic === true,
+        wordmark: args.customizePublic
+          ? {
+            black: args.wordmarkBlack,
+            green: args.wordmarkGreen
+          }
+          : undefined
+      }
+      : {
+        ...(existingSiteConfig.branding || {}),
+        domain: args.domain
+      }
   });
 
   writeJson(CUSTOM_SITE_CONFIG_PATH, siteConfig, args);
@@ -531,6 +567,7 @@ function rewriteHtmlFiles(directory, transform) {
 function applyBranding(html, args) {
   const brandLabel = `${args.wordmarkBlack}${args.wordmarkGreen}`;
   const wordmark = `<h1$1><span>${escapeHtml(args.wordmarkBlack)}</span><span>${escapeHtml(args.wordmarkGreen)}</span></h1>`;
+  const slogan = renderBrandingSlogan(args.brandingSlogan, args.operator);
 
   return html
     .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) => wordmark.replace("$1", attributes))
@@ -539,7 +576,18 @@ function applyBranding(html, args) {
     .replace(/(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi, `$1"https://${escapeHtmlAttribute(args.domain)}/"`)
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityURLs\.link"/g, `$1"${PROJECT_SITE_URL}"`)
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityurls\.link\/?"/gi, `$1"${PROJECT_SITE_URL}"`)
-    .replace(/(<a class="redirected-badge"[^>]*aria-label=)"[^"]*"/g, '$1"VanityURLs"');
+    .replace(/(<a class="redirected-badge"[^>]*aria-label=)"[^"]*"/g, '$1"VanityURLs"')
+    .replace(/<p class="instance-brand-subtitle">[\s\S]*?<\/p>/g, `<p class="instance-brand-subtitle">${slogan}</p>`);
+}
+
+function renderBrandingSlogan(slogan, operator = {}) {
+  const rendered = escapeHtml(slogan || "");
+  const legalName = String(operator.legal_name || "").trim();
+  const operatorDomain = normalizeDomain(operator.operator_domain || "");
+  if (!rendered || !legalName || !operatorDomain) return rendered;
+
+  const escapedName = escapeHtml(legalName);
+  return rendered.replace(escapedName, `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedName}</a>`);
 }
 
 function readJson(filePath, fallback = {}) {

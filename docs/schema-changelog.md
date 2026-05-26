@@ -33,6 +33,7 @@ Migration: none required. `lnk` reads missing values from `defaults/v8s-site-con
 Added installer-managed branding fields:
 
 - `branding.domain`
+- `branding.slogan`
 - `branding.custom_public`
 - `branding.wordmark.black`
 - `branding.wordmark.green`

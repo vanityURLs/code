@@ -27,5 +27,14 @@
     "analytics_disclosure": "",
     "analytics_retention": "",
     "abuse_response_window": ""
+  },
+  "branding": {
+    "domain": "",
+    "slogan": "",
+    "custom_public": false,
+    "wordmark": {
+      "black": "",
+      "green": ""
+    }
   }
 }

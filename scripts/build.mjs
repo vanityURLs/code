@@ -614,13 +614,30 @@ function normalizeLegalTemplateChrome(html, page, siteConfig) {
 
 function applyLegalBranding(html, siteConfig) {
   const wordmark = siteConfig?.branding?.wordmark;
-  if (!wordmark?.black && !wordmark?.green) return html;
+  let brandedHtml = html;
 
-  const brandLabel = `${wordmark.black || ""}${wordmark.green || ""}`;
-  const renderedWordmark = renderConfiguredWordmark(siteConfig);
-  return html
-    .replace(/<header class="instance-brand" aria-label="[^"]*">/, `<header class="instance-brand" aria-label="${escapeHtmlAttribute(brandLabel)}">`)
-    .replace(/<h1 class="instance-brand-title"><a href="([^"]+)" aria-label="[^"]*">[\s\S]*?<\/a><\/h1>/, `<h1 class="instance-brand-title"><a href="$1" aria-label="${escapeHtmlAttribute(brandLabel)}">${renderedWordmark}</a></h1>`);
+  if (wordmark?.black || wordmark?.green) {
+    const brandLabel = `${wordmark.black || ""}${wordmark.green || ""}`;
+    const renderedWordmark = renderConfiguredWordmark(siteConfig);
+    brandedHtml = brandedHtml
+      .replace(/<header class="instance-brand" aria-label="[^"]*">/, `<header class="instance-brand" aria-label="${escapeHtmlAttribute(brandLabel)}">`)
+      .replace(/<h1 class="instance-brand-title"><a href="([^"]+)" aria-label="[^"]*">[\s\S]*?<\/a><\/h1>/, `<h1 class="instance-brand-title"><a href="$1" aria-label="${escapeHtmlAttribute(brandLabel)}">${renderedWordmark}</a></h1>`);
+  }
+
+  const slogan = renderBrandingSlogan(siteConfig?.branding?.slogan, siteConfig?.operator);
+  return slogan
+    ? brandedHtml.replace(/<p class="instance-brand-subtitle">[\s\S]*?<\/p>/, `<p class="instance-brand-subtitle">${slogan}</p>`)
+    : brandedHtml;
+}
+
+function renderBrandingSlogan(slogan, operator = {}) {
+  const rendered = escapeHtml(slogan || "");
+  const legalName = String(operator?.legal_name || "").trim();
+  const operatorDomain = normalizeDomain(operator?.operator_domain || "");
+  if (!rendered || !legalName || !operatorDomain) return rendered;
+
+  const escapedName = escapeHtml(legalName);
+  return rendered.replace(escapedName, `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedName}</a>`);
 }
 
 function removeLegalRedirectedBadge(html) {
