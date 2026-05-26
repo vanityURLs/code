@@ -1,6 +1,6 @@
-# 0004. Custom policy replaces the default source policy
+# 0003. Custom policy replaces the default source policy
 
-Date: 2026-05-26
+Date: 2026-05-19
 
 Status: Accepted
 

@@ -13,6 +13,7 @@ const CUSTOM_PUBLIC_DIR = path.join(CUSTOM_DIR, "public");
 const CUSTOM_LINKS_PATH = path.join(CUSTOM_DIR, "v8s-links.txt");
 const CUSTOM_SITE_CONFIG_PATH = path.join(CUSTOM_DIR, "v8s-site-config.json");
 const DEFAULT_SITE_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-site-config.json");
+const DEFAULT_LINKS_PATH = path.join(ROOT, "defaults", "v8s-links.txt");
 const DEFAULT_PUBLIC_DIR = path.join(ROOT, "defaults", "public");
 const DEFAULT_DOMAIN = "v8s.link";
 const DEFAULT_LANGUAGES = ["en", "fr", "es", "it", "de"];
@@ -454,17 +455,24 @@ function createCustomFiles(args) {
   fs.mkdirSync(CUSTOM_PUBLIC_DIR, { recursive: true });
 
   if (!fs.existsSync(CUSTOM_LINKS_PATH) || args.force) {
-    const mainSite = `https://${args.domain}`;
-    const content = [
-      "# slug|target|state|title|description|tags|owner|expires_at|notes",
-      `home|${mainSite}|permanent|Home|Primary website|core|${args.owner}||`,
-      `status|https://status.${args.domain}|ephemeral|Status|Service status page|status|${args.owner}||`,
-      `docs|https://vanityURLs.link/en/docs/|permanent|Docs|vanityURLs documentation|docs|${args.owner}||`,
-      ""
-    ].join("\n");
-
-    writeFile(CUSTOM_LINKS_PATH, content, args);
+    writeFile(CUSTOM_LINKS_PATH, starterLinks(args), args);
   }
+}
+
+function starterLinks(args) {
+  const content = fs.readFileSync(DEFAULT_LINKS_PATH, "utf8");
+  const lines = content.split(/\r?\n/).map((line) => {
+    if (!line.trim() || line.startsWith("#")) return line;
+
+    const fields = line.split("|");
+    const slug = fields[0] || "";
+    if (slug === "home") fields[1] = `https://${args.domain}`;
+    if (slug === "status") fields[1] = `https://status.${args.domain}`;
+    if (fields.length > 6) fields[6] = args.owner;
+    return fields.join("|");
+  });
+
+  return `${lines.join("\n").replace(/\n*$/u, "")}\n`;
 }
 
 function updateSiteConfig(args) {

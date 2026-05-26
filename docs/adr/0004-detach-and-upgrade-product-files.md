@@ -1,6 +1,6 @@
-# 0008. Detach instances and upgrade product files
+# 0004. Detach instances and upgrade product files
 
-Date: 2026-05-26
+Date: 2026-05-21
 
 Status: Accepted
 

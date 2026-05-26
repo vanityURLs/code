@@ -2,7 +2,7 @@
 
 This changelog records field-level schema changes for vanityURLs configuration files, including additive changes that do not bump `schema_version`.
 
-`schema_version` is reserved for incompatible stored-config changes that need migration. See `docs/adr/0002-site-config-schema-versioning.md`.
+`schema_version` is reserved for incompatible stored-config changes that need migration. See `docs/adr/0008-site-config-schema-versioning.md`.
 
 ## 2026-05-26
 
@@ -78,11 +78,24 @@ Migration: none required for plain redirect behavior. Generated legal pages requ
 
 Added local helper and local publish configuration:
 
+- `schema_version`
 - `shell_helper`
+  - `enabled`
+  - `install_path`
+  - `rc_file`
 - `lnk_cli`
+  - `install_path`
 - `local_publish`
+  - `commit_message`
+  - `commit_messages.links`
+  - `commit_messages.policies`
+  - `commit_messages.site_config`
+  - `commit_messages.mixed`
+  - `paths`
 - `registry`
+  - `local_path`
 - `repository`
+  - `path`
 
 Compatibility: additive, no `schema_version` bump
 
@@ -92,11 +105,42 @@ Migration: none required. `npm run local-install` writes workstation-specific va
 
 Replaced legacy blocklist naming with the broader policy source:
 
+- `schema_version`
+- `updated_at`
 - `defaults`
+  - `block_private_networks`
+  - `block_localhost`
+  - `block_auth_in_url`
+  - `allowed_protocols`
+  - `blocked_file_extensions`
 - `allow_domains`
+  - `domain`
+  - `reason`
+  - `source`
+  - `added_at`
+  - `enabled`
 - `blocked_keywords`
+  - `keyword`
+  - `category`
+  - `severity`
+  - `reason`
+  - `source`
+  - `scope`
+  - `added_at`
 - `block_domains`
+  - `domain`
+  - `category`
+  - `severity`
+  - `reason`
+  - `source`
+  - `added_at`
 - optional `generated_sources`
+  - `url`
+  - `type`
+  - `category`
+  - `severity`
+  - `source`
+  - `enabled`
 
 Compatibility: additive and rename-compatible, no `schema_version` bump
 

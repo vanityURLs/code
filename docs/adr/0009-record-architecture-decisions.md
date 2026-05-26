@@ -1,4 +1,4 @@
-# 0001. Record architecture decisions in the code repository
+# 0009. Record architecture decisions in the code repository
 
 Date: 2026-05-26
 

@@ -1,6 +1,6 @@
-# 0003. Keep instance-owned changes in custom
+# 0002. Keep instance-owned changes in custom
 
-Date: 2026-05-26
+Date: 2026-05-19
 
 Status: Accepted
 

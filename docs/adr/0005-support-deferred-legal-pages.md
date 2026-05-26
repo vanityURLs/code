@@ -1,6 +1,6 @@
 # 0005. Support deferred legal pages
 
-Date: 2026-05-26
+Date: 2026-05-22
 
 Status: Accepted
 

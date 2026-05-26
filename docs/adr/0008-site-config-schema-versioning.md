@@ -1,4 +1,4 @@
-# 0002. Treat site config schema version as a stored contract
+# 0008. Treat site config schema version as a stored contract
 
 Date: 2026-05-26
 
