@@ -2,3 +2,4 @@
 home|https://example.com|permanent|Home|Primary website|core|owner||
 status|https://status.example.com|ephemeral|Status|Service status page|status|owner||
 docs|https://vanityURLs.link/en/docs/|permanent|Docs|vanityURLs documentation|docs|owner||
+idempotent|https://www.vanityurls.link/docs/reference/glossary/#idempotent|permanent|Idempotent|Glossary definition for idempotent setup behavior|docs,glossary|owner||
