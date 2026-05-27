@@ -420,7 +420,11 @@ function removeDeferredLegalPages(siteConfig) {
 }
 
 function securityTxtWritePaths() {
-  return [path.join(BUILD_DIR, ".well-known", "security.txt")];
+  return [
+    path.join(BUILD_DIR, ".well-known", "security.txt"),
+    path.join(BUILD_DIR, ".Well-known", "security.txt"),
+    path.join(BUILD_DIR, "security.txt")
+  ];
 }
 
 function removeSecurityTxt() {
