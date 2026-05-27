@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.9.0](https://github.com/vanityURLs/code/compare/v2.8.0...v2.9.0) (2026-05-27)
+
+
+### Features
+
+* add idempotent glossary shortlink ([e41d2ff](https://github.com/vanityURLs/code/commit/e41d2ff35ffab5169f527ba3bb2441fe4a8097a1))
+* **detach:** install instance readme ([13cfec6](https://github.com/vanityURLs/code/commit/13cfec68dd7d782d684d89b409c92f97cb9114a5))
+* **setup:** localize branding slogans ([428b3a9](https://github.com/vanityURLs/code/commit/428b3a994ca9e936196e5c666f19810868882afe))
+
+
+### Bug Fixes
+
+* **build:** publish security txt compatibility paths ([958ef0f](https://github.com/vanityURLs/code/commit/958ef0fe64871748f451d8ea99bb6d5972a5797f))
+* deleting READNE.md during upgrade ([f1c997f](https://github.com/vanityURLs/code/commit/f1c997f4f312b52c04594da7bfc85de28e62764d))
+* **setup:** point to quickstart continuation ([6173ae8](https://github.com/vanityURLs/code/commit/6173ae8adaacfb1df54d221e0101aa376a1fb1c9))
+* **setup:** reduce phase one prompts ([87a9a87](https://github.com/vanityURLs/code/commit/87a9a87e7f589e864eabafae5b9c795d53377efc))
+* **setup:** simplify first-run output ([bbd017c](https://github.com/vanityURLs/code/commit/bbd017c0eba4d72f87d10ec457697ae7dca6f2d7))
+* **worker:** route security txt through worker ([1797c1b](https://github.com/vanityURLs/code/commit/1797c1b3e74521af417397b28cbdbf1c258c803d))
+
 ## [2.8.0](https://github.com/vanityURLs/code/compare/v2.7.2...v2.8.0) (2026-05-26)
 
 
