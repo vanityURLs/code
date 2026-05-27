@@ -19,7 +19,6 @@ run_worker_first = [
   "!/*.svg",
   "!/*.ico",
   "!/*.webmanifest",
-  "!/*.txt",
   "!/*.xml",
   "!/fonts/*",
 ]

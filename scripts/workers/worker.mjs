@@ -71,6 +71,13 @@ async function handleRequest(context) {
     return Response.redirect(new URL("/.well-known/security.txt", request.url).toString(), 308);
   }
 
+  if (isSecurityTxtPath(slug)) {
+    if (slug !== ".well-known/security.txt") {
+      return Response.redirect(new URL("/.well-known/security.txt", request.url).toString(), 308);
+    }
+    return renderAsset(request, env, "/.well-known/security.txt", 200, ctx);
+  }
+
   if (isProtectedPath(slug)) {
     const accessResponse = await requireCloudflareAccess(request, env);
     if (accessResponse) return accessResponse;
@@ -279,6 +286,10 @@ function shouldBypassToAssets(slug) {
   if (isPrivateRuntimeAsset(slug)) return false;
 
   return ASSET_EXT_RE.test(slug);
+}
+
+function isSecurityTxtPath(slug) {
+  return slug.toLowerCase() === ".well-known/security.txt";
 }
 
 function isProtectedPath(slug) {

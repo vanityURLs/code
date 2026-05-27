@@ -424,6 +424,21 @@ await run("redirects legacy security.txt to well-known security.txt", async () =
   assert(response.headers.get("location") === "https://dicai.re/.well-known/security.txt", "location");
 });
 
+await run("serves canonical well-known security.txt", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(request("/.well-known/security.txt"), env(), ctx);
+  const body = await response.text();
+  assert(response.status === 200, "status");
+  assert(body.includes("Contact: mailto:security@example.com"), "body");
+});
+
+await run("redirects mixed-case well-known security.txt to canonical path", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(request("/.Well-known/security.txt"), env(), ctx);
+  assert(response.status === 308, "status");
+  assert(response.headers.get("location") === "https://dicai.re/.well-known/security.txt", "location");
+});
+
 await run("requires Cloudflare Access config for protected paths", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/_tests"), env(), ctx);
