@@ -106,11 +106,21 @@ async function promptForMissing(args) {
       args.operatorLegalName || configuredOperator.legal_name || ""
     );
     args.operatorShortDomain = args.operatorShortDomain || args.domain;
-    args.operatorDomain = await question(
+    const contactArgsProvided = hasContactArgs(args);
+    const reviewPublicContactEmails = await confirm(
       rl,
-      "Operator domain for contact emails",
-      args.operatorDomain || configuredOperator.operator_domain || ""
+      "Review public contact emails for generated pages?",
+      contactArgsProvided || hasConfiguredPublicContactEmails(configuredOperator)
     );
+    if (reviewPublicContactEmails) {
+      args.operatorDomain = await question(
+        rl,
+        "Operator domain for contact emails",
+        args.operatorDomain || configuredOperator.operator_domain || ""
+      );
+    } else {
+      args.operatorDomain = args.operatorDomain || configuredOperator.operator_domain || "";
+    }
     const operatorEmailDomain = args.operatorDomain || args.domain;
     if (args.configureLegalPages) {
       args.operatorJurisdiction = await question(
@@ -123,20 +133,31 @@ async function promptForMissing(args) {
         "Governing law",
         args.operatorGoverningLaw || configuredOperator.governing_law || args.operatorJurisdiction || ""
       );
-      args.operatorContactEmail = await question(
-        rl,
-        "Operator contact email",
-        args.operatorContactEmail ||
+      if (reviewPublicContactEmails) {
+        args.operatorContactEmail = await question(
+          rl,
+          "Operator contact email",
+          args.operatorContactEmail ||
+            configuredOperator.contact_email ||
+            defaultContactEmail("hello", operatorEmailDomain)
+        );
+        args.operatorPrivacyContact = await question(
+          rl,
+          "Privacy contact",
+          args.operatorPrivacyContact ||
+            configuredOperator.privacy_contact ||
+            defaultContactEmail("privacy", operatorEmailDomain)
+        );
+      } else {
+        args.operatorContactEmail =
+          args.operatorContactEmail ||
           configuredOperator.contact_email ||
-          defaultContactEmail("hello", operatorEmailDomain)
-      );
-      args.operatorPrivacyContact = await question(
-        rl,
-        "Privacy contact",
-        args.operatorPrivacyContact ||
+          defaultContactEmail("hello", operatorEmailDomain);
+        args.operatorPrivacyContact =
+          args.operatorPrivacyContact ||
           configuredOperator.privacy_contact ||
-          defaultContactEmail("privacy", operatorEmailDomain)
-      );
+          defaultContactEmail("privacy", operatorEmailDomain);
+      }
     } else {
       args.operatorJurisdiction = args.operatorJurisdiction || configuredOperator.jurisdiction || "";
       args.operatorGoverningLaw =
@@ -144,11 +165,20 @@ async function promptForMissing(args) {
       args.operatorContactEmail = args.operatorContactEmail || configuredOperator.contact_email || "";
       args.operatorPrivacyContact = args.operatorPrivacyContact || configuredOperator.privacy_contact || "";
     }
-    args.operatorAbuseContact = await question(
-      rl,
-      "Trust & Safety contact",
-      args.operatorAbuseContact || configuredOperator.abuse_contact || defaultContactEmail("abuse", operatorEmailDomain)
-    );
+    if (reviewPublicContactEmails) {
+      args.operatorAbuseContact = await question(
+        rl,
+        "Trust & Safety contact",
+        args.operatorAbuseContact ||
+          configuredOperator.abuse_contact ||
+          defaultContactEmail("abuse", operatorEmailDomain)
+      );
+    } else {
+      args.operatorAbuseContact =
+        args.operatorAbuseContact ||
+        configuredOperator.abuse_contact ||
+        defaultContactEmail("abuse", operatorEmailDomain);
+    }
     if (args.configureLegalPages || configuredOperator.abuse_response_window) {
       args.operatorAbuseResponseWindow = await question(
         rl,
@@ -158,13 +188,20 @@ async function promptForMissing(args) {
     } else {
       args.operatorAbuseResponseWindow = args.operatorAbuseResponseWindow || "5 business days";
     }
-    args.operatorSecurityContact = await question(
-      rl,
-      "Security contact",
-      args.operatorSecurityContact ||
+    if (reviewPublicContactEmails) {
+      args.operatorSecurityContact = await question(
+        rl,
+        "Security contact",
+        args.operatorSecurityContact ||
+          configuredOperator.security_contact ||
+          defaultContactEmail("security", operatorEmailDomain)
+      );
+    } else {
+      args.operatorSecurityContact =
+        args.operatorSecurityContact ||
         configuredOperator.security_contact ||
-        defaultContactEmail("security", operatorEmailDomain)
-    );
+        defaultContactEmail("security", operatorEmailDomain);
+    }
     if (args.configureLegalPages) {
       args.operatorLastUpdated = await question(
         rl,
@@ -440,6 +477,26 @@ function hasConfiguredLegalPages(operator) {
   );
 }
 
+function hasConfiguredPublicContactEmails(operator) {
+  return Boolean(
+    String(operator?.operator_domain || "").trim() ||
+    String(operator?.contact_email || "").trim() ||
+    String(operator?.privacy_contact || "").trim() ||
+    String(operator?.abuse_contact || "").trim() ||
+    String(operator?.security_contact || "").trim()
+  );
+}
+
+function hasContactArgs(args) {
+  return Boolean(
+    String(args.operatorDomain || "").trim() ||
+    String(args.operatorContactEmail || "").trim() ||
+    String(args.operatorPrivacyContact || "").trim() ||
+    String(args.operatorAbuseContact || "").trim() ||
+    String(args.operatorSecurityContact || "").trim()
+  );
+}
+
 function validateOperator(operator) {
   const required =
     operator.legal_pages_enabled === true
@@ -618,7 +675,6 @@ function starterLinks(args) {
     const fields = line.split("|");
     const slug = fields[0] || "";
     if (slug === "home") fields[1] = `https://${args.domain}`;
-    if (slug === "status") fields[1] = `https://status.${args.domain}`;
     if (fields.length > 6) fields[6] = args.owner;
     return fields.join("|");
   });

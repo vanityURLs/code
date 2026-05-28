@@ -1,5 +1,4 @@
 # slug|target|state|title|description|tags|owner|expires_at|notes
 home|https://example.com|permanent|Home|Primary website|core|owner||
-status|https://status.example.com|ephemeral|Status|Service status page|status|owner||
+contact|https://www.youtube.com/watch?v=dQw4w9WgXcQ|permanent|Contact|Scheduled contact example|contact,schedule|owner||
 docs|https://vanityURLs.link/en/docs/|permanent|Docs|vanityURLs documentation|docs|owner||
-idempotent|https://www.vanityurls.link/docs/reference/glossary/#idempotent|permanent|Idempotent|Glossary definition for idempotent setup behavior|docs,glossary|owner||

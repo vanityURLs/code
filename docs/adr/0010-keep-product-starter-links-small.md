@@ -17,11 +17,14 @@ contained a much larger example inventory.
 Keep `defaults/v8s-links.txt` as the product starter source with only:
 
 - `home`
-- `status`
+- `contact`
 - `docs`
 
 When `custom/v8s-links.txt` is missing, setup creates it from `defaults/v8s-links.txt` and adapts the starter home,
-status, and owner values for the instance.
+owner values for the instance.
+
+The `contact` starter link is intentionally paired with `defaults/v8s-schedules.json` so the starter registry includes
+one working scheduled-link example without adding extra demo-only links.
 
 Larger example inventories belong in demo instances or documentation, not in the product starter file.
 
@@ -31,3 +34,4 @@ Larger example inventories belong in demo instances or documentation, not in the
 - Setup has one source for starter links instead of a hidden hard-coded list
 - Demo links can grow independently without becoming product defaults
 - The default registry remains valid and easy to replace
+- Starter schedules cannot point at slugs that are absent from the starter registry
