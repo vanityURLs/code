@@ -642,8 +642,8 @@ function applyLegalBranding(html, siteConfig, language = "en") {
         `<header class="instance-brand" aria-label="${escapeHtmlAttribute(brandLabel)}">`
       )
       .replace(
-        /<h1 class="instance-brand-title"><a href="([^"]+)" aria-label="[^"]*">[\s\S]*?<\/a><\/h1>/,
-        `<h1 class="instance-brand-title"><a href="$1" aria-label="${escapeHtmlAttribute(brandLabel)}">${renderedWordmark}</a></h1>`
+        /<h1 class="instance-brand-title">\s*<a href="([^"]+)" aria-label="[^"]*">[\s\S]*?<\/a>\s*<\/h1>/,
+        `<h1 class="instance-brand-title">\n            <a href="$1" aria-label="${escapeHtmlAttribute(brandLabel)}">${renderedWordmark}</a>\n          </h1>`
       );
   }
 
@@ -696,6 +696,7 @@ function escapeRegExp(value) {
 
 function renderLegalPageContent(language, slug, operator) {
   const content = legalPageContent(language, slug);
+  const localizedOperator = localizeOperatorFields(operator, language);
   const paragraphs = content.sections
     .filter(([, text]) => {
       return (
@@ -706,19 +707,58 @@ function renderLegalPageContent(language, slug, operator) {
     .map(([heading, text], index) => {
       const headingLevel = legalSectionHeadingLevel(slug, index);
       const headingHtml = heading ? `      <${headingLevel}>${escapeHtml(heading)}</${headingLevel}>\n` : "";
-      return `${headingHtml}${renderLegalSectionBody(text, operator)}`;
+      return `${headingHtml}${renderLegalSectionBody(text, localizedOperator)}`;
     })
     .join("\n\n");
 
   const notes = [
-    content.note ? `      <p class="legal-note">${renderOperatorText(content.note, operator)}</p>` : "",
-    `      <p class="legal-note">${escapeHtml(content.lastUpdated)} ${escapeHtml(operator.last_updated || "")}</p>`
+    content.note ? `      <p class="legal-note">${renderOperatorText(content.note, localizedOperator)}</p>` : "",
+    `      <p class="legal-note">${escapeHtml(content.lastUpdated)} ${escapeHtml(localizedOperator.last_updated || "")}</p>`
   ]
     .filter(Boolean)
     .join("\n");
 
   return `${notes}\n\n${paragraphs}\n`;
 }
+
+function localizeOperatorFields(operator, language) {
+  return {
+    ...operator,
+    abuse_response_window: localizedResponseWindow(operator.abuse_response_window, language)
+  };
+}
+
+function localizedResponseWindow(value, language) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  const localized = RESPONSE_WINDOW_LOCALIZATION[normalized];
+  return localized?.[language] || localized?.en || value;
+}
+
+const RESPONSE_WINDOW_LOCALIZATION = {
+  "5 business days": {
+    en: "5 business days",
+    fr: "5 jours ouvrables",
+    es: "5 días hábiles",
+    it: "5 giorni lavorativi",
+    de: "5 Werktagen"
+  },
+  "72 hours": {
+    en: "72 hours",
+    fr: "72 heures",
+    es: "72 horas",
+    it: "72 ore",
+    de: "72 Stunden"
+  },
+  "as soon as practical": {
+    en: "as soon as practical",
+    fr: "dès que possible en pratique",
+    es: "tan pronto como sea práctico",
+    it: "non appena ragionevolmente possibile",
+    de: "so bald wie praktisch möglich"
+  }
+};
 
 function renderLegalConfigurationNotice(language) {
   const notice = LEGAL_CONFIGURATION_NOTICE[language] || LEGAL_CONFIGURATION_NOTICE.en;
@@ -1014,7 +1054,7 @@ const LEGAL_CONTENT = {
           {
             list: [
               "Source code: https://github.com/vanityURLs/code",
-              "Documentation: /en/docs/",
+              "Documentation: https://www.vanityurls.link/en/docs/",
               "Machine-readable security contact: /.well-known/security.txt",
               "Block-keyword policy: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json"
             ]
@@ -1224,7 +1264,7 @@ const LEGAL_CONTENT = {
         ],
         [
           "Références",
-          "Code source : https://github.com/vanityURLs/code. Documentation : /en/docs/. Contact de sécurité lisible par machine : /.well-known/security.txt. Politique de mots-clés bloqués : https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
+          "Code source : https://github.com/vanityURLs/code. Documentation : https://www.vanityurls.link/fr/docs/. Contact de sécurité lisible par machine : /.well-known/security.txt. Politique de mots-clés bloqués : https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
         ]
       ]
     },
@@ -1430,7 +1470,7 @@ const LEGAL_CONTENT = {
         ],
         [
           "Material de referencia",
-          "Código fuente: https://github.com/vanityURLs/code. Documentación: /en/docs/. Contacto de seguridad legible por máquina: /.well-known/security.txt. Política de palabras clave bloqueadas: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
+          "Código fuente: https://github.com/vanityURLs/code. Documentación: https://www.vanityurls.link/en/docs/. Contacto de seguridad legible por máquina: /.well-known/security.txt. Política de palabras clave bloqueadas: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
         ]
       ]
     }
@@ -1614,7 +1654,7 @@ const LEGAL_CONTENT = {
         ],
         [
           "Materiale di riferimento",
-          "Codice sorgente: https://github.com/vanityURLs/code. Documentazione: /en/docs/. Contatto di sicurezza leggibile automaticamente: /.well-known/security.txt. Policy delle parole chiave bloccate: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
+          "Codice sorgente: https://github.com/vanityURLs/code. Documentazione: https://www.vanityurls.link/en/docs/. Contatto di sicurezza leggibile automaticamente: /.well-known/security.txt. Policy delle parole chiave bloccate: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
         ]
       ]
     }
@@ -1798,7 +1838,7 @@ const LEGAL_CONTENT = {
         ],
         [
           "Referenzmaterial",
-          "Quellcode: https://github.com/vanityURLs/code. Dokumentation: /en/docs/. Maschinenlesbarer Sicherheitskontakt: /.well-known/security.txt. Block-Keyword-Policy: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
+          "Quellcode: https://github.com/vanityURLs/code. Dokumentation: https://www.vanityurls.link/en/docs/. Maschinenlesbarer Sicherheitskontakt: /.well-known/security.txt. Block-Keyword-Policy: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
         ]
       ]
     }
@@ -1807,7 +1847,7 @@ const LEGAL_CONTENT = {
 
 function buildTestsPage(siteConfig) {
   const languages = supportedLanguages(siteConfig);
-  const panels = languages.map((language) => renderTestsPanel(language)).join("\n\n");
+  const panels = languages.map((language) => renderTestsPanel(language, siteConfig)).join("\n\n");
   const wordmark = renderConfiguredWordmark(siteConfig);
   const html = `<!doctype html>
 <html lang="en">
@@ -1847,7 +1887,7 @@ function renderConfiguredWordmark(siteConfig) {
   return `<span>${escapeHtml(wordmark.black || "")}</span><span>${escapeHtml(wordmark.green || "")}</span>`;
 }
 
-function renderTestsPanel(language) {
+function renderTestsPanel(language, siteConfig) {
   const metadata = LANGUAGE_METADATA[language] || {
     name: language,
     pagesTitle: "Pages",
@@ -1859,12 +1899,13 @@ function renderTestsPanel(language) {
   const indexHref = language === "en" ? "/index" : `${prefix}/index.html`;
   const expandHref = language === "en" ? "/expand" : `${prefix}/expand/index.html`;
   const legalContent = LEGAL_CONTENT[language] || {};
+  const enabledPolicySlugs = new Set(legalPageSlugs(siteConfig));
   const policyLinks = [
     ["privacy", metadata.links.privacy || "Privacy"],
     ["terms", metadata.links.terms || "Terms"],
     ["abuse", metadata.links.abuse || "Trust & Safety"],
     ["security", metadata.links.security || "Security"]
-  ].filter(([slug]) => Boolean(legalContent[slug]));
+  ].filter(([slug]) => enabledPolicySlugs.has(slug) && Boolean(legalContent[slug]));
   const pageLinks = [
     `            <li><a href="${escapeHtml(indexHref)}">${escapeHtml(metadata.links.index)}</a></li>`,
     `            <li><a href="${escapeHtml(expandHref)}">${escapeHtml(metadata.links.expand)}</a></li>`,
@@ -2033,8 +2074,8 @@ function main() {
   renderLegalPages(siteConfig);
   renderSecurityTxt(siteConfig);
   writeSiteConfig(runtimeSiteConfig(siteConfig));
-  buildTestsPage(siteConfig);
   removeDeferredLegalPages(siteConfig);
+  buildTestsPage(siteConfig);
   copyRuntimeBlocklist();
   buildRedirectTargets();
   validateRuntimeRegistry();

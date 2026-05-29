@@ -2,11 +2,13 @@
 
 import crypto from "node:crypto";
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
-const ROOT = process.env.V8S_REPO || process.cwd();
+const ROOT = resolveRoot();
 process.chdir(ROOT);
 
 const VERSION = readPackageVersion();
@@ -117,6 +119,16 @@ function readPackageVersion() {
   } catch {
     return "0.0.0";
   }
+}
+
+function resolveRoot() {
+  const scriptRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const sourceScriptPath = path.join(scriptRoot, "scripts", "lnk");
+  const isRepositoryScript = fs.existsSync(path.join(scriptRoot, "package.json")) && fs.existsSync(sourceScriptPath);
+
+  if (isRepositoryScript) return scriptRoot;
+
+  return process.env.V8S_REPO || process.cwd();
 }
 
 function resolveLinksFile() {

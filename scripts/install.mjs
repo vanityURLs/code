@@ -786,12 +786,17 @@ function languageForPublicFile(filePath) {
 
 function applyBranding(html, args, language = "en") {
   const brandLabel = `${args.wordmarkBlack}${args.wordmarkGreen}`;
-  const wordmark = `<h1$1><span>${escapeHtml(args.wordmarkBlack)}</span><span>${escapeHtml(args.wordmarkGreen)}</span></h1>`;
+  const wordmarkSpans = `<span>${escapeHtml(args.wordmarkBlack)}</span><span>${escapeHtml(args.wordmarkGreen)}</span>`;
+  const wordmark = `<h1$1>${wordmarkSpans}</h1>`;
   const slogan = renderBrandingSlogan(localizedSlogan(args.brandingSlogans, language), args.operator);
 
   return html
     .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) =>
       wordmark.replace("$1", attributes)
+    )
+    .replace(
+      /(<h1 class="instance-brand-title">\s*<a href="[^"]+" aria-label=")[^"]*("[^>]*>)[\s\S]*?(<\/a>\s*<\/h1>)/g,
+      `$1${escapeHtmlAttribute(brandLabel)}$2${wordmarkSpans}$3`
     )
     .replace(/<title>([^<]*?)VanityURLs([^<]*?)<\/title>/gi, `<title>$1${escapeHtml(brandLabel)}$2</title>`)
     .replace(/aria-label="VanityURLs"/g, `aria-label="${escapeHtmlAttribute(brandLabel)}"`)
