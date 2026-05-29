@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.9.1](https://github.com/vanityURLs/code/compare/v2.9.0...v2.9.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* emit formatted branded subtitles ([25346b4](https://github.com/vanityURLs/code/commit/25346b4203462dbd7a7ddc20ddd4c9db24d56b54))
+* point starter docs links to website host ([7dc7ff5](https://github.com/vanityURLs/code/commit/7dc7ff569cec30ed7bb6c7596fa0c5de6418a559))
+
 ## [2.9.0](https://github.com/vanityURLs/code/compare/v2.8.0...v2.9.0) (2026-05-27)
 
 
