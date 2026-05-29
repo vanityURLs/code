@@ -807,7 +807,12 @@ function applyBranding(html, args, language = "en") {
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityURLs\.link"/g, `$1"${PROJECT_SITE_URL}"`)
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityurls\.link\/?"/gi, `$1"${PROJECT_SITE_URL}"`)
     .replace(/(<a class="redirected-badge"[^>]*aria-label=)"[^"]*"/g, '$1"VanityURLs"')
-    .replace(/<p class="instance-brand-subtitle">[\s\S]*?<\/p>/g, `<p class="instance-brand-subtitle">${slogan}</p>`);
+    .replace(
+      /<p class="instance-brand-subtitle">[\s\S]*?<\/p>/g,
+      slogan
+        ? `<p class="instance-brand-subtitle">\n            ${slogan}\n          </p>`
+        : `<p class="instance-brand-subtitle"></p>`
+    );
 }
 
 function renderBrandingSlogan(slogan, operator = {}) {
