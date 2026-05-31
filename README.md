@@ -59,6 +59,10 @@ Run `npm run setup` first to configure the instance, then `npm run local-install
 `npm run local-publish` after local edits when you want checks, commit selection, and push handled in one step. Run
 `./scripts/lnk --help` for the local link-management quick reference.
 
+Command prefixes are grouped: `npm run test`, `npm run validate`, and `npm run smoke` run their whole group, while
+focused variants such as `test:worker`, `validate:targets`, and `smoke:analytics` run one layer. Run `npm run help` for
+the full command list and rationale.
+
 ## Contributions
 
 [Contributions](.github/CONTRIBUTING.md) are welcome! We recognize

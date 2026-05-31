@@ -28,9 +28,16 @@ newlines, JSON parse errors, JavaScript syntax checks, and vanityURLs-specific `
 Make `npm run check` the single local and CI gate. It runs, in order:
 
 1. `npm run format:check`
-2. `node scripts/build.mjs`
+2. `npm run build`
 3. `npm run lint`
-4. `npm test`
+4. `npm run test`
+
+Keep grouped command prefixes predictable:
+
+- `test` runs all tests, with focused variants under `test:*`
+- `validate` runs generated-artifact validation, with focused variants under `validate:*`
+- `smoke` runs all smoke checks, with focused variants under `smoke:*`
+- `check` remains the full pre-release and CI confidence gate, with focused variants under `check:*`
 
 The GitHub Actions check workflow runs `npm ci` followed by `npm run check`.
 

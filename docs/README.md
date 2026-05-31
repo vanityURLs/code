@@ -42,11 +42,18 @@ Generated files in `build/`, `src/`, and `functions/` are build outputs. Do not 
 
 ```bash
 npm run setup
+npm run help
 npm run check
+npm run test
+npm run validate
+npm run smoke
 npm run local-install
 ./scripts/lnk --help
 ./scripts/lnk list
 ```
+
+Grouped commands run the whole group by default. Use focused variants such as `npm run test:worker`,
+`npm run validate:targets`, or `npm run smoke:analytics` when you only need one layer.
 
 ## Documentation
 

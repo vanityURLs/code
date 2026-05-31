@@ -156,15 +156,15 @@ Compatibility: additive and rename-compatible, no `schema_version` bump
 Migration: legacy `v8s-blocklist.json` filenames are still recognized for migration compatibility, but new instances
 should use `v8s-policies.json`.
 
-### v8s-schedules.json
+### v8s-links.txt inline schedules
 
-Added schedule configuration keyed by slug:
+Added inline schedule directives below link rows:
 
-- `timezone`
-- `default`
-- shortcut rules such as `9to5`
-- `rules[]` entries with `label`, `timezone`, `days`, `from`, `to`, and `target`
+- `@schedule timezone=America/Toronto`
+- `@schedule 9to5=https://example.com/open`
+- `@schedule rule=work days=mon,tue,wed,thu,fri from=09:00 to=17:00 target=https://example.com/open`
 
-Compatibility: additive, no `schema_version` bump
+Compatibility: additive, no stored-config `schema_version` bump. `v8s-schedules.json` remains readable as a deprecated
+compatibility source during 3.x.
 
-Migration: none required. Missing custom schedules mean the link uses its normal target.
+Migration: none required. Missing schedules mean the link uses its normal target.
