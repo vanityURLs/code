@@ -75,7 +75,8 @@ Options:
 
 Files:
   Links are written to custom/v8s-links.txt unless V8S_LINKS_FILE overrides the path.
-  Schedules are written to custom/v8s-schedules.json.
+  New schedules should be written inline in custom/v8s-links.txt when practical.
+  This command still writes custom/v8s-schedules.json as a 3.x compatibility source.
   Block policies are written to custom/v8s-policies.json.
   Link CLI defaults are read from custom/v8s-site-config.json.
 
@@ -85,7 +86,7 @@ Environment:
   V8S_LINKS_OWNER=OWNER  Default owner value for new links
   V8S_LINKS_FILE=FILE    Override the links file
   V8S_SCHEDULES_FILE=FILE
-                         Override the schedule file
+                         Override the legacy schedule file
   V8S_POLICY_FILE=FILE   Override the block policy file
 
 Notes:
@@ -648,7 +649,7 @@ Usage:
   ./scripts/lnk schedule list [SLUG]
 
 Options:
-  --file FILE            Schedule JSON path, defaults to custom/v8s-schedules.json
+  --file FILE            Legacy schedule JSON path, defaults to custom/v8s-schedules.json
   --label LABEL          Rule label shown in analytics, required for add
   --timezone TZ          IANA timezone, defaults to UTC
   --days DAYS            Comma-separated weekdays, for example mon,tue,wed,thu,fri

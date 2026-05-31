@@ -1,12 +1,14 @@
+import { detectBot } from "./lib/analytics-policy.mjs";
+
 const ASSET_EXT_RE = /\.(html|css|js|mjs|map|json|png|svg|ico|webmanifest|txt|xml|woff2?|ttf|otf|eot)$/i;
 
 const WORKER_UA_FALLBACK =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 " +
   "(KHTML, like Gecko) Version/17.0 Safari/605.1.15";
 
-const SAFE_REDIRECT_PROTOCOLS = new Set(["http:", "https:"]);
-const SAFE_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
-const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const SAFE_REDIRECT_PROTOCOLS = new Set(["http:", "https:"]); // keep in sync with scripts/lib/constants.mjs
+const SAFE_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]); // keep in sync with scripts/lib/constants.mjs
+const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]; // keep in sync with scripts/lib/constants.mjs
 const WEEKDAY_ALIASES = {
   sun: "sun",
   mon: "mon",
@@ -17,39 +19,12 @@ const WEEKDAY_ALIASES = {
   sat: "sat"
 };
 
+// Cached per Worker isolate; reset on failed reads so a later request can recover after a fixed deployment.
 let runtimeBlocklistPromise;
 const accessJwksPromises = new Map();
 
+// Build rewrites this generated constant after copying scripts/workers/ into src/.
 const LOCALIZED_HTML_LANGUAGES = ["fr", "es", "it", "de"]; // build replaces this list from v8s-site-config.json
-
-const BOT_PATTERNS = [
-  { re: /googlebot/i, name: "Googlebot" },
-  { re: /bingbot/i, name: "Bingbot" },
-  { re: /duckduckbot|duckduckgo-favicons-bot/i, name: "DuckDuckBot" },
-  { re: /yandexbot/i, name: "YandexBot" },
-  { re: /baiduspider/i, name: "Baiduspider" },
-  { re: /applebot/i, name: "Applebot" },
-  { re: /ahrefsbot/i, name: "AhrefsBot" },
-  { re: /semrushbot/i, name: "SemrushBot" },
-  { re: /mj12bot/i, name: "MJ12bot" },
-  { re: /dotbot/i, name: "DotBot" },
-  { re: /gptbot/i, name: "GPTBot" },
-  { re: /claudebot|claude-web/i, name: "ClaudeBot" },
-  { re: /perplexitybot/i, name: "PerplexityBot" },
-  { re: /ccbot/i, name: "CCBot" },
-  { re: /bytespider/i, name: "Bytespider" },
-  { re: /facebookexternalhit/i, name: "FacebookExternalHit" },
-  { re: /twitterbot/i, name: "Twitterbot" },
-  { re: /linkedinbot/i, name: "LinkedInBot" },
-  { re: /slackbot/i, name: "Slackbot" },
-  { re: /discordbot/i, name: "Discordbot" },
-  { re: /telegrambot/i, name: "TelegramBot" },
-  { re: /whatsapp/i, name: "WhatsApp" },
-  { re: /uptimerobot|pingdom|monitis|statuscake/i, name: "Monitor" },
-  { re: /curl|wget|python-requests|libwww/i, name: "CLI" },
-  { re: /bot[\/\s\-\d]|crawler|spider|scraper/i, name: "Other" },
-  { re: /headlesschrome|phantomjs|httrack/i, name: "Headless" }
-];
 
 export default {
   async fetch(request, env, ctx) {
@@ -178,7 +153,7 @@ async function handleRequest(context) {
     });
   }
 
-  const resolved = resolveLink(registry.links || [], slug);
+  const resolved = resolveRegistryLink(registry, slug);
 
   if (!resolved) {
     ctx.waitUntil?.(
@@ -425,6 +400,49 @@ function resolveLink(links, slug) {
   }
 
   return null;
+}
+
+function resolveRegistryLink(registry, slug) {
+  if (registry?.tree) {
+    return resolveTreeLink(registry.tree, slug);
+  }
+
+  return resolveLink(registry.links || [], slug);
+}
+
+function resolveTreeLink(tree, slug) {
+  const segments = String(slug || "")
+    .split("/")
+    .filter(Boolean);
+  let node = tree;
+  let splatCandidate = null;
+
+  for (let index = 0; index < segments.length; index += 1) {
+    if (node?.link?.match === "splat") {
+      splatCandidate = {
+        link: node.link,
+        splat: segments.slice(index).join("/")
+      };
+    }
+
+    node = node?.children?.[segments[index]];
+    if (!node) return splatCandidate;
+  }
+
+  if (node?.link) {
+    if ((node.link.match || "exact") === "exact") {
+      return {
+        link: node.link,
+        splat: ""
+      };
+    }
+
+    if (segments.length > 0) {
+      return splatCandidate;
+    }
+  }
+
+  return splatCandidate;
 }
 
 function getEffectiveState(link, registry) {
@@ -1385,17 +1403,7 @@ function safeHostname(value) {
 }
 
 function shouldUseFallbackUserAgent(userAgent) {
-  return Boolean(detectBot(userAgent));
-}
-
-function detectBot(userAgent) {
-  if (!userAgent) return "Unknown";
-
-  for (const { re, name } of BOT_PATTERNS) {
-    if (re.test(userAgent)) return name;
-  }
-
-  return null;
+  return !userAgent || Boolean(detectBot(userAgent));
 }
 
 function resolveUmamiIP(env, ip) {

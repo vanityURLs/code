@@ -19,6 +19,7 @@ const DEFAULT_DOMAIN = "v8s.link";
 const DEFAULT_LANGUAGE = "en";
 const DEFAULT_LANGUAGES = ["de", "en", "es", "fr", "it"];
 const DEFAULT_RANDOM_SLUG_LENGTH = 3;
+const DEFAULT_OPERATOR_TIMEZONE = "UTC";
 const MAX_RANDOM_SLUG_LENGTH = 64;
 const MAX_WORKER_NAME_LENGTH = 63;
 const PROJECT_SITE_URL = "https://www.vanityURLs.link";
@@ -94,6 +95,11 @@ async function promptForMissing(args) {
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
     args.languages = normalizeLanguages(
       await question(rl, "Supported languages", args.languages || configuredLanguages)
+    );
+    args.operatorTimezone = await question(
+      rl,
+      "Operator timezone",
+      args.operatorTimezone || configuredOperator.timezone || localTimezone()
     );
     args.configureLegalPages = await confirm(
       rl,
@@ -460,6 +466,7 @@ function normalizeOperator(args) {
     privacy_contact: privacyContact,
     abuse_contact: abuseContact,
     security_contact: securityContact,
+    timezone: normalizeTimezone(args.operatorTimezone || DEFAULT_OPERATOR_TIMEZONE),
     last_updated: String(args.operatorLastUpdated || gitLastUpdatedDate() || todayIsoDate()).trim(),
     analytics_disclosure: String(args.operatorAnalyticsDisclosure || analyticsDisclosureDefault(args.analytics)).trim(),
     analytics_retention: String(args.operatorAnalyticsRetention || analyticsRetentionDefault(args.analytics)).trim(),
@@ -521,7 +528,8 @@ function validateOperator(operator) {
       : ["abuse_contact", "security_contact"];
   const invalidEmails = emailFields.filter((field) => !isEmail(operator[field]));
   const invalidDate = /^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated || "")) ? [] : ["last_updated"];
-  const issues = [...new Set([...missing, ...invalidEmails, ...invalidDate])];
+  const invalidTimezone = isValidTimezone(operator.timezone) ? [] : ["timezone"];
+  const issues = [...new Set([...missing, ...invalidEmails, ...invalidDate, ...invalidTimezone])];
 
   if (issues.length) {
     throw new Error(`Operator configuration needs valid values for: ${issues.join(", ")}`);
@@ -530,6 +538,24 @@ function validateOperator(operator) {
 
 function isEmail(value) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(value || ""));
+}
+
+function localTimezone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_OPERATOR_TIMEZONE;
+}
+
+function normalizeTimezone(value) {
+  const timezone = String(value || "").trim() || DEFAULT_OPERATOR_TIMEZONE;
+  return isValidTimezone(timezone) ? timezone : DEFAULT_OPERATOR_TIMEZONE;
+}
+
+function isValidTimezone(value) {
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: value }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function todayIsoDate() {

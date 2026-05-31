@@ -2,13 +2,20 @@
 
 import fs from "node:fs";
 import { checkTargetUrl, loadBlocklistPolicy } from "./blocklist-policy.mjs";
+import {
+  DEFAULT_STATE,
+  LINK_STATES,
+  REDIRECT_STATES,
+  RUNTIME_REGISTRY_SCHEMA_VERSION,
+  VALID_DAYS
+} from "./lib/constants.mjs";
+import { parseLinksFile } from "./lib/links-file.mjs";
 
 const inputPath = process.argv[2] || "defaults/v8s-links.txt";
 const outputPath = process.argv[3] || "build/v8s.json";
 
-const VALID_STATES = new Set(["permanent", "ephemeral", "expired", "disabled", "maintenance", "deactivated"]);
-const TARGET_REDIRECT_STATES = new Set(["permanent", "ephemeral"]);
-const VALID_DAYS = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+const VALID_STATES = new Set(LINK_STATES);
+const TARGET_REDIRECT_STATES = new Set(REDIRECT_STATES);
 const SCHEDULE_SHORTCUTS = {
   "9to5": {
     days: ["mon", "tue", "wed", "thu", "fri"],
@@ -66,12 +73,46 @@ function isSafeRedirectUrl(value) {
   }
 }
 
+function createRegistryTree(links) {
+  const root = { children: {} };
+
+  for (const link of links) {
+    const segments = link.slug.split("/").filter(Boolean);
+    let node = root;
+
+    for (const segment of segments) {
+      node.children[segment] ||= { children: {} };
+      node = node.children[segment];
+    }
+
+    node.link = link;
+  }
+
+  return root;
+}
+
 function readJsonFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function loadScheduleEntries() {
+function loadOperatorTimezone() {
+  const base = readJsonFile("defaults/v8s-site-config.json");
+  const custom = readJsonFile("custom/v8s-site-config.json");
+  const timezone = String(custom.operator?.timezone || base.operator?.timezone || "UTC").trim();
+  return isValidTimezone(timezone) ? timezone : "UTC";
+}
+
+function isValidTimezone(value) {
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: value }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function loadScheduleEntries(inlineSchedules = new Map()) {
   const entries = new Map();
 
   for (const [slug, config] of Object.entries(readJsonFile("defaults/v8s-schedules.json"))) {
@@ -86,6 +127,10 @@ function loadScheduleEntries() {
       config,
       source: "custom"
     });
+  }
+
+  for (const [slug, entry] of inlineSchedules) {
+    entries.set(slug, entry);
   }
 
   return entries;
@@ -108,7 +153,12 @@ function normalizeScheduleRule(slug, rawRule, fallbackTimezone, index, errors) {
   const timezone = String(rule.timezone || fallbackTimezone || "UTC").trim();
   const from = String(rule.from || "").trim();
   const to = String(rule.to || "").trim();
-  const days = Array.isArray(rule.days) ? rule.days.map(normalizeDay).filter(Boolean) : [];
+  const days = Array.isArray(rule.days)
+    ? rule.days.map(normalizeDay).filter(Boolean)
+    : String(rule.days || "")
+        .split(",")
+        .map(normalizeDay)
+        .filter(Boolean);
   const target = normalizeTarget(rule.target);
   const prefix = `Schedule for "${slug}" rule "${label}"`;
 
@@ -170,8 +220,8 @@ function scheduleRulesFromConfig(slug, config, errors) {
   return rules;
 }
 
-function applyScheduleConfig(links, blocklistPolicy, errors) {
-  const scheduleEntries = loadScheduleEntries();
+function applyScheduleConfig(links, blocklistPolicy, errors, inlineSchedules) {
+  const scheduleEntries = loadScheduleEntries(inlineSchedules);
   const linksBySlug = new Map(links.map((link) => [link.slug, link]));
 
   for (const [rawSlug, { config, source }] of scheduleEntries) {
@@ -201,14 +251,14 @@ function applyScheduleConfig(links, blocklistPolicy, errors) {
       link.target = normalizeTarget(config.default);
       if (!isSafeRedirectUrl(link.target)) {
         errors.push(`Schedule default target for "${slug}" must be a safe http(s) URL`);
-      } else if (TARGET_REDIRECT_STATES.has(link.state || "permanent")) {
+      } else if (TARGET_REDIRECT_STATES.has(link.state || DEFAULT_STATE)) {
         for (const violation of checkTargetUrl(link.target, blocklistPolicy)) {
           errors.push(`Schedule default target for "${slug}" is blocked: ${violation}`);
         }
       }
     }
 
-    if (TARGET_REDIRECT_STATES.has(link.state || "permanent")) {
+    if (TARGET_REDIRECT_STATES.has(link.state || DEFAULT_STATE)) {
       for (const rule of rules) {
         for (const violation of checkTargetUrl(rule.target, blocklistPolicy)) {
           errors.push(`Schedule target for "${slug}" is blocked: ${violation}`);
@@ -248,7 +298,7 @@ function parseLine(line, lineNumber, blocklistPolicy, errors) {
     errors.push(`Line ${lineNumber}: invalid state "${state}" for "${displaySlug}"`);
   }
 
-  const effectiveState = state || "permanent";
+  const effectiveState = state || DEFAULT_STATE;
   if (TARGET_REDIRECT_STATES.has(effectiveState)) {
     const blocklistViolations = checkTargetUrl(target, blocklistPolicy);
     if (blocklistViolations.length) {
@@ -272,7 +322,7 @@ function parseLine(line, lineNumber, blocklistPolicy, errors) {
     slug,
     match,
     target,
-    state: state || "permanent",
+    state: state || DEFAULT_STATE,
     title: title || displaySlug,
     description: description || "",
     tags: parseTags(tags),
@@ -289,14 +339,13 @@ function main() {
   const blocklistPolicy = loadBlocklistPolicy();
   const errors = [];
 
-  const links = raw
-    .split(/\r?\n/)
-    .map((line, index) => ({ line: line.trim(), lineNumber: index + 1 }))
-    .filter(({ line }) => line && !line.startsWith("#"))
-    .map(({ line, lineNumber }) => parseLine(line, lineNumber, blocklistPolicy, errors))
-    .filter(Boolean);
+  const { links, inlineSchedules } = parseLinksFile(
+    raw,
+    (line, lineNumber) => parseLine(line, lineNumber, blocklistPolicy, errors),
+    errors
+  );
 
-  applyScheduleConfig(links, blocklistPolicy, errors);
+  applyScheduleConfig(links, blocklistPolicy, errors, inlineSchedules);
 
   const seen = new Set();
 
@@ -318,9 +367,10 @@ function main() {
   }
 
   const registry = {
-    schema_version: "2.2",
+    schema_version: RUNTIME_REGISTRY_SCHEMA_VERSION,
     generated_at: new Date().toISOString(),
-    default_state: "permanent",
+    generated_timezone: loadOperatorTimezone(),
+    default_state: DEFAULT_STATE,
     routing: {
       permanent: {
         type: "redirect",
@@ -352,6 +402,7 @@ function main() {
         status: 404
       }
     },
+    tree: createRegistryTree(links),
     links
   };
 

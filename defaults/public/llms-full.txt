@@ -63,7 +63,7 @@ The default policy rejects risky destinations such as credentialed URLs, non-HTT
 
 - [Project README](https://github.com/bhdicaire/vanityURLs): Overview, setup notes, and source repository
 - [Link authoring format](https://www.vanityurls.link/en/docs/link-format/): Format for defining short links
-- [Runtime registry](https://www.vanityurls.link/en/docs/runtime-registry/): Runtime redirect model and schema 2.2 registry
+- [Runtime registry](https://www.vanityurls.link/en/docs/runtime-registry/): Runtime redirect model and schema 3.0 registry
 - [Admin and stats dashboard](https://www.vanityurls.link/en/docs/admin-dashboard/): Read-only dashboard and protection guidance
 - [Analytics](https://www.vanityurls.link/en/docs/server-side-analytics/): Server-side analytics model
 - [Validation and CI](https://www.vanityurls.link/en/docs/validation-ci/): Validation and build checks

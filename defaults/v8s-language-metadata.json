@@ -1,0 +1,89 @@
+{
+  "en": {
+    "name": "English",
+    "pagesTitle": "Pages",
+    "statusTitle": "Status Pages",
+    "links": {
+      "index": "Index",
+      "expand": "Expand",
+      "stats": "Stats",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "abuse": "Trust & Safety",
+      "security": "Security",
+      "notFound": "404",
+      "expired": "Expired",
+      "disabled": "Disabled",
+      "maintenance": "Maintenance"
+    }
+  },
+  "fr": {
+    "name": "Français",
+    "pagesTitle": "Pages",
+    "statusTitle": "Pages d'état",
+    "links": {
+      "index": "Accueil",
+      "expand": "Développer",
+      "stats": "Stats",
+      "privacy": "Confidentialité",
+      "terms": "Conditions",
+      "abuse": "Confiance et sécurité",
+      "security": "Sécurité",
+      "notFound": "404",
+      "expired": "Expiré",
+      "disabled": "Désactivé",
+      "maintenance": "Maintenance"
+    }
+  },
+  "es": {
+    "name": "Español",
+    "pagesTitle": "Páginas",
+    "statusTitle": "Páginas de estado",
+    "links": {
+      "index": "Inicio",
+      "expand": "Expandir",
+      "stats": "Stats",
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "abuse": "Confianza y seguridad",
+      "notFound": "404",
+      "expired": "Caducado",
+      "disabled": "Desactivado",
+      "maintenance": "Mantenimiento"
+    }
+  },
+  "it": {
+    "name": "Italiano",
+    "pagesTitle": "Pagine",
+    "statusTitle": "Pagine di stato",
+    "links": {
+      "index": "Home",
+      "expand": "Espandi",
+      "stats": "Stats",
+      "privacy": "Privacy",
+      "terms": "Condizioni",
+      "abuse": "Fiducia e sicurezza",
+      "notFound": "404",
+      "expired": "Scaduto",
+      "disabled": "Disattivato",
+      "maintenance": "Manutenzione"
+    }
+  },
+  "de": {
+    "name": "Deutsch",
+    "pagesTitle": "Seiten",
+    "statusTitle": "Statusseiten",
+    "links": {
+      "index": "Start",
+      "expand": "Erweitern",
+      "stats": "Stats",
+      "privacy": "Datenschutz",
+      "terms": "Bedingungen",
+      "abuse": "Vertrauen und Sicherheit",
+      "notFound": "404",
+      "expired": "Abgelaufen",
+      "disabled": "Deaktiviert",
+      "maintenance": "Wartung"
+    }
+  }
+}

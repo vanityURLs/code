@@ -207,7 +207,7 @@
         const response = await fetch("/_stats/api/v8s.json", { cache: "no-store" });
         registry = await response.json();
         allLinks = flattenRegistry(registry);
-        generatedEl.textContent = formatGeneratedFooter(registry.generated_at);
+        generatedEl.textContent = formatGeneratedFooter(registry.generated_at, registry.generated_timezone);
         renderMetrics(allLinks);
         renderRows(allLinks);
       }
@@ -231,7 +231,18 @@
           }
 
           for (const [key, child] of Object.entries(node)) {
-            if (["schema_version", "generated_at", "default_state", "routing", "routes"].includes(key)) continue;
+            if (
+              [
+                "schema_version",
+                "generated_at",
+                "generated_timezone",
+                "default_state",
+                "routing",
+                "routes",
+                "tree"
+              ].includes(key)
+            )
+              continue;
             walk(child, [...parts, key]);
           }
         }
@@ -293,21 +304,35 @@
         return value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
       }
 
-      function formatGeneratedFooter(value) {
+      function formatGeneratedFooter(value, timezone) {
         if (!value) return "View of links";
 
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return "View of links";
 
-        return `View of links, generated ${date.toLocaleString(undefined, {
+        const displayTimezone = validTimezone(timezone) ? timezone : undefined;
+        const formatted = date.toLocaleString(undefined, {
           year: "numeric",
           month: "short",
           day: "numeric",
           hour: "numeric",
           minute: "2-digit",
           second: "2-digit",
-          timeZoneName: "short"
-        })}`;
+          timeZoneName: "short",
+          ...(displayTimezone ? { timeZone: displayTimezone } : {})
+        });
+
+        return `Registry generated ${formatted}${displayTimezone ? ` (${displayTimezone})` : ""}`;
+      }
+
+      function validTimezone(timezone) {
+        if (!timezone) return false;
+        try {
+          new Intl.DateTimeFormat(undefined, { timeZone: timezone }).format(new Date());
+          return true;
+        } catch {
+          return false;
+        }
       }
 
       function stateClass(state) {

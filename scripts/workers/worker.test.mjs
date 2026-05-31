@@ -12,7 +12,7 @@ globalThis.fetch = async (url, init) => {
 };
 
 const registry = {
-  version: "2.2",
+  schema_version: "3.0",
   default_state: "permanent",
   routing: {
     permanent: { type: "redirect", status: 302, target: "link.target" },
@@ -843,6 +843,62 @@ await run("redirects splat short link", async () => {
   await ctx.flush();
   assert(response.status === 307, "status");
   assert(response.headers.get("location") === "https://example.com/docs/page-1", "location");
+});
+
+await run("prefers registry tree when present", async () => {
+  const originalRegistryResponse = assets["/v8s.json"];
+  assets["/v8s.json"] = Response.json({
+    ...registry,
+    tree: {
+      children: {
+        test: {
+          children: {},
+          link: {
+            slug: "test",
+            match: "exact",
+            target: "https://tree.example/test",
+            state: "permanent"
+          }
+        }
+      }
+    },
+    links: [
+      {
+        slug: "test",
+        match: "exact",
+        target: "https://links.example/test",
+        state: "permanent"
+      }
+    ]
+  });
+
+  try {
+    const ctx = mockCtx();
+    const response = await worker.fetch(request("/test"), env(), ctx);
+    await ctx.flush();
+    assert(response.status === 302, "status");
+    assert(response.headers.get("location") === "https://tree.example/test", "tree location");
+  } finally {
+    assets["/v8s.json"] = originalRegistryResponse;
+  }
+});
+
+await run("falls back to links array when registry tree is absent", async () => {
+  const originalRegistryResponse = assets["/v8s.json"];
+  assets["/v8s.json"] = Response.json({
+    ...registry,
+    tree: undefined
+  });
+
+  try {
+    const ctx = mockCtx();
+    const response = await worker.fetch(request("/test"), env(), ctx);
+    await ctx.flush();
+    assert(response.status === 302, "status");
+    assert(response.headers.get("location") === "https://example.com/test", "links fallback location");
+  } finally {
+    assets["/v8s.json"] = originalRegistryResponse;
+  }
 });
 
 await run("encodes splat values before redirecting", async () => {
