@@ -112,4 +112,51 @@ function runSetup(cwd, extraArgs) {
   );
 }
 
+{
+  const fixture = makeFixture();
+
+  runSetup(fixture, [
+    "--domain",
+    "v8s.link",
+    "--worker-name",
+    "v8s-link",
+    "--owner",
+    "team",
+    "--languages",
+    "en,fr",
+    "--operator-timezone",
+    "America/Toronto",
+    "--operator-legal-name",
+    "Example Inc.",
+    "--operator-domain",
+    "example.com",
+    "--operator-abuse-contact",
+    "abuse@example.com",
+    "--operator-security-contact",
+    "security@example.com",
+    "--branding-slogan",
+    "The official demo for Example Inc. projects",
+    "--wordmark-black",
+    "v8s.",
+    "--wordmark-green",
+    "link",
+    "--no-customize-public"
+  ]);
+
+  const siteConfig = JSON.parse(fs.readFileSync(path.join(fixture, "custom", "v8s-site-config.json"), "utf8"));
+  assert.equal(siteConfig.branding.custom_public, false);
+  assert.equal(siteConfig.branding.wordmark.black, "v8s.");
+  assert.equal(siteConfig.branding.wordmark.green, "link");
+  assert.equal(fs.existsSync(path.join(fixture, "custom", "public", "en", "index.html")), false);
+
+  execFileSync(process.execPath, ["scripts/build.mjs"], {
+    cwd: fixture,
+    stdio: "pipe"
+  });
+
+  const builtIndex = fs.readFileSync(path.join(fixture, "build", "index.html"), "utf8");
+  assert.match(builtIndex, /<span>v8s\.<\/span><span>link<\/span>/);
+  assert.match(builtIndex, /The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects/);
+}
+
 console.log("install tests ok");

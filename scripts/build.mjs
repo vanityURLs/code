@@ -473,10 +473,32 @@ function applyLegalBranding(html, siteConfig, language = "en") {
 
 function applyPublicBranding(siteConfig) {
   const slogans = siteConfig?.branding?.slogan;
-  if (!hasConfiguredSlogan(slogans)) return;
+  const wordmark = siteConfig?.branding?.wordmark;
+  const hasWordmark = Boolean(wordmark?.black || wordmark?.green);
+  const hasSlogan = hasConfiguredSlogan(slogans);
+  if (!hasWordmark && !hasSlogan) return;
 
   rewriteHtmlFiles(BUILD_DIR, (html, filePath) => {
-    if (!html.includes('class="instance-brand-subtitle"')) return html;
+    let brandedHtml = html;
+    const brandLabel = hasWordmark ? `${wordmark.black || ""}${wordmark.green || ""}` : "";
+
+    if (hasWordmark) {
+      const renderedWordmark = renderConfiguredWordmark(siteConfig);
+      brandedHtml = brandedHtml
+        .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, `<h1$1>${renderedWordmark}</h1>`)
+        .replace(
+          /(<h1 class="instance-brand-title">\s*<a href="[^"]+" aria-label=")[^"]*("[^>]*>)[\s\S]*?(<\/a>\s*<\/h1>)/g,
+          `$1${escapeHtmlAttribute(brandLabel)}$2${renderedWordmark}$3`
+        )
+        .replace(/<title>([^<]*?)VanityURLs([^<]*?)<\/title>/gi, `<title>$1${escapeHtml(brandLabel)}$2</title>`)
+        .replace(/aria-label="VanityURLs"/g, `aria-label="${escapeHtmlAttribute(brandLabel)}"`)
+        .replace(
+          /(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi,
+          `$1"https://${escapeHtmlAttribute(siteConfig?.operator?.short_domain || brandLabel)}/"`
+        );
+    }
+
+    if (!hasSlogan) return brandedHtml;
 
     const language = languageForBuildHtmlFile(filePath);
     const slogan = renderBrandingSlogan(
@@ -484,12 +506,14 @@ function applyPublicBranding(siteConfig) {
       siteConfig?.operator,
       localizedSloganLinkText(siteConfig?.branding?.slogan_link_text, language)
     );
-    if (!slogan) return html;
+    if (!slogan) return brandedHtml;
+    const subtitle = `<p class="instance-brand-subtitle">${slogan}</p>`;
 
-    return html.replace(
-      /<p class="instance-brand-subtitle">[\s\S]*?<\/p>/,
-      `<p class="instance-brand-subtitle">${slogan}</p>`
-    );
+    if (!brandedHtml.includes('class="instance-brand-subtitle"')) {
+      return brandedHtml.replace(/(<a class="wordmark"[\s\S]*?<\/a>)/, `$1\n\n        ${subtitle}`);
+    }
+
+    return brandedHtml.replace(/<p class="instance-brand-subtitle">[\s\S]*?<\/p>/, subtitle);
   });
 }
 

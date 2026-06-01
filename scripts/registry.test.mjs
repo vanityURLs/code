@@ -36,6 +36,24 @@ execFileSync(process.execPath, ["scripts/validate-runtime-registry.mjs", registr
   stdio: "pipe"
 });
 
+fs.writeFileSync(
+  linksPath,
+  [
+    "# slug|target|state|title|description|tags|owner|expires_at|notes",
+    "déplier|https://example.com/docs|permanent|Docs|Docs home|docs|team||",
+    ""
+  ].join("\n")
+);
+
+assert.throws(
+  () =>
+    execFileSync(process.execPath, ["scripts/build-redirect-targets.mjs", linksPath, registryPath], {
+      encoding: "utf8",
+      stdio: "pipe"
+    }),
+  (error) => String(error.stderr || "").includes("invalid slug segment")
+);
+
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
 const baseSiteConfig = JSON.parse(fs.readFileSync("defaults/v8s-site-config.json", "utf8"));
 const customSiteConfigPath = "custom/v8s-site-config.json";

@@ -254,8 +254,8 @@ async function promptForMissing(args) {
         : {};
       args.customizePublic = await confirm(
         rl,
-        "Copy default web pages to custom/public with a split-color domain wordmark?",
-        siteConfig.branding?.custom_public !== false
+        "Copy full default web pages to custom/public for manual template editing?",
+        siteConfig.branding?.custom_public === true
       );
       args.wordmarkBlack = await question(
         rl,
@@ -302,7 +302,7 @@ function normalizeArgs(args) {
   if (!args.workerName) throw new Error("Worker name cannot be empty.");
   validateWorkerName(args.workerName);
   validateOperator(args.operator);
-  if (args.customizePublic) {
+  if (args.configureBranding) {
     const split = normalizeWordmarkSplit(args);
     args.wordmarkBlack = split.black;
     args.wordmarkGreen = split.green;
@@ -741,12 +741,10 @@ function updateSiteConfig(args) {
           slogan: args.brandingSlogans,
           slogan_link_text: existingSiteConfig.branding?.slogan_link_text || {},
           custom_public: args.customizePublic === true,
-          wordmark: args.customizePublic
-            ? {
-                black: args.wordmarkBlack,
-                green: args.wordmarkGreen
-              }
-            : undefined
+          wordmark: {
+            black: args.wordmarkBlack,
+            green: args.wordmarkGreen
+          }
         }
       : {
           ...(existingSiteConfig.branding || {}),

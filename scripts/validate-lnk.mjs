@@ -103,7 +103,11 @@ if (!fs.existsSync(file)) {
 
     const segments = path.split("/");
     for (const segment of segments) {
-      if (!validSegment(segment)) fail(`${displayPath}: invalid segment '${segment}'`);
+      if (!validSegment(segment)) {
+        fail(
+          `${displayPath}: invalid segment '${segment}'; use ASCII letters, digits, dot, underscore, tilde, or hyphen`
+        );
+      }
     }
 
     if (reservedTopLevel.has(segments[0])) fail(`${displayPath}: top-level path '${segments[0]}' is reserved`);

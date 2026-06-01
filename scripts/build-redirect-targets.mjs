@@ -56,6 +56,10 @@ function parseTags(value) {
     .filter(Boolean);
 }
 
+function isValidSlugSegment(segment) {
+  return /^[A-Za-z0-9][A-Za-z0-9._~-]*$/.test(segment);
+}
+
 function normalizeTarget(value) {
   const target = String(value || "").trim();
   if (target.startsWith("//")) return target;
@@ -353,6 +357,14 @@ function parseLine(line, lineNumber, blocklistPolicy, errors) {
 
   if (slug.startsWith("/") || slug.endsWith("/") || slug.includes("//")) {
     errors.push(`Line ${lineNumber}: invalid slug "${displaySlug}"`);
+  }
+
+  for (const segment of slug.split("/")) {
+    if (!isValidSlugSegment(segment)) {
+      errors.push(
+        `Line ${lineNumber}: invalid slug segment "${segment}" for "${displaySlug}"; use ASCII letters, digits, dot, underscore, tilde, or hyphen`
+      );
+    }
   }
 
   if (match === "splat" && !target.includes(":splat")) {

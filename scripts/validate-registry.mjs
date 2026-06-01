@@ -54,6 +54,10 @@ function isValidPathTarget(value) {
   return typeof value === "string" && value.startsWith("/") && !value.startsWith("//");
 }
 
+function isValidSlugSegment(segment) {
+  return /^[A-Za-z0-9][A-Za-z0-9._~-]*$/.test(segment);
+}
+
 function isObject(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -94,6 +98,15 @@ function validateLink(link, prefix, blocklistPolicy, errors, seen = null) {
 
   if (link.slug.startsWith("/") || link.slug.endsWith("/") || link.slug.includes("//")) {
     error(errors, `${prefix}.slug is invalid: ${link.slug}`);
+  }
+
+  for (const segment of link.slug.split("/")) {
+    if (!isValidSlugSegment(segment)) {
+      error(
+        errors,
+        `${prefix}.slug contains invalid segment "${segment}"; use ASCII letters, digits, dot, underscore, tilde, or hyphen`
+      );
+    }
   }
 
   const match = link.match || "exact";
