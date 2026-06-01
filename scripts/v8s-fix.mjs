@@ -21,11 +21,11 @@ function main() {
       options.public ? true : options[fixOptionName(issue.fix)]
     );
     if (!issues.length) {
-      console.log("[reconcile] Dry run: no matching custom public drift detected.");
+      console.log("[v8s-fix] Dry run: no matching custom public drift detected.");
       return;
     }
 
-    console.log(`[reconcile] Dry run: would address ${issues.length} issue${issues.length === 1 ? "" : "s"}:`);
+    console.log(`[v8s-fix] Dry run: would address ${issues.length} issue${issues.length === 1 ? "" : "s"}:`);
     for (const issue of issues) {
       console.log(`- ${issue.path}: ${issue.message}`);
     }
@@ -34,12 +34,12 @@ function main() {
 
   const actions = reconcileCustomPublic(context, options);
   if (!actions.length) {
-    console.log("[reconcile] No changes requested.");
+    console.log("[v8s-fix] No changes requested.");
     return;
   }
 
   for (const action of actions) {
-    console.log(`[reconcile] ${action}`);
+    console.log(`[v8s-fix] ${action}`);
   }
 }
 
@@ -51,6 +51,6 @@ function fixOptionName(fix) {
 try {
   main();
 } catch (error) {
-  console.error(`[reconcile] ${error.message}`);
+  console.error(`[v8s-fix] ${error.message}`);
   process.exitCode = 1;
 }
