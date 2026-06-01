@@ -1042,7 +1042,7 @@ function updateWrangler(args) {
     toml = setSectionString(toml, "vars", "CF_ACCESS_TEAM_DOMAIN", normalizeAccessTeamDomain(args.accessTeamDomain));
   }
 
-  writeFile(WRANGLER_PATH, toml, args);
+  writeFile(WRANGLER_PATH, `${toml.trimEnd()}\n`, args);
 }
 
 function setTopLevelString(toml, key, value) {
