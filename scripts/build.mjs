@@ -490,18 +490,20 @@ function applyPublicBranding(siteConfig) {
 
     if (hasWordmark) {
       const renderedWordmark = renderConfiguredWordmark(siteConfig);
+      const brandHref = `https://${escapeHtmlAttribute(siteConfig?.operator?.short_domain || brandLabel)}/`;
       brandedHtml = brandedHtml
         .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, `<h1$1>${renderedWordmark}</h1>`)
+        .replace(
+          /<a class="brand-mark" href="[^"]+" target="_blank" rel="noreferrer" aria-label="[^"]+">\s*<img src="\/logo\.svg" alt="[^"]+" \/>\s*<\/a>/g,
+          `<a class="brand-mark brand-mark-wordmark" href="${brandHref}" target="_blank" rel="noreferrer" aria-label="${escapeHtmlAttribute(brandLabel)}">${renderedWordmark}</a>`
+        )
         .replace(
           /(<h1 class="instance-brand-title">\s*<a href="[^"]+" aria-label=")[^"]*("[^>]*>)[\s\S]*?(<\/a>\s*<\/h1>)/g,
           `$1${escapeHtmlAttribute(brandLabel)}$2${renderedWordmark}$3`
         )
         .replace(/<title>([^<]*?)VanityURLs([^<]*?)<\/title>/gi, `<title>$1${escapeHtml(brandLabel)}$2</title>`)
         .replace(/aria-label="VanityURLs"/g, `aria-label="${escapeHtmlAttribute(brandLabel)}"`)
-        .replace(
-          /(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi,
-          `$1"https://${escapeHtmlAttribute(siteConfig?.operator?.short_domain || brandLabel)}/"`
-        );
+        .replace(/(<a class="wordmark" href=)"https:\/\/vanityurls\.link\/"/gi, `$1"${brandHref}"`);
     }
 
     if (!hasSlogan) return brandedHtml;

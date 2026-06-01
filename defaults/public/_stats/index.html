@@ -82,13 +82,29 @@
       }
       .brand-mark {
         display: inline-flex;
-        width: min(42vw, 320px);
         flex: 0 0 auto;
+        align-items: center;
+        justify-content: flex-end;
+        width: min(48vw, 560px);
+        min-height: 4.5rem;
+        color: var(--text);
+        text-decoration: none;
       }
       .brand-mark img {
         display: block;
-        width: 100%;
+        width: auto;
+        max-width: 100%;
+        max-height: 4.5rem;
         height: auto;
+      }
+      .brand-mark-wordmark {
+        font-size: clamp(2.4rem, 5vw, 4.5rem);
+        font-weight: 850;
+        letter-spacing: 0;
+        line-height: 0.9;
+      }
+      .brand-mark-wordmark span:last-child {
+        color: var(--brand);
       }
       .muted {
         color: var(--muted);
@@ -300,7 +316,8 @@
       });
 
       metricsEl.addEventListener("click", (event) => {
-        const button = event.target.closest("button[data-filter-state]");
+        const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+        const button = target?.closest("button[data-filter-state]");
         if (!button) return;
 
         const state = button.dataset.filterState;
