@@ -168,6 +168,9 @@ function run(cwd, args) {
   run(fixture, ["scripts/reconcile.mjs", "--languages", "--branding"]);
   assert.equal(fs.existsSync(path.join(fixture, "custom", "public", "fr")), false);
   assert.match(fs.readFileSync(path.join(fixture, "custom", "public", "en", "index.html"), "utf8"), /Updated links/);
+  assert(
+    !JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"])).issues.some((issue) => issue.code === "branding-stale")
+  );
 }
 
 console.log("maintenance tests ok");

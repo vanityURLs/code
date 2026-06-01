@@ -198,7 +198,8 @@ function diagnoseBranding(context) {
   return listHtmlFiles(context.customPublicDir)
     .filter((filePath) => {
       const html = fs.readFileSync(filePath, "utf8");
-      return applyBranding(html, context, languageForPublicFile(context, filePath)) !== html;
+      const brandedHtml = applyBranding(html, context, languageForPublicFile(context, filePath));
+      return formatHtmlText(context, brandedHtml) !== formatHtmlText(context, html);
     })
     .map((filePath) => ({
       code: "branding-stale",
@@ -447,6 +448,27 @@ function formatFiles(context, directory, extensions) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"]
   });
+}
+
+function formatHtmlText(context, html) {
+  const prettierBin = path.join(
+    context.root,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "prettier.cmd" : "prettier"
+  );
+  if (!fs.existsSync(prettierBin)) return html;
+
+  try {
+    return execFileSync(prettierBin, ["--parser", "html"], {
+      cwd: context.root,
+      input: html,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "ignore"]
+    });
+  } catch {
+    return html;
+  }
 }
 
 function listFiles(directory) {
