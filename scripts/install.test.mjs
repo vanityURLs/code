@@ -90,9 +90,21 @@ function runSetup(cwd, extraArgs) {
   const privacyHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "privacy.html"), "utf8");
   assert.match(privacyHtml, /The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects/);
 
+  const indexHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "index.html"), "utf8");
+  assert.match(
+    indexHtml,
+    /<p class="instance-brand-subtitle">[\s\S]*?The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects[\s\S]*?<\/p>/
+  );
+
+  const expandHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "expand", "index.html"), "utf8");
+  assert.match(
+    expandHtml,
+    /<p class="instance-brand-subtitle">[\s\S]*?The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects[\s\S]*?<\/p>/
+  );
+
   execFileSync(
     path.join(fixture, "node_modules", ".bin", process.platform === "win32" ? "prettier.cmd" : "prettier"),
-    ["--check", "custom/public/en/privacy.html"],
+    ["--check", "custom/public/en/privacy.html", "custom/public/en/index.html", "custom/public/en/expand/index.html"],
     {
       cwd: fixture,
       stdio: "pipe"

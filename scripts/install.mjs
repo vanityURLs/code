@@ -831,8 +831,11 @@ function applyBranding(html, args, language = "en") {
   const wordmarkSpans = `<span>${escapeHtml(args.wordmarkBlack)}</span><span>${escapeHtml(args.wordmarkGreen)}</span>`;
   const wordmark = `<h1$1>${wordmarkSpans}</h1>`;
   const slogan = renderBrandingSlogan(localizedSlogan(args.brandingSlogans, language), args.operator);
+  const subtitle = slogan
+    ? `<p class="instance-brand-subtitle">\n            ${slogan}\n          </p>`
+    : `<p class="instance-brand-subtitle"></p>`;
 
-  return html
+  let brandedHtml = html
     .replace(/<h1([^>]*)><span>Vanity<\/span><span>URLs<\/span><\/h1>/g, (_match, attributes) =>
       wordmark.replace("$1", attributes)
     )
@@ -849,12 +852,13 @@ function applyBranding(html, args, language = "en") {
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityURLs\.link"/g, `$1"${PROJECT_SITE_URL}"`)
     .replace(/(<a class="redirected-badge" href=)"https:\/\/vanityurls\.link\/?"/gi, `$1"${PROJECT_SITE_URL}"`)
     .replace(/(<a class="redirected-badge"[^>]*aria-label=)"[^"]*"/g, '$1"VanityURLs"')
-    .replace(
-      /<p class="instance-brand-subtitle">[\s\S]*?<\/p>/g,
-      slogan
-        ? `<p class="instance-brand-subtitle">\n            ${slogan}\n          </p>`
-        : `<p class="instance-brand-subtitle"></p>`
-    );
+    .replace(/<p class="instance-brand-subtitle">[\s\S]*?<\/p>/g, subtitle);
+
+  if (!brandedHtml.includes('class="instance-brand-subtitle"')) {
+    brandedHtml = brandedHtml.replace(/(<a class="wordmark"[\s\S]*?<\/a>)/, `$1\n\n        ${subtitle}`);
+  }
+
+  return brandedHtml;
 }
 
 function renderBrandingSlogan(slogan, operator = {}) {
