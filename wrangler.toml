@@ -1,4 +1,4 @@
-name = 'vanityurls-redirector'
+name = 'go-vanityurls'
 main = 'src/worker.mjs'
 compatibility_date = '2026-05-05'
 workers_dev = false
@@ -24,10 +24,10 @@ run_worker_first = [
 ]
 
 [vars]
+CF_ACCESS_TEAM_DOMAIN = 'vanityurls.cloudflareaccess.com'
 
 [[routes]]
-# pattern = "your-short-domain.com"
-pattern = "vanityurls.link"
+pattern = "go.vanityurls.link"
 custom_domain = true
 
 [observability]
