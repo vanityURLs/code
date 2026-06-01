@@ -8,7 +8,7 @@ import { spawnSync } from "node:child_process";
 const ROOT = process.cwd();
 const DEFAULT_REMOTE = "https://github.com/vanityurls/code.git";
 const DEFAULT_REF = "main";
-const DEFAULT_PATHS = ["defaults", "scripts", "package.json", "package-lock.json", "LICENSE"];
+const DEFAULT_PATHS = ["defaults", "scripts", "package.json", "package-lock.json", "LICENSE", ".npmrc"];
 const PROTECTED_PATHS = ["custom", "wrangler.toml", ".dev.vars", "README.md"];
 const GENERATED_PATHS = ["build", "functions", "src"];
 
@@ -232,20 +232,30 @@ function extractSource(source, paths) {
   }
 }
 
+function sourceAvailablePaths(source, paths) {
+  const output = git(["ls-tree", "--name-only", source, "--", ...paths], { capture: true });
+  return new Set(
+    output
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+  );
+}
+
 function syncPaths(args, source) {
-  const { tempDir, extractDir } = extractSource(source, args.paths);
+  const availablePaths = sourceAvailablePaths(source, args.paths);
+  const paths = args.paths.filter((relativePath) => availablePaths.has(relativePath));
+  const missing = args.paths.filter((relativePath) => !availablePaths.has(relativePath));
   const synced = [];
-  const missing = [];
+
+  if (!paths.length) return { synced, missing };
+
+  const { tempDir, extractDir } = extractSource(source, paths);
 
   try {
-    for (const relativePath of args.paths) {
+    for (const relativePath of paths) {
       const sourcePath = path.join(extractDir, relativePath);
       const targetPath = path.join(ROOT, relativePath);
-
-      if (!fs.existsSync(sourcePath)) {
-        missing.push(relativePath);
-        continue;
-      }
 
       if (args.dryRun) {
         console.log(`[dry-run] would replace ${relativePath}`);
@@ -274,21 +284,29 @@ function runCheck(args) {
   console.log(`[build] Built v8s-blocklist.json and v8s.json with ${linkCount} links`);
 
   runQuiet(process.execPath, ["scripts/registry.test.mjs"], "registry tests");
-  console.log("[test] registry tests ok");
+  console.log("[test] registry contract ok (generated routing data is valid)");
   runQuiet(process.execPath, ["scripts/install.test.mjs"], "install tests");
-  console.log("[test] install tests ok");
+  console.log("[test] setup compatibility ok (installer preserves instance config and custom files)");
   runQuiet(process.execPath, ["scripts/maintenance.test.mjs"], "maintenance tests");
-  console.log("[test] maintenance tests ok");
+  console.log("[test] maintenance tools ok (doctor and v8s-fix handle expected drift)");
 }
 
-function printSummary(args, source, result) {
-  console.log(`Summary: Synced ${result.synced.length ? result.synced.join(", ") : "none"}`);
-  if (result.missing.length) console.log(`Summary: Missing upstream paths: ${result.missing.join(", ")}`);
-
+function printPostRunNote(args) {
   if (!args.dryRun) {
     const status = worktreeStatus();
     if (status) console.log("Review with git status --short and git diff, then commit and push.");
   }
+}
+
+function formatSyncList(paths) {
+  if (!paths.length) return "none";
+  return paths.map(formatSyncPath).join(", ");
+}
+
+function formatSyncPath(relativePath) {
+  const fullPath = path.join(ROOT, relativePath);
+  if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) return `${relativePath}/`;
+  return relativePath;
 }
 
 async function main() {
@@ -301,12 +319,12 @@ async function main() {
   const source = resolveSource(args);
   const result = syncPaths(args, source);
   if (!args.dryRun) {
-    console.log(`[sync] Synced ${result.synced.length ? result.synced.join(", ") : "none"}`);
-    if (result.missing.length) console.log(`[sync] Missing upstream paths: ${result.missing.join(", ")}`);
+    console.log(`[sync] ${formatSyncList(result.synced)}`);
+    if (result.missing.length) console.log(`[sync] Missing upstream paths: ${formatSyncList(result.missing)}`);
   }
 
   runCheck(args);
-  printSummary(args, source, result);
+  printPostRunNote(args);
 }
 
 main().catch((error) => {
