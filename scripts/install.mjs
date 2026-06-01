@@ -739,6 +739,7 @@ function updateSiteConfig(args) {
       ? {
           domain: args.domain,
           slogan: args.brandingSlogans,
+          slogan_link_text: existingSiteConfig.branding?.slogan_link_text || {},
           custom_public: args.customizePublic === true,
           wordmark: args.customizePublic
             ? {
@@ -830,7 +831,11 @@ function applyBranding(html, args, language = "en") {
   const brandLabel = `${args.wordmarkBlack}${args.wordmarkGreen}`;
   const wordmarkSpans = `<span>${escapeHtml(args.wordmarkBlack)}</span><span>${escapeHtml(args.wordmarkGreen)}</span>`;
   const wordmark = `<h1$1>${wordmarkSpans}</h1>`;
-  const slogan = renderBrandingSlogan(localizedSlogan(args.brandingSlogans, language), args.operator);
+  const slogan = renderBrandingSlogan(
+    localizedSlogan(args.brandingSlogans, language),
+    args.operator,
+    localizedSloganLinkText(args.previousSiteConfig?.branding?.slogan_link_text, language)
+  );
   const subtitle = slogan
     ? `<p class="instance-brand-subtitle">\n            ${slogan}\n          </p>`
     : `<p class="instance-brand-subtitle"></p>`;
@@ -861,14 +866,25 @@ function applyBranding(html, args, language = "en") {
   return brandedHtml;
 }
 
-function renderBrandingSlogan(slogan, operator = {}) {
+function renderBrandingSlogan(slogan, operator = {}, linkText = "") {
   const rendered = escapeHtml(slogan || "");
   const legalName = String(operator.legal_name || "").trim();
   const operatorDomain = normalizeDomain(operator.operator_domain || "");
   if (!rendered || !legalName || !operatorDomain) return rendered;
 
-  const escapedName = escapeHtml(legalName);
-  return rendered.replace(escapedName, `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedName}</a>`);
+  const linkCandidates = [String(linkText || "").trim(), legalName].filter(Boolean);
+
+  for (const candidate of linkCandidates) {
+    const escapedText = escapeHtml(candidate);
+    if (rendered.includes(escapedText)) {
+      return rendered.replace(
+        escapedText,
+        `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedText}</a>`
+      );
+    }
+  }
+
+  return rendered;
 }
 
 function localizedSlogan(slogans, language = "en") {
@@ -876,6 +892,13 @@ function localizedSlogan(slogans, language = "en") {
     return slogans[language] || slogans.en || "";
   }
   return String(slogans || "");
+}
+
+function localizedSloganLinkText(linkTexts, language = "en") {
+  if (linkTexts && typeof linkTexts === "object" && !Array.isArray(linkTexts)) {
+    return linkTexts[language] || linkTexts.en || "";
+  }
+  return String(linkTexts || "");
 }
 
 function readJson(filePath, fallback = {}) {

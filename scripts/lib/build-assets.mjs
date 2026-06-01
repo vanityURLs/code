@@ -53,6 +53,14 @@ export function mergeSiteConfig(base, custom) {
     branding: {
       ...(base.branding || {}),
       ...(custom.branding || {}),
+      slogan: {
+        ...(base.branding?.slogan || {}),
+        ...(custom.branding?.slogan || {})
+      },
+      slogan_link_text: {
+        ...(base.branding?.slogan_link_text || {}),
+        ...(custom.branding?.slogan_link_text || {})
+      },
       wordmark: {
         ...(base.branding?.wordmark || {}),
         ...(custom.branding?.wordmark || {})

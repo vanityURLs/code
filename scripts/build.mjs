@@ -407,7 +407,11 @@ function applyLegalBranding(html, siteConfig, language = "en") {
       );
   }
 
-  const slogan = renderBrandingSlogan(localizedSlogan(siteConfig?.branding?.slogan, language), siteConfig?.operator);
+  const slogan = renderBrandingSlogan(
+    localizedSlogan(siteConfig?.branding?.slogan, language),
+    siteConfig?.operator,
+    localizedSloganLinkText(siteConfig?.branding?.slogan_link_text, language)
+  );
   return slogan
     ? brandedHtml.replace(
         /<p class="instance-brand-subtitle">[\s\S]*?<\/p>/,
@@ -416,14 +420,59 @@ function applyLegalBranding(html, siteConfig, language = "en") {
     : brandedHtml;
 }
 
-function renderBrandingSlogan(slogan, operator = {}) {
+function applyPublicBranding(siteConfig) {
+  const slogans = siteConfig?.branding?.slogan;
+  if (!hasConfiguredSlogan(slogans)) return;
+
+  rewriteHtmlFiles(BUILD_DIR, (html, filePath) => {
+    if (!html.includes('class="instance-brand-subtitle"')) return html;
+
+    const language = languageForBuildHtmlFile(filePath);
+    const slogan = renderBrandingSlogan(
+      localizedSlogan(slogans, language),
+      siteConfig?.operator,
+      localizedSloganLinkText(siteConfig?.branding?.slogan_link_text, language)
+    );
+    if (!slogan) return html;
+
+    return html.replace(
+      /<p class="instance-brand-subtitle">[\s\S]*?<\/p>/,
+      `<p class="instance-brand-subtitle">${slogan}</p>`
+    );
+  });
+}
+
+function languageForBuildHtmlFile(filePath) {
+  const [firstSegment] = path.relative(BUILD_DIR, filePath).split(path.sep);
+  return LANGUAGE_METADATA[firstSegment] ? firstSegment : "en";
+}
+
+function hasConfiguredSlogan(slogan) {
+  if (slogan && typeof slogan === "object" && !Array.isArray(slogan)) {
+    return Object.values(slogan).some((value) => String(value || "").trim());
+  }
+  return Boolean(String(slogan || "").trim());
+}
+
+function renderBrandingSlogan(slogan, operator = {}, linkText = "") {
   const rendered = escapeHtml(slogan || "");
   const legalName = String(operator?.legal_name || "").trim();
   const operatorDomain = normalizeDomain(operator?.operator_domain || "");
   if (!rendered || !legalName || !operatorDomain) return rendered;
 
-  const escapedName = escapeHtml(legalName);
-  return rendered.replace(escapedName, `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedName}</a>`);
+  const linkCandidates = [String(linkText || "").trim(), legalName].filter(Boolean);
+
+  for (const candidate of linkCandidates) {
+    const escapedText = escapeHtml(candidate);
+    if (rendered.includes(escapedText)) {
+      return rendered.replace(
+        escapedText,
+        `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedText}</a>`
+      );
+    }
+  }
+
+  return rendered;
 }
 
 function localizedSlogan(slogans, language = "en") {
@@ -431,6 +480,13 @@ function localizedSlogan(slogans, language = "en") {
     return slogans[language] || slogans.en || "";
   }
   return String(slogans || "");
+}
+
+function localizedSloganLinkText(linkTexts, language = "en") {
+  if (linkTexts && typeof linkTexts === "object" && !Array.isArray(linkTexts)) {
+    return linkTexts[language] || linkTexts.en || "";
+  }
+  return String(linkTexts || "");
 }
 
 function removeLegalRedirectedBadge(html) {
@@ -657,6 +713,7 @@ function renderTestsPanel(language, siteConfig) {
 ${pageLinks}
           </ul>
         </section>
+${language === "en" ? renderMachineReadableTestsSection() : ""}
         <section class="qa-section">
           <h3>${escapeHtml(metadata.statusTitle)}</h3>
           <ul class="qa-links">
@@ -671,6 +728,26 @@ ${renderTestsLink(`${prefix}/maintenance${extension}`, metadata.links.maintenanc
 
 function renderTestsLink(href, label) {
   return `            <li><a href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a></li>`;
+}
+
+function renderMachineReadableTestsSection() {
+  const links = [
+    ["/.well-known/security.txt", ".well-known/security.txt"],
+    ["/security.txt", "security.txt redirect"],
+    ["/robots.txt", "robots.txt"],
+    ["/llms.txt", "llms.txt"],
+    ["/llms-full.txt", "llms-full.txt"],
+    ["/site.webmanifest", "site.webmanifest"]
+  ]
+    .map(([href, label]) => renderTestsLink(href, label))
+    .join("\n");
+
+  return `        <section class="qa-section">
+          <h3>Machine-readable files</h3>
+          <ul class="qa-links">
+${links}
+          </ul>
+        </section>`;
 }
 
 function encodePathSegment(value) {
@@ -824,6 +901,7 @@ function main() {
     siteConfig,
     log
   });
+  applyPublicBranding(siteConfig);
   renderLegalPages(siteConfig);
   renderSecurityTxt(siteConfig);
   writeRuntimeSiteConfig(runtimeSiteConfig(siteConfig), RUNTIME_SITE_CONFIG_PATH);
