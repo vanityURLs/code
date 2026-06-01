@@ -53,6 +53,7 @@ export function diagnoseCustomPublic(context) {
 
   issues.push(...diagnoseHtmlHeadAssets(context));
   issues.push(...diagnoseSharedAssets(context));
+  issues.push(...diagnoseProductPages(context));
   issues.push(...diagnoseBranding(context));
 
   const supported = new Set(languages);
@@ -95,9 +96,10 @@ export function reconcileCustomPublic(context, options = {}) {
     fs.rmSync(customPublicDir, { recursive: true, force: true });
     copyDirectory(defaultPublicDir, customPublicDir);
     pruneUnsupportedLanguageDirs(context);
-    rewriteHtmlFiles(customPublicDir, (html, filePath) =>
-      normalizeHtmlHead(applyBranding(html, context, languageForPublicFile(context, filePath)))
-    );
+    rewriteHtmlFiles(customPublicDir, (html, filePath) => {
+      if (isProductPublicFile(context, filePath)) return html;
+      return normalizeHtmlHead(applyBranding(html, context, languageForPublicFile(context, filePath)));
+    });
     actions.push("recreated custom/public from defaults");
   } else {
     if (options.languages) {
@@ -110,15 +112,24 @@ export function reconcileCustomPublic(context, options = {}) {
       actions.push("synced shared CSS, script, logo, icon, font, and badge assets from defaults");
     }
 
+    if (options.productPages) {
+      syncProductPages(context);
+      actions.push("synced product dashboard and QA pages from defaults");
+    }
+
     if (options.branding) {
-      rewriteHtmlFiles(customPublicDir, (html, filePath) =>
-        applyBranding(html, context, languageForPublicFile(context, filePath))
-      );
+      rewriteHtmlFiles(customPublicDir, (html, filePath) => {
+        if (isProductPublicFile(context, filePath)) return html;
+        return applyBranding(html, context, languageForPublicFile(context, filePath));
+      });
       actions.push("refreshed branding in custom/public HTML");
     }
 
     if (options.headAssets) {
-      rewriteHtmlFiles(customPublicDir, (html) => normalizeHtmlHead(html));
+      rewriteHtmlFiles(customPublicDir, (html, filePath) => {
+        if (isProductPublicFile(context, filePath)) return html;
+        return normalizeHtmlHead(html);
+      });
       actions.push("normalized favicon and theme head assets in custom/public HTML");
     }
   }
@@ -134,6 +145,7 @@ export function parseReconcileArgs(argv) {
     dryRun: false,
     headAssets: false,
     languages: false,
+    productPages: false,
     public: false
   };
 
@@ -143,6 +155,7 @@ export function parseReconcileArgs(argv) {
       options.branding = true;
       options.headAssets = true;
       options.languages = true;
+      options.productPages = true;
     } else if (arg === "--assets") {
       options.assets = true;
     } else if (arg === "--branding") {
@@ -153,6 +166,8 @@ export function parseReconcileArgs(argv) {
       options.headAssets = true;
     } else if (arg === "--languages") {
       options.languages = true;
+    } else if (arg === "--product-pages") {
+      options.productPages = true;
     } else if (arg === "--public") {
       options.public = true;
     } else {
@@ -165,6 +180,7 @@ export function parseReconcileArgs(argv) {
 
 function diagnoseHtmlHeadAssets(context) {
   return listHtmlFiles(context.customPublicDir)
+    .filter((filePath) => !isProductPublicFile(context, filePath))
     .filter((filePath) => normalizeHtmlHead(fs.readFileSync(filePath, "utf8")) !== fs.readFileSync(filePath, "utf8"))
     .map((filePath) => ({
       code: "html-head-assets-stale",
@@ -193,10 +209,29 @@ function diagnoseSharedAssets(context) {
     });
 }
 
+function diagnoseProductPages(context) {
+  return listProductDefaultPages(context)
+    .filter((defaultPath) => {
+      const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
+      return fs.existsSync(customPath) && !sameFile(defaultPath, customPath);
+    })
+    .map((defaultPath) => {
+      const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
+      return {
+        code: "product-page-stale",
+        severity: "warn",
+        fix: "product-pages",
+        path: relativePath(context, customPath),
+        message: "Product-managed dashboard or QA page differs from defaults."
+      };
+    });
+}
+
 function diagnoseBranding(context) {
   if (!hasBrandingConfig(context.siteConfig)) return [];
 
   return listHtmlFiles(context.customPublicDir)
+    .filter((filePath) => !isProductPublicFile(context, filePath))
     .filter((filePath) => {
       const html = fs.readFileSync(filePath, "utf8");
       const brandedHtml = applyBranding(html, context, languageForPublicFile(context, filePath));
@@ -240,6 +275,28 @@ function syncSharedAssets(context) {
     fs.mkdirSync(path.dirname(customPath), { recursive: true });
     fs.copyFileSync(defaultPath, customPath);
   }
+}
+
+function syncProductPages(context) {
+  for (const defaultPath of listProductDefaultPages(context)) {
+    const relative = path.relative(context.defaultPublicDir, defaultPath);
+    const customPath = path.join(context.customPublicDir, relative);
+    if (!fs.existsSync(customPath)) continue;
+    fs.mkdirSync(path.dirname(customPath), { recursive: true });
+    fs.copyFileSync(defaultPath, customPath);
+  }
+}
+
+function listProductDefaultPages(context) {
+  return [
+    path.join(context.defaultPublicDir, "_stats", "index.html"),
+    path.join(context.defaultPublicDir, "_tests", "index.html")
+  ].filter((filePath) => fs.existsSync(filePath));
+}
+
+function isProductPublicFile(context, filePath) {
+  const relative = path.relative(context.customPublicDir, filePath).split(path.sep).join("/");
+  return relative === "_stats/index.html" || relative === "_tests/index.html";
 }
 
 function listSharedDefaultAssets(context) {

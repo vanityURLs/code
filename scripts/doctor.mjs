@@ -38,7 +38,7 @@ function main() {
 }
 
 function printRecommendedFixes(issues) {
-  const fixes = [...new Set(issues.map((issue) => issue.fix))];
+  const fixes = [...new Set(issues.map((issue) => issue.fix))].sort(compareFixes);
   const fixCounts = fixes.map((fix) => ({
     fix,
     count: issues.filter((issue) => issue.fix === fix).length
@@ -53,6 +53,11 @@ function printRecommendedFixes(issues) {
   for (const { fix, count } of fixCounts) {
     console.log(`- --${fix}: ${count} issue${count === 1 ? "" : "s"}`);
   }
+}
+
+function compareFixes(left, right) {
+  const order = ["product-pages", "head-assets", "assets", "branding", "languages", "public"];
+  return order.indexOf(left) - order.indexOf(right);
 }
 
 try {

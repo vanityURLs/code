@@ -773,9 +773,10 @@ function customizePublicPages(args) {
   fs.rmSync(CUSTOM_PUBLIC_DIR, { recursive: true, force: true });
   copyDirectory(DEFAULT_PUBLIC_DIR, CUSTOM_PUBLIC_DIR);
   pruneUnsupportedLanguageDirs(CUSTOM_PUBLIC_DIR, args.languages);
-  rewriteHtmlFiles(CUSTOM_PUBLIC_DIR, (html, filePath) =>
-    normalizeHtmlHead(applyBranding(html, args, languageForPublicFile(filePath)))
-  );
+  rewriteHtmlFiles(CUSTOM_PUBLIC_DIR, (html, filePath) => {
+    if (isProductPublicFile(filePath)) return html;
+    return normalizeHtmlHead(applyBranding(html, args, languageForPublicFile(filePath)));
+  });
   formatFiles(CUSTOM_PUBLIC_DIR, [".html"]);
 }
 
@@ -893,6 +894,11 @@ const THEME_OVERRIDE_SCRIPT = `    <script data-v8s-theme-override>
 function languageForPublicFile(filePath) {
   const [language] = path.relative(CUSTOM_PUBLIC_DIR, filePath).split(path.sep);
   return DEFAULT_LANGUAGES.includes(language) ? language : "en";
+}
+
+function isProductPublicFile(filePath) {
+  const relative = path.relative(CUSTOM_PUBLIC_DIR, filePath).split(path.sep).join("/");
+  return relative === "_stats/index.html" || relative === "_tests/index.html";
 }
 
 function applyBranding(html, args, language = "en") {

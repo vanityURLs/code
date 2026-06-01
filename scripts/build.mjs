@@ -485,6 +485,8 @@ function applyPublicBranding(siteConfig) {
   if (!hasWordmark && !hasSlogan) return;
 
   rewriteHtmlFiles(BUILD_DIR, (html, filePath) => {
+    if (isStatsDashboardFile(filePath)) return html;
+
     let brandedHtml = html;
     const brandLabel = hasWordmark ? `${wordmark.black || ""}${wordmark.green || ""}` : "";
 
@@ -523,6 +525,10 @@ function applyPublicBranding(siteConfig) {
 
     return brandedHtml.replace(/<p class="instance-brand-subtitle">[\s\S]*?<\/p>/, subtitle);
   });
+}
+
+function isStatsDashboardFile(filePath) {
+  return path.relative(BUILD_DIR, filePath).split(path.sep).join("/") === "_stats/index.html";
 }
 
 function languageForBuildHtmlFile(filePath) {

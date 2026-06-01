@@ -157,6 +157,10 @@ function runSetup(cwd, extraArgs) {
   const builtIndex = fs.readFileSync(path.join(fixture, "build", "index.html"), "utf8");
   assert.match(builtIndex, /<span>v8s\.<\/span><span>link<\/span>/);
   assert.match(builtIndex, /The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects/);
+
+  const builtStats = fs.readFileSync(path.join(fixture, "build", "_stats", "index.html"), "utf8");
+  assert.match(builtStats, /<img src="\/logo\.svg" alt="VanityURLs" \/>/);
+  assert.doesNotMatch(builtStats, /<a class="brand-mark brand-mark-wordmark"/);
 }
 
 console.log("install tests ok");

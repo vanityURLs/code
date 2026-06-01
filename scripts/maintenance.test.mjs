@@ -191,4 +191,52 @@ function runCommand(cwd, args) {
   );
 }
 
+{
+  const fixture = makeFixture();
+  run(fixture, [
+    "scripts/install.mjs",
+    "--no-check",
+    "--domain",
+    "go.example",
+    "--worker-name",
+    "go-example",
+    "--owner",
+    "team",
+    "--languages",
+    "en,fr",
+    "--operator-timezone",
+    "America/Toronto",
+    "--operator-legal-name",
+    "Example Inc.",
+    "--operator-domain",
+    "example.com",
+    "--operator-abuse-contact",
+    "abuse@example.com",
+    "--operator-security-contact",
+    "security@example.com",
+    "--branding-slogan",
+    "A short-link service for Example Inc.'s projects",
+    "--customize-public"
+  ]);
+
+  const statsPath = path.join(fixture, "custom", "public", "_stats", "index.html");
+  fs.writeFileSync(statsPath, "<!doctype html><title>Old dashboard</title>\n");
+
+  const doctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
+  assert(
+    doctorJson.issues.some(
+      (issue) =>
+        issue.code === "product-page-stale" &&
+        issue.fix === "product-pages" &&
+        issue.path === "custom/public/_stats/index.html"
+    )
+  );
+
+  runCommand(fixture, ["scripts/v8s-fix", "--product-pages"]);
+  assert.equal(
+    fs.readFileSync(statsPath, "utf8"),
+    fs.readFileSync(path.join(fixture, "defaults", "public", "_stats", "index.html"), "utf8")
+  );
+}
+
 console.log("maintenance tests ok");
