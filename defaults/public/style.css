@@ -403,9 +403,9 @@ button svg {
 }
 
 .qa-links li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
+  gap: 14px;
   min-height: 44px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -424,15 +424,18 @@ button svg {
 }
 
 .qa-link-main {
-  display: block;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
   min-height: 44px;
   padding: 11px 13px;
 }
 
 .qa-theme-controls {
   display: inline-flex;
-  gap: 2px;
-  padding: 4px 6px 4px 0;
+  flex: 0 0 auto;
+  gap: 10px;
+  padding: 4px 10px 4px 0;
 }
 
 .qa-theme-link {

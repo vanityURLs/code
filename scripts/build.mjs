@@ -803,7 +803,9 @@ ${renderTestsLink(`${prefix}/maintenance${extension}`, metadata.links.maintenanc
 
 function renderTestsLink(href, label, options = {}) {
   const themeControls = options.themeControls ? renderTestsThemeControls(href, label) : "";
-  return `            <li><a class="qa-link-main" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>${themeControls}</li>`;
+  return `            <li class="qa-link-item">
+              <a class="qa-link-main" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>${themeControls}
+            </li>`;
 }
 
 function renderTestsThemeControls(href, label) {
