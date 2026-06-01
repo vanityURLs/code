@@ -37,10 +37,16 @@ execFileSync(process.execPath, ["scripts/validate-runtime-registry.mjs", registr
 });
 
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+const baseSiteConfig = JSON.parse(fs.readFileSync("defaults/v8s-site-config.json", "utf8"));
+const customSiteConfigPath = "custom/v8s-site-config.json";
+const customSiteConfig = fs.existsSync(customSiteConfigPath)
+  ? JSON.parse(fs.readFileSync(customSiteConfigPath, "utf8"))
+  : {};
+const expectedGeneratedTimezone = customSiteConfig.operator?.timezone || baseSiteConfig.operator?.timezone || "UTC";
 
 assert.equal(registry.schema_version, RUNTIME_REGISTRY_SCHEMA_VERSION);
 assert.equal(registry.default_state, "permanent");
-assert.equal(registry.generated_timezone, "UTC");
+assert.equal(registry.generated_timezone, expectedGeneratedTimezone);
 assert.match(registry.generated_git.commit, /^$|^[0-9a-f]{40}$/);
 if (registry.generated_git.commit_url) {
   assert(registry.generated_git.commit_url.includes(registry.generated_git.commit));
