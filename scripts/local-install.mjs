@@ -12,6 +12,7 @@ const DEFAULT_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-local-config.json")
 const CUSTOM_CONFIG_PATH = path.join(ROOT, "custom", "v8s-local-config.json");
 const HELPER_SOURCE_PATH = path.join(ROOT, "scripts", "v8s.sh");
 const LNK_SOURCE_PATH = path.join(ROOT, "scripts", "lnk");
+const V8S_FIX_SOURCE_PATH = path.join(ROOT, "scripts", "v8s-fix");
 const START_MARKER = "# >>> V8S >>>";
 const END_MARKER = "# <<< V8S <<<";
 
@@ -99,6 +100,10 @@ function mergeConfig(base, local) {
       ...(base.lnk_cli || {}),
       ...(local.lnk_cli || {})
     },
+    v8s_fix_cli: {
+      ...(base.v8s_fix_cli || {}),
+      ...(local.v8s_fix_cli || {})
+    },
     local_publish: {
       ...(base.local_publish || {}),
       ...(local.local_publish || {}),
@@ -137,6 +142,9 @@ async function promptConfig(config, args) {
       lnk_cli: {
         ...config.lnk_cli
       },
+      v8s_fix_cli: {
+        ...config.v8s_fix_cli
+      },
       local_publish: {
         ...config.local_publish,
         commit_messages: {
@@ -158,6 +166,9 @@ async function promptConfig(config, args) {
       lnk_cli: {
         ...config.lnk_cli
       },
+      v8s_fix_cli: {
+        ...config.v8s_fix_cli
+      },
       local_publish: {
         ...config.local_publish,
         commit_messages: {
@@ -176,6 +187,7 @@ async function promptConfig(config, args) {
 
     next.shell_helper.install_path = await question(rl, "Shell helper install path", next.shell_helper.install_path);
     next.lnk_cli.install_path = await question(rl, "lnk CLI install path", next.lnk_cli.install_path);
+    next.v8s_fix_cli.install_path = await question(rl, "v8s-fix CLI install path", next.v8s_fix_cli.install_path);
     next.local_publish.commit_messages = {
       ...(next.local_publish.commit_messages || {})
     };
@@ -240,13 +252,14 @@ function shellQuote(value) {
 
 function installHelper(config, args) {
   if (config.shell_helper?.enabled !== true) {
-    console.log("Shell helper disabled; installing lnk CLI only.");
-    installLnkCli(config, args);
+    console.log("Shell helper disabled; installing CLI helpers only.");
+    installCliHelpers(config, args);
     return;
   }
 
   const helperTarget = expandLocalPath(config.shell_helper.install_path);
   const lnkTarget = expandLocalPath(config.lnk_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
+  const v8sFixTarget = expandLocalPath(config.v8s_fix_cli?.install_path || "$XDG_CONFIG_HOME/bin/v8s-fix");
   const rcFile = expandLocalPath(config.shell_helper.rc_file);
   const registryPath = expandLocalPath(config.registry?.local_path || "~/.v8s.json");
   const repoPath = expandLocalPath(config.repository?.path || ROOT);
@@ -254,6 +267,7 @@ function installHelper(config, args) {
   if (args.dryRun) {
     console.log(`[dry-run] would copy scripts/v8s.sh to ${helperTarget}`);
     console.log(`[dry-run] would copy scripts/lnk to ${lnkTarget}`);
+    console.log(`[dry-run] would copy scripts/v8s-fix to ${v8sFixTarget}`);
     console.log(`[dry-run] would update ${rcFile}`);
     return;
   }
@@ -261,6 +275,7 @@ function installHelper(config, args) {
   fs.mkdirSync(path.dirname(helperTarget), { recursive: true });
   fs.copyFileSync(HELPER_SOURCE_PATH, helperTarget);
   copyExecutable(LNK_SOURCE_PATH, lnkTarget);
+  copyExecutable(V8S_FIX_SOURCE_PATH, v8sFixTarget);
 
   const block = [
     START_MARKER,
@@ -279,19 +294,24 @@ function installHelper(config, args) {
   fs.writeFileSync(rcFile, next);
   console.log(`Installed V8S shell helper to ${helperTarget}`);
   console.log(`Installed lnk CLI to ${lnkTarget}`);
+  console.log(`Installed v8s-fix CLI to ${v8sFixTarget}`);
   console.log(`Updated ${rcFile}`);
 }
 
-function installLnkCli(config, args) {
+function installCliHelpers(config, args) {
   const lnkTarget = expandLocalPath(config.lnk_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
+  const v8sFixTarget = expandLocalPath(config.v8s_fix_cli?.install_path || "$XDG_CONFIG_HOME/bin/v8s-fix");
 
   if (args.dryRun) {
     console.log(`[dry-run] would copy scripts/lnk to ${lnkTarget}`);
+    console.log(`[dry-run] would copy scripts/v8s-fix to ${v8sFixTarget}`);
     return;
   }
 
   copyExecutable(LNK_SOURCE_PATH, lnkTarget);
+  copyExecutable(V8S_FIX_SOURCE_PATH, v8sFixTarget);
   console.log(`Installed lnk CLI to ${lnkTarget}`);
+  console.log(`Installed v8s-fix CLI to ${v8sFixTarget}`);
 }
 
 function copyExecutable(sourcePath, targetPath) {

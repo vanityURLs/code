@@ -94,6 +94,8 @@ Added local helper and local publish configuration:
   - `rc_file`
 - `lnk_cli`
   - `install_path`
+- `v8s_fix_cli`
+  - `install_path`
 - `local_publish`
   - `commit_message`
   - `commit_messages.links`

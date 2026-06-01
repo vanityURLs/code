@@ -8,6 +8,9 @@
   "lnk_cli": {
     "install_path": "$XDG_CONFIG_HOME/bin/lnk"
   },
+  "v8s_fix_cli": {
+    "install_path": "$XDG_CONFIG_HOME/bin/v8s-fix"
+  },
   "local_publish": {
     "commit_message": "chore: update local vanityURLs configuration",
     "commit_messages": {
