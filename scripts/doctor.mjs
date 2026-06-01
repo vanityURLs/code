@@ -46,7 +46,7 @@ function printRecommendedFixes(issues) {
 
   console.log("");
   console.log("[doctor] Recommended fix:");
-  console.log(`  npm run reconcile -- ${fixes.map((fix) => `--${fix}`).join(" ")}`);
+  console.log(`  ./scripts/v8s-fix ${fixes.map((fix) => `--${fix}`).join(" ")}`);
 
   console.log("");
   console.log("[doctor] Fix groups:");

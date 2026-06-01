@@ -23,7 +23,6 @@
     "local-publish": "node scripts/local-publish.mjs",
     "optimize:badges": "find defaults/public -name 'v8s-redirected*.svg' -print0 | xargs -0 svgo --config scripts/svgo.config.mjs",
     "setup": "node scripts/install.mjs",
-    "reconcile": "node scripts/reconcile.mjs",
     "smoke": "npm run smoke:analytics",
     "smoke:analytics": "npm run build && node scripts/smoke-analytics.mjs",
     "test": "npm run test:all",

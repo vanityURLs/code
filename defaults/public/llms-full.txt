@@ -56,7 +56,7 @@ The default policy rejects risky destinations such as credentialed URLs, non-HTT
 
 Product defaults live in `defaults/`. Instance-owned files live in `custom/` and are not overwritten automatically during updates. The build copies defaults first, overlays `custom/public`, and then generates runtime files.
 
-Use `npm run doctor` to detect stale copied public assets, unsupported copied language folders, stale branding, and missing shared head assets. Use `npm run reconcile -- --assets`, `--head-assets`, `--languages`, `--branding`, or `--all` to apply explicit maintenance fixes to copied public files.
+Use `npm run doctor` to detect stale copied public assets, unsupported copied language folders, stale branding, and missing shared head assets. Use `./scripts/v8s-fix --assets`, `--head-assets`, `--languages`, `--branding`, or `--all` to apply explicit maintenance fixes to copied public files.
 
 ## Useful Files
 

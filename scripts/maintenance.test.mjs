@@ -36,6 +36,14 @@ function run(cwd, args) {
   });
 }
 
+function runCommand(cwd, args) {
+  return execFileSync(args[0], args.slice(1), {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+}
+
 {
   const fixture = makeFixture();
   run(fixture, [
@@ -80,10 +88,10 @@ function run(cwd, args) {
   );
   const doctorText = run(fixture, ["scripts/doctor.mjs"]);
   assert.match(doctorText, /Recommended fix:/);
-  assert.match(doctorText, /npm run reconcile -- --head-assets/);
+  assert.match(doctorText, /\.\/scripts\/v8s-fix --head-assets/);
   assert.match(doctorText, /--head-assets: 1 issue/);
 
-  run(fixture, ["scripts/reconcile.mjs", "--head-assets"]);
+  runCommand(fixture, ["scripts/v8s-fix", "--head-assets"]);
   const fixedHtml = fs.readFileSync(indexPath, "utf8");
   assert.match(fixedHtml, /rel="icon"/);
   assert.match(fixedHtml, /rel="apple-touch-icon"/);
@@ -126,7 +134,7 @@ function run(cwd, args) {
   const doctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
   assert(doctorJson.issues.some((issue) => issue.code === "shared-asset-stale" && issue.fix === "assets"));
 
-  run(fixture, ["scripts/reconcile.mjs", "--assets"]);
+  runCommand(fixture, ["scripts/v8s-fix", "--assets"]);
   assert.equal(
     fs.readFileSync(logoPath, "utf8"),
     fs.readFileSync(path.join(fixture, "defaults", "public", "logo.svg"), "utf8")
@@ -175,7 +183,7 @@ function run(cwd, args) {
   assert(doctorJson.issues.some((issue) => issue.code === "unsupported-language-present" && issue.fix === "languages"));
   assert(doctorJson.issues.some((issue) => issue.code === "branding-stale" && issue.fix === "branding"));
 
-  run(fixture, ["scripts/reconcile.mjs", "--languages", "--branding"]);
+  runCommand(fixture, ["scripts/v8s-fix", "--languages", "--branding"]);
   assert.equal(fs.existsSync(path.join(fixture, "custom", "public", "fr")), false);
   assert.match(fs.readFileSync(path.join(fixture, "custom", "public", "en", "index.html"), "utf8"), /Updated links/);
   assert(
