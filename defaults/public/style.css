@@ -100,7 +100,7 @@ a {
 
 .search-home {
   display: grid;
-  width: min(100%, 720px);
+  width: min(100%, 860px);
   margin: 0 auto;
   justify-items: center;
   gap: 30px;
@@ -175,11 +175,12 @@ a {
 }
 
 .instance-brand-subtitle {
-  max-width: 34rem;
+  max-width: 44rem;
   margin: 0;
   color: var(--muted);
   font-size: 1rem;
   line-height: 1.5;
+  text-align: center;
 }
 
 .instance-brand-subtitle a {
