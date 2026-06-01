@@ -17,7 +17,7 @@ const DEFAULT_LINKS_PATH = path.join(ROOT, "defaults", "v8s-links.txt");
 const DEFAULT_PUBLIC_DIR = path.join(ROOT, "defaults", "public");
 const DEFAULT_DOMAIN = "v8s.link";
 const DEFAULT_LANGUAGE = "en";
-const DEFAULT_LANGUAGES = ["de", "en", "es", "fr", "it"];
+const DEFAULT_LANGUAGES = ["en", "de", "es", "fr", "it"];
 const DEFAULT_RANDOM_SLUG_LENGTH = 3;
 const DEFAULT_OPERATOR_TIMEZONE = "UTC";
 const MAX_RANDOM_SLUG_LENGTH = 64;
@@ -68,6 +68,7 @@ async function promptForMissing(args) {
   }
   if (!process.stdin.isTTY) return args;
 
+  const customSiteConfig = readJson(CUSTOM_SITE_CONFIG_PATH);
   const siteConfig = loadSiteConfig();
   const wranglerConfig = loadWranglerConfig();
   const configuredLanguages = supportedLanguages(siteConfig).join(",");
@@ -81,6 +82,7 @@ async function promptForMissing(args) {
     args.analytics === "disabled" ? wranglerConfig.analyticsProvider || args.analytics : args.analytics;
   const configuredAccessTeamDomain = args.accessTeamDomain || wranglerConfig.accessTeamDomain || "";
   const configuredOperator = siteConfig.operator || {};
+  const customOperatorTimezone = customSiteConfig.operator?.timezone;
   const configuredBranding = siteConfig.branding || {};
   const suggested = suggestWordmarkSplit(configuredDomain);
 
@@ -98,8 +100,8 @@ async function promptForMissing(args) {
     );
     args.operatorTimezone = await question(
       rl,
-      "Operator timezone",
-      args.operatorTimezone || configuredOperator.timezone || localTimezone()
+      "Operator timezone (IANA name, for example America/Toronto)",
+      args.operatorTimezone || configuredTimezone(configuredOperator.timezone, customOperatorTimezone != null)
     );
     args.configureLegalPages = await confirm(
       rl,
@@ -244,6 +246,9 @@ async function promptForMissing(args) {
         `Add a slogan line under the domain name on your pages, such as "${defaultBrandingSlogan(args, "en")}"?`,
         hasConfiguredSlogan(configuredBranding.slogan)
       );
+      if (args.brandingSloganEnabled) {
+        console.log("Enter the English slogan first; setup will then ask for each additional supported language.");
+      }
       args.brandingSlogans = args.brandingSloganEnabled
         ? await promptForBrandingSlogans(rl, args, configuredBranding.slogan)
         : {};
@@ -417,8 +422,8 @@ function normalizeLanguages(value) {
     .map((language) => language.trim().toLowerCase().split("-")[0])
     .filter(Boolean);
   const unique = [...new Set(languages)];
-  if (!unique.includes(DEFAULT_LANGUAGE)) unique.push(DEFAULT_LANGUAGE);
-  return unique.sort((a, b) => a.localeCompare(b));
+  const ordered = unique.includes(DEFAULT_LANGUAGE) ? unique : [DEFAULT_LANGUAGE, ...unique];
+  return [DEFAULT_LANGUAGE, ...ordered.filter((language) => language !== DEFAULT_LANGUAGE)];
 }
 
 function normalizeBoolean(value) {
@@ -544,9 +549,19 @@ function localTimezone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_OPERATOR_TIMEZONE;
 }
 
+function configuredTimezone(value, isStoredValue = false) {
+  const timezone = String(value || "").trim();
+  if (isStoredValue) return timezone || DEFAULT_OPERATOR_TIMEZONE;
+  if (!timezone || timezone === DEFAULT_OPERATOR_TIMEZONE) return localTimezone();
+  return timezone;
+}
+
 function normalizeTimezone(value) {
   const timezone = String(value || "").trim() || DEFAULT_OPERATOR_TIMEZONE;
-  return isValidTimezone(timezone) ? timezone : DEFAULT_OPERATOR_TIMEZONE;
+  if (isValidTimezone(timezone)) return timezone;
+  throw new Error(
+    `Operator timezone must be an IANA timezone name such as America/Toronto, not an offset such as ${timezone}. IANA timezones handle daylight saving time automatically.`
+  );
 }
 
 function isValidTimezone(value) {
@@ -759,6 +774,7 @@ function customizePublicPages(args) {
   copyDirectory(DEFAULT_PUBLIC_DIR, CUSTOM_PUBLIC_DIR);
   pruneUnsupportedLanguageDirs(CUSTOM_PUBLIC_DIR, args.languages);
   rewriteHtmlFiles(CUSTOM_PUBLIC_DIR, (html, filePath) => applyBranding(html, args, languageForPublicFile(filePath)));
+  formatFiles(CUSTOM_PUBLIC_DIR, [".html"]);
 }
 
 function copyDirectory(source, target) {
@@ -871,6 +887,39 @@ function writeJson(filePath, value, args) {
 
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, formatJson(`${JSON.stringify(removeUndefined(value), null, 2)}\n`));
+}
+
+function formatFiles(directory, extensions) {
+  const prettierBin = path.join(
+    ROOT,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "prettier.cmd" : "prettier"
+  );
+  if (!fs.existsSync(prettierBin)) return;
+
+  const files = listFiles(directory).filter((filePath) => extensions.includes(path.extname(filePath)));
+  if (!files.length) return;
+
+  try {
+    execFileSync(prettierBin, ["--write", ...files], {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    });
+  } catch {
+    // Let the final verification step show the actionable formatting error.
+  }
+}
+
+function listFiles(directory) {
+  if (!fs.existsSync(directory)) return [];
+
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return listFiles(entryPath);
+    return entry.isFile() ? [entryPath] : [];
+  });
 }
 
 function formatJson(text) {

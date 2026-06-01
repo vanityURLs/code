@@ -41,6 +41,10 @@ const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
 assert.equal(registry.schema_version, RUNTIME_REGISTRY_SCHEMA_VERSION);
 assert.equal(registry.default_state, "permanent");
 assert.equal(registry.generated_timezone, "UTC");
+assert.match(registry.generated_git.commit, /^$|^[0-9a-f]{40}$/);
+if (registry.generated_git.commit_url) {
+  assert(registry.generated_git.commit_url.includes(registry.generated_git.commit));
+}
 assert.ok(Array.isArray(registry.links), "links compatibility array");
 assert.equal(registry.links.length, 3);
 assert.equal(registry.tree.children.docs.link.slug, "docs");

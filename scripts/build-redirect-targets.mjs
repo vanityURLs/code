@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import { checkTargetUrl, loadBlocklistPolicy } from "./blocklist-policy.mjs";
 import {
   DEFAULT_STATE,
@@ -110,6 +111,50 @@ function isValidTimezone(value) {
   } catch {
     return false;
   }
+}
+
+function gitValue(args) {
+  try {
+    return execFileSync("git", args, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function normalizeRemoteUrl(value) {
+  const remote = String(value || "").trim();
+  if (!remote) return "";
+
+  const sshMatch = remote.match(/^git@([^:]+):(.+)$/);
+  if (sshMatch) {
+    return `https://${sshMatch[1]}/${sshMatch[2].replace(/\.git$/i, "")}`;
+  }
+
+  const sshUrlMatch = remote.match(/^ssh:\/\/git@([^/]+)\/(.+)$/);
+  if (sshUrlMatch) {
+    return `https://${sshUrlMatch[1]}/${sshUrlMatch[2].replace(/\.git$/i, "")}`;
+  }
+
+  return remote.replace(/\.git$/i, "");
+}
+
+function commitUrl(remoteUrl, commit) {
+  if (!remoteUrl || !commit) return "";
+  if (/gitlab\./i.test(remoteUrl)) return `${remoteUrl}/-/commit/${commit}`;
+  return `${remoteUrl}/commit/${commit}`;
+}
+
+function gitMetadata() {
+  const commit = gitValue(["rev-parse", "HEAD"]);
+  const remoteUrl = normalizeRemoteUrl(gitValue(["config", "--get", "remote.origin.url"]));
+
+  return {
+    commit,
+    commit_url: commitUrl(remoteUrl, commit)
+  };
 }
 
 function loadScheduleEntries(inlineSchedules = new Map()) {
@@ -370,6 +415,7 @@ function main() {
     schema_version: RUNTIME_REGISTRY_SCHEMA_VERSION,
     generated_at: new Date().toISOString(),
     generated_timezone: loadOperatorTimezone(),
+    generated_git: gitMetadata(),
     default_state: DEFAULT_STATE,
     routing: {
       permanent: {

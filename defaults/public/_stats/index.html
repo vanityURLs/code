@@ -56,7 +56,7 @@
       }
       .brand-mark {
         display: inline-flex;
-        width: 96px;
+        width: 160px;
         flex: 0 0 auto;
       }
       .brand-mark img {
@@ -97,6 +97,7 @@
         width: 100%;
         border-collapse: collapse;
         margin-top: 1rem;
+        table-layout: fixed;
       }
       th,
       td {
@@ -138,6 +139,29 @@
       a {
         color: inherit;
       }
+      .slug-cell {
+        width: 9rem;
+      }
+      .state-cell {
+        width: 8rem;
+      }
+      .title-cell {
+        width: 20rem;
+      }
+      .target-cell {
+        max-width: 60ch;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+      .owner-cell {
+        width: 6rem;
+      }
+      .tags-cell {
+        width: 13rem;
+      }
+      .expires-cell {
+        width: 7rem;
+      }
       footer {
         display: flex;
         flex-wrap: wrap;
@@ -161,7 +185,7 @@
           <h1>Dashboard</h1>
         </div>
         <a class="brand-mark" href="https://vanityURLs.link" target="_blank" rel="noreferrer" aria-label="VanityURLs">
-          <img src="/v8s-logo.svg" alt="V8S" />
+          <img src="/logo.svg" alt="VanityURLs" />
         </a>
       </header>
 
@@ -172,13 +196,13 @@
       <table>
         <thead>
           <tr>
-            <th>Path</th>
-            <th>State</th>
-            <th>Title</th>
-            <th>Target</th>
-            <th>Owner</th>
-            <th>Tags</th>
-            <th>Expires</th>
+            <th class="slug-cell">Slug</th>
+            <th class="state-cell">State</th>
+            <th class="title-cell">Title</th>
+            <th class="target-cell">Target</th>
+            <th class="owner-cell">Owner</th>
+            <th class="tags-cell">Tags</th>
+            <th class="expires-cell">Expires</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -207,7 +231,7 @@
         const response = await fetch("/_stats/api/v8s.json", { cache: "no-store" });
         registry = await response.json();
         allLinks = flattenRegistry(registry);
-        generatedEl.textContent = formatGeneratedFooter(registry.generated_at, registry.generated_timezone);
+        generatedEl.innerHTML = renderGeneratedFooter(registry);
         renderMetrics(allLinks);
         renderRows(allLinks);
       }
@@ -219,27 +243,40 @@
       });
 
       function flattenRegistry(registry) {
-        const root = registry.routes && typeof registry.routes === "object" ? registry.routes : registry;
+        if (Array.isArray(registry.links)) {
+          return registry.links
+            .map((link) => ({ ...link, path: link.slug || "" }))
+            .sort((a, b) => a.path.localeCompare(b.path));
+        }
+
+        const root = registry.routes && typeof registry.routes === "object" ? registry.routes : registry.tree;
         const result = [];
 
         function walk(node, parts) {
           if (!node || typeof node !== "object") return;
+
+          if (node.link && typeof node.link === "object") {
+            result.push({ ...node.link, path: node.link.slug || parts.join("/") });
+          }
 
           if (typeof node.target === "string") {
             result.push({ path: parts.join("/"), ...node });
             return;
           }
 
-          for (const [key, child] of Object.entries(node)) {
+          for (const [key, child] of Object.entries(node.children || node)) {
             if (
               [
                 "schema_version",
                 "generated_at",
                 "generated_timezone",
+                "generated_git",
                 "default_state",
                 "routing",
                 "routes",
-                "tree"
+                "tree",
+                "links",
+                "link"
               ].includes(key)
             )
               continue;
@@ -287,13 +324,13 @@
             const state = effectiveState(link);
             return `
           <tr>
-            <td><code>/${escapeHtml(link.path)}</code></td>
-            <td><span class="state ${stateClass(state)}">${escapeHtml(state)}</span></td>
-            <td><strong>${escapeHtml(link.title || "—")}</strong><br><span class="muted">${escapeHtml(link.description || "")}</span></td>
-            <td><a href="${escapeAttr(link.target)}" target="_blank" rel="noreferrer">${escapeHtml(link.target)}</a></td>
-            <td>${escapeHtml(link.owner || "—")}</td>
-            <td>${Array.isArray(link.tags) ? link.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join("") : "—"}</td>
-            <td>${escapeHtml(link.expires_at || "—")}</td>
+            <td class="slug-cell"><code>/${escapeHtml(link.path)}</code></td>
+            <td class="state-cell"><span class="state ${stateClass(state)}">${escapeHtml(state)}</span></td>
+            <td class="title-cell"><strong>${escapeHtml(link.title || "—")}</strong><br><span class="muted">${escapeHtml(link.description || "")}</span></td>
+            <td class="target-cell"><a href="${escapeAttr(link.target)}" target="_blank" rel="noreferrer">${wrapLongText(link.target, 60)}</a></td>
+            <td class="owner-cell">${escapeHtml(link.owner || "—")}</td>
+            <td class="tags-cell">${Array.isArray(link.tags) ? link.tags.map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join("") : "—"}</td>
+            <td class="expires-cell">${escapeHtml(link.expires_at || "—")}</td>
           </tr>
         `;
           })
@@ -302,6 +339,21 @@
 
       function label(value) {
         return value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+      }
+
+      function renderGeneratedFooter(registry) {
+        const generated = formatGeneratedFooter(registry?.generated_at, registry?.generated_timezone);
+        const commit = String(registry?.generated_git?.commit || "").trim();
+        const commitUrl = String(registry?.generated_git?.commit_url || "").trim();
+        if (!commit) return escapeHtml(generated);
+
+        const shortCommit = commit.slice(0, 7);
+        const commitLabel = `commit ${shortCommit}`;
+        const commitHtml = commitUrl
+          ? `<a href="${escapeAttr(commitUrl)}" target="_blank" rel="noreferrer">${escapeHtml(commitLabel)}</a>`
+          : escapeHtml(commitLabel);
+
+        return `${escapeHtml(generated)} / ${commitHtml}`;
       }
 
       function formatGeneratedFooter(value, timezone) {
@@ -322,7 +374,16 @@
           ...(displayTimezone ? { timeZone: displayTimezone } : {})
         });
 
-        return `Registry generated ${formatted}${displayTimezone ? ` (${displayTimezone})` : ""}`;
+        return `View of links, generated ${formatted}`;
+      }
+
+      function wrapLongText(value, size = 60) {
+        const text = String(value ?? "");
+        const chunks = [];
+        for (let index = 0; index < text.length; index += size) {
+          chunks.push(escapeHtml(text.slice(index, index + size)));
+        }
+        return chunks.join("<wbr>");
       }
 
       function validTimezone(timezone) {

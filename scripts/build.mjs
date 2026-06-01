@@ -626,7 +626,7 @@ function renderTestsPanel(language, siteConfig) {
   };
   const prefix = language === "en" ? "" : `/${language}`;
   const extension = language === "en" ? "" : ".html";
-  const indexHref = language === "en" ? "/index" : `${prefix}/index.html`;
+  const indexHref = language === "en" ? "/index.html" : `${prefix}/index.html`;
   const expandHref = language === "en" ? "/expand" : `${prefix}/expand/index.html`;
   const legalContent = LEGAL_DATA.content?.[language] || {};
   const enabledPolicySlugs = new Set(legalPageSlugs(siteConfig));
