@@ -345,7 +345,6 @@ await run("serves localized policy and expand pages from Accept-Language", async
 
 await run("serves localized expand aliases", async () => {
   for (const [path, expected] of [
-    ["/fr/déplier", "expand fr"],
     ["/fr/deplier", "expand fr"],
     ["/es/expandir", "expand es"],
     ["/it/espandi", "expand it"],

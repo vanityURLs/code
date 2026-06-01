@@ -665,7 +665,7 @@ const staticPageAliases = new Map([
 const localizedExpandAliases = {
   de: ["expand", "erweitern"],
   es: ["expand", "expandir"],
-  fr: ["expand", "deplier", "déplier"],
+  fr: ["expand", "deplier"],
   it: ["expand", "espandi"]
 };
 
