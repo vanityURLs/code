@@ -11,7 +11,7 @@ const ROOT = process.cwd();
 const DEFAULT_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-local-config.json");
 const CUSTOM_CONFIG_PATH = path.join(ROOT, "custom", "v8s-local-config.json");
 const HELPER_SOURCE_PATH = path.join(ROOT, "scripts", "v8s.sh");
-const LNK_SOURCE_PATH = path.join(ROOT, "scripts", "lnk");
+const V8S_LNK_SOURCE_PATH = path.join(ROOT, "scripts", "v8s-lnk");
 const V8S_FIX_SOURCE_PATH = path.join(ROOT, "scripts", "v8s-fix");
 const START_MARKER = "# >>> V8S >>>";
 const END_MARKER = "# <<< V8S <<<";
@@ -44,7 +44,7 @@ function parseArgs(argv) {
 function printHelp() {
   console.log(`Usage: npm run local-install -- [options]
 
-Configure the local V8S shell helper and lnk CLI for this workstation.
+Configure the local V8S shell helper and v8s-lnk CLI for this workstation.
 
 Options:
   --yes       Accept defaults without prompting
@@ -89,7 +89,7 @@ function writeJson(filePath, value, args) {
 }
 
 function mergeConfig(base, local) {
-  return {
+  return normalizeLocalConfig({
     ...base,
     ...local,
     shell_helper: {
@@ -120,6 +120,19 @@ function mergeConfig(base, local) {
       ...(base.repository || {}),
       ...(local.repository || {})
     }
+  });
+}
+
+function normalizeLocalConfig(config) {
+  const lnkCli = { ...(config.lnk_cli || {}) };
+  if (typeof lnkCli.install_path === "string" && /(^|[/\\])lnk$/.test(lnkCli.install_path)) {
+    lnkCli.legacy_install_path ||= lnkCli.install_path;
+    lnkCli.install_path = lnkCli.install_path.replace(/lnk$/, "v8s-lnk");
+  }
+
+  return {
+    ...config,
+    lnk_cli: lnkCli
   };
 }
 
@@ -186,7 +199,12 @@ async function promptConfig(config, args) {
     if (!enabled) return next;
 
     next.shell_helper.install_path = await question(rl, "Shell helper install path", next.shell_helper.install_path);
-    next.lnk_cli.install_path = await question(rl, "lnk CLI install path", next.lnk_cli.install_path);
+    next.lnk_cli.install_path = await question(rl, "v8s-lnk CLI install path", next.lnk_cli.install_path);
+    next.lnk_cli.legacy_install_path = await question(
+      rl,
+      "lnk compatibility symlink path",
+      next.lnk_cli.legacy_install_path
+    );
     next.v8s_fix_cli.install_path = await question(rl, "v8s-fix CLI install path", next.v8s_fix_cli.install_path);
     next.local_publish.commit_messages = {
       ...(next.local_publish.commit_messages || {})
@@ -258,7 +276,7 @@ function installHelper(config, args) {
   }
 
   const helperTarget = expandLocalPath(config.shell_helper.install_path);
-  const lnkTarget = expandLocalPath(config.lnk_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
+  const { v8sLnkTarget, lnkTarget } = resolveLnkTargets(config);
   const v8sFixTarget = expandLocalPath(config.v8s_fix_cli?.install_path || "$XDG_CONFIG_HOME/bin/v8s-fix");
   const rcFile = expandLocalPath(config.shell_helper.rc_file);
   const registryPath = expandLocalPath(config.registry?.local_path || "~/.v8s.json");
@@ -266,7 +284,8 @@ function installHelper(config, args) {
 
   if (args.dryRun) {
     console.log(`[dry-run] would copy scripts/v8s.sh to ${helperTarget}`);
-    console.log(`[dry-run] would copy scripts/lnk to ${lnkTarget}`);
+    console.log(`[dry-run] would copy scripts/v8s-lnk to ${v8sLnkTarget}`);
+    console.log(`[dry-run] would symlink ${lnkTarget} to ${v8sLnkTarget}`);
     console.log(`[dry-run] would copy scripts/v8s-fix to ${v8sFixTarget}`);
     console.log(`[dry-run] would update ${rcFile}`);
     return;
@@ -274,7 +293,8 @@ function installHelper(config, args) {
 
   fs.mkdirSync(path.dirname(helperTarget), { recursive: true });
   fs.copyFileSync(HELPER_SOURCE_PATH, helperTarget);
-  copyExecutable(LNK_SOURCE_PATH, lnkTarget);
+  copyExecutable(V8S_LNK_SOURCE_PATH, v8sLnkTarget);
+  installCompatibilitySymlink(v8sLnkTarget, lnkTarget);
   copyExecutable(V8S_FIX_SOURCE_PATH, v8sFixTarget);
 
   const block = [
@@ -293,24 +313,28 @@ function installHelper(config, args) {
 
   fs.writeFileSync(rcFile, next);
   console.log(`Installed V8S shell helper to ${helperTarget}`);
-  console.log(`Installed lnk CLI to ${lnkTarget}`);
+  console.log(`Installed v8s-lnk CLI to ${v8sLnkTarget}`);
+  console.log(`Installed lnk compatibility symlink to ${lnkTarget}`);
   console.log(`Installed v8s-fix CLI to ${v8sFixTarget}`);
   console.log(`Updated ${rcFile}`);
 }
 
 function installCliHelpers(config, args) {
-  const lnkTarget = expandLocalPath(config.lnk_cli?.install_path || "$XDG_CONFIG_HOME/bin/lnk");
+  const { v8sLnkTarget, lnkTarget } = resolveLnkTargets(config);
   const v8sFixTarget = expandLocalPath(config.v8s_fix_cli?.install_path || "$XDG_CONFIG_HOME/bin/v8s-fix");
 
   if (args.dryRun) {
-    console.log(`[dry-run] would copy scripts/lnk to ${lnkTarget}`);
+    console.log(`[dry-run] would copy scripts/v8s-lnk to ${v8sLnkTarget}`);
+    console.log(`[dry-run] would symlink ${lnkTarget} to ${v8sLnkTarget}`);
     console.log(`[dry-run] would copy scripts/v8s-fix to ${v8sFixTarget}`);
     return;
   }
 
-  copyExecutable(LNK_SOURCE_PATH, lnkTarget);
+  copyExecutable(V8S_LNK_SOURCE_PATH, v8sLnkTarget);
+  installCompatibilitySymlink(v8sLnkTarget, lnkTarget);
   copyExecutable(V8S_FIX_SOURCE_PATH, v8sFixTarget);
-  console.log(`Installed lnk CLI to ${lnkTarget}`);
+  console.log(`Installed v8s-lnk CLI to ${v8sLnkTarget}`);
+  console.log(`Installed lnk compatibility symlink to ${lnkTarget}`);
   console.log(`Installed v8s-fix CLI to ${v8sFixTarget}`);
 }
 
@@ -318,6 +342,36 @@ function copyExecutable(sourcePath, targetPath) {
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.copyFileSync(sourcePath, targetPath);
   fs.chmodSync(targetPath, 0o755);
+}
+
+function resolveLnkTargets(config) {
+  const configuredPrimary = config.lnk_cli?.install_path || "$XDG_CONFIG_HOME/bin/v8s-lnk";
+  const primaryTarget = expandLocalPath(configuredPrimary);
+  const legacyTarget = expandLocalPath(config.lnk_cli?.legacy_install_path || "$XDG_CONFIG_HOME/bin/lnk");
+
+  if (path.basename(primaryTarget) === "lnk") {
+    return {
+      v8sLnkTarget: path.join(path.dirname(primaryTarget), "v8s-lnk"),
+      lnkTarget: primaryTarget
+    };
+  }
+
+  return {
+    v8sLnkTarget: primaryTarget,
+    lnkTarget: legacyTarget
+  };
+}
+
+function installCompatibilitySymlink(targetPath, linkPath) {
+  if (path.resolve(targetPath) === path.resolve(linkPath)) return;
+  fs.mkdirSync(path.dirname(linkPath), { recursive: true });
+  fs.rmSync(linkPath, { force: true });
+  try {
+    fs.symlinkSync(targetPath, linkPath);
+  } catch {
+    fs.copyFileSync(targetPath, linkPath);
+    fs.chmodSync(linkPath, 0o755);
+  }
 }
 
 function escapeRegExp(value) {

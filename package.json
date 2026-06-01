@@ -37,6 +37,7 @@
     "validate:all": "npm run validate:registry",
     "validate:registry": "node scripts/validate-registry.mjs build/v8s.json",
     "validate:targets": "node scripts/check-targets.mjs build/v8s.json",
+    "check:links": "npm run build && npm run lint && npm run test:registry",
     "check": "npm run check:all",
     "check:all": "npm run format:check && npm run build && npm run lint && npm run test",
     "check:targets": "npm run validate:targets",

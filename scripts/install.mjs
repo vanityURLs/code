@@ -1230,7 +1230,7 @@ function runCheck(args) {
 function printNextSteps(args) {
   console.log(`\nSetup complete for ${args.domain}.`);
   console.log("\nNext steps:");
-  console.log("- Review the starter link list with ./scripts/lnk list");
+  console.log("- Review the starter link list with ./scripts/v8s-lnk list");
   console.log("- Continue Quickstart: https://www.vanityurls.link/en/docs/setup/quickstart/#install-local-helpers");
 }
 

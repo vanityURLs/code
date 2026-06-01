@@ -291,6 +291,17 @@ function runCheck(args) {
   console.log("[test] maintenance tools ok (doctor and v8s-fix handle expected drift)");
 }
 
+function runDoctor(args) {
+  if (args.dryRun) {
+    console.log("[dry-run] would run doctor");
+    return;
+  }
+
+  const result = run("npm", ["run", "doctor"], { capture: true });
+  const output = result.trim();
+  if (output) console.log(output);
+}
+
 function printPostRunNote(args) {
   if (!args.dryRun) {
     const status = worktreeStatus();
@@ -324,6 +335,7 @@ async function main() {
   }
 
   runCheck(args);
+  runDoctor(args);
   printPostRunNote(args);
 }
 

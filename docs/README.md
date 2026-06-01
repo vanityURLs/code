@@ -16,14 +16,16 @@ npm install
 Review the current links:
 
 ```bash
-./scripts/lnk list
+./scripts/v8s-lnk list
 ```
 
-Add or edit links with `./scripts/lnk`, then verify the instance:
+Add or edit links with `./scripts/v8s-lnk`, then verify link-only changes:
 
 ```bash
-npm run check
+npm run check:links
 ```
+
+Run `npm run check` for broader product, template, or policy changes.
 
 Commit and push changes to GitHub. When the repository is connected to Cloudflare Workers & Pages, Cloudflare deploys
 the pushed commit automatically.
@@ -48,18 +50,18 @@ npm run test
 npm run validate
 npm run smoke
 npm run local-install
-./scripts/lnk --help
-./scripts/lnk list
+./scripts/v8s-lnk --help
+./scripts/v8s-lnk list
 ```
 
 Grouped commands run the whole group by default. Use focused variants such as `npm run test:worker`,
-`npm run validate:targets`, or `npm run smoke:analytics` when you only need one layer.
+`npm run check:links`, `npm run validate:targets`, or `npm run smoke:analytics` when you only need one layer.
 
 ## Documentation
 
 Use the vanityURLs documentation site for setup, customization, and operations:
 
 - Quickstart: https://www.vanityurls.link/en/docs/setup/quickstart/
-- LNK command line interface: https://www.vanityurls.link/en/docs/command-line-interface/lnk/
+- v8s-lnk command line interface: https://www.vanityurls.link/en/docs/command-line-interface/lnk/
 - Configuration files: https://www.vanityurls.link/en/docs/reference/configuration-files/
 - Upgrading an instance: https://www.vanityurls.link/en/docs/reference/upgrading/

@@ -13,18 +13,18 @@ const CATEGORIES_PATH = "defaults/v8s-blocklist-categories.json";
 const VERSION = readPackageVersion();
 
 function usage() {
-  console.log(`LNK block policies - manage blocked and allowed destinations.
+  console.log(`v8s-lnk block policies - manage blocked and allowed destinations.
 Version: ${VERSION}
 
 Usage:
-  ./scripts/lnk block list policy
-  ./scripts/lnk block list categories
-  ./scripts/lnk block list domain [block|allow]
-  ./scripts/lnk block list keyword
-  ./scripts/lnk block categories
-  ./scripts/lnk block add DOMAIN --category CATEGORY --severity SEVERITY --reason TEXT
-  ./scripts/lnk block keyword KEYWORD --category CATEGORY --severity SEVERITY --reason TEXT
-  ./scripts/lnk block allow DOMAIN --reason TEXT
+  ./scripts/v8s-lnk block list policy
+  ./scripts/v8s-lnk block list categories
+  ./scripts/v8s-lnk block list domain [block|allow]
+  ./scripts/v8s-lnk block list keyword
+  ./scripts/v8s-lnk block categories
+  ./scripts/v8s-lnk block add DOMAIN --category CATEGORY --severity SEVERITY --reason TEXT
+  ./scripts/v8s-lnk block keyword KEYWORD --category CATEGORY --severity SEVERITY --reason TEXT
+  ./scripts/v8s-lnk block allow DOMAIN --reason TEXT
 
 Options:
   --format FORMAT       table | json for list output
@@ -347,11 +347,11 @@ function validateCategory(category, severity) {
   const registry = readJson(CATEGORIES_PATH, { categories: {}, severities: {} });
 
   if (!registry.categories?.[category]) {
-    throw new Error(`Unknown blocklist category: ${category}. Run ./scripts/lnk block categories.`);
+    throw new Error(`Unknown blocklist category: ${category}. Run ./scripts/v8s-lnk block categories.`);
   }
 
   if (!registry.severities?.[severity]) {
-    throw new Error(`Unknown blocklist severity: ${severity}. Run ./scripts/lnk block categories.`);
+    throw new Error(`Unknown blocklist severity: ${severity}. Run ./scripts/v8s-lnk block categories.`);
   }
 }
 

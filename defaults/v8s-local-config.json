@@ -6,7 +6,8 @@
     "rc_file": "$XDG_CONFIG_HOME/zsh/.zshrc"
   },
   "lnk_cli": {
-    "install_path": "$XDG_CONFIG_HOME/bin/lnk"
+    "install_path": "$XDG_CONFIG_HOME/bin/v8s-lnk",
+    "legacy_install_path": "$XDG_CONFIG_HOME/bin/lnk"
   },
   "v8s_fix_cli": {
     "install_path": "$XDG_CONFIG_HOME/bin/v8s-fix"

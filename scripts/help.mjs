@@ -3,11 +3,11 @@
 const daily = [
   {
     title: "1. Modify links",
-    detail: "Edit custom/v8s-links.txt with lnk or your preferred editor."
+    detail: "Edit custom/v8s-links.txt with v8s-lnk or your preferred editor."
   },
   {
     title: "2. Prove the change",
-    detail: "Run npm run check. It builds deployable output, validates it, lints, and runs tests."
+    detail: "Run npm run check:links for link-only changes, or npm run check for the full confidence gate."
   },
   {
     title: "3. Commit and push",
@@ -25,6 +25,7 @@ const sections = [
     rationale: "These are the commands you normally need while changing an instance.",
     commands: [
       ["npm run check", "Run the full local confidence gate before pushing."],
+      ["npm run check:links", "Run the fast link-change gate: build, lint, and registry tests."],
       ["npm run build", "Generate build/ and src/ when you want to inspect output without the full gate."],
       ["npm run help", "Show this operating guide."]
     ]
