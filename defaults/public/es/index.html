@@ -4,10 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Enlaces cortos VanityURLs</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script>
       (function () {
         var pathname = window.location.pathname || "/";
-        if (pathname === "/") return;
+        if (pathname === "/" || /\/index\.html$/i.test(pathname)) return;
 
         try {
           window.__initialInvalidRedirectKey = decodeURIComponent(pathname.replace(/^\//, ""));

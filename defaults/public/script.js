@@ -132,7 +132,7 @@ function syncViewportLayout() {
 function checkForInvalidRedirect() {
   const currentPath = window.location.pathname;
 
-  if (currentPath !== "/") {
+  if (currentPath !== "/" && !/\/index\.html$/i.test(currentPath)) {
     triggerInvalidRedirectFeedback(currentPath.replace(/^\//, ""));
     return true;
   }

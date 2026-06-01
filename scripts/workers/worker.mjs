@@ -84,8 +84,9 @@ async function handleRequest(context) {
     return renderScannerProbe404(scannerProbe);
   }
 
-  if (slug === "expand") {
-    return renderAsset(request, env, "/expand/index.html", 200, ctx);
+  const expandAssetPath = expandPageAssetPath(slug);
+  if (expandAssetPath) {
+    return renderAsset(request, env, expandAssetPath, 200, ctx);
   }
 
   if (slug === "") {
@@ -261,6 +262,16 @@ function shouldBypassToAssets(slug) {
   if (isPrivateRuntimeAsset(slug)) return false;
 
   return ASSET_EXT_RE.test(slug);
+}
+
+function expandPageAssetPath(slug) {
+  if (slug === "expand") return "/expand/index.html";
+
+  const [language, alias, ...rest] = slug.split("/");
+  if (rest.length || !LOCALIZED_HTML_LANGUAGES.includes(language)) return "";
+
+  const aliases = localizedExpandAliases[language] || [];
+  return aliases.includes(alias) ? `/${language}/expand/index.html` : "";
 }
 
 function isSecurityTxtPath(slug) {
@@ -650,6 +661,13 @@ const staticPageAliases = new Map([
   ["terms", "/terms.html"],
   ["trust-safety", "/abuse.html"]
 ]);
+
+const localizedExpandAliases = {
+  de: ["expand", "erweitern"],
+  es: ["expand", "expandir"],
+  fr: ["expand", "deplier", "déplier"],
+  it: ["expand", "espandi"]
+};
 
 function hasStatePage(state) {
   return Object.hasOwn(statePages, state);

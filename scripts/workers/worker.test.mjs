@@ -343,6 +343,20 @@ await run("serves localized policy and expand pages from Accept-Language", async
   }
 });
 
+await run("serves localized expand aliases", async () => {
+  for (const [path, expected] of [
+    ["/fr/déplier", "expand fr"],
+    ["/fr/deplier", "expand fr"],
+    ["/es/expandir", "expand es"],
+    ["/it/espandi", "expand it"],
+    ["/de/erweitern", "expand de"]
+  ]) {
+    const response = await worker.fetch(request(path), env(), mockCtx());
+    assert(response.status === 200, `${path} status`);
+    assert((await response.text()).includes(expected), `${path} localized expand body`);
+  }
+});
+
 await run("serves localized status pages from Accept-Language", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/missing"), env(), ctx);

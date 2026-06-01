@@ -586,6 +586,8 @@ function buildTestsPage(siteConfig) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>VanityURLs QA Tests</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/style.css?v=20260504">
 </head>
 <body>
@@ -622,12 +624,13 @@ function renderTestsPanel(language, siteConfig) {
     name: language,
     pagesTitle: "Pages",
     statusTitle: "Status Pages",
+    expandSlug: "expand",
     links: LANGUAGE_METADATA.en.links
   };
   const prefix = language === "en" ? "" : `/${language}`;
   const extension = language === "en" ? "" : ".html";
-  const indexHref = language === "en" ? "/index.html" : `${prefix}/index.html`;
-  const expandHref = language === "en" ? "/expand" : `${prefix}/expand/index.html`;
+  const indexHref = language === "en" ? "/" : `${prefix}/index.html`;
+  const expandHref = language === "en" ? "/expand" : `${prefix}/${encodePathSegment(metadata.expandSlug || "expand")}`;
   const legalContent = LEGAL_DATA.content?.[language] || {};
   const enabledPolicySlugs = new Set(legalPageSlugs(siteConfig));
   const policyLinks = [
@@ -637,12 +640,12 @@ function renderTestsPanel(language, siteConfig) {
     ["security", metadata.links.security || "Security"]
   ].filter(([slug]) => enabledPolicySlugs.has(slug) && Boolean(legalContent[slug]));
   const pageLinks = [
-    `            <li><a href="${escapeHtml(indexHref)}">${escapeHtml(metadata.links.index)}</a></li>`,
-    `            <li><a href="${escapeHtml(expandHref)}">${escapeHtml(metadata.links.expand)}</a></li>`,
-    `            <li><a href="/_stats/">${escapeHtml(metadata.links.stats)}</a></li>`,
+    renderTestsLink(indexHref, metadata.links.index),
+    renderTestsLink(expandHref, metadata.links.expand),
+    renderTestsLink("/_stats/", metadata.links.stats),
     ...policyLinks.map(([slug, label]) => {
       const hrefSlug = language === "en" && slug === "abuse" ? "trust-safety" : slug;
-      return `            <li><a href="${prefix}/${hrefSlug}${extension}">${escapeHtml(label)}</a></li>`;
+      return renderTestsLink(`${prefix}/${hrefSlug}${extension}`, label);
     })
   ].join("\n");
 
@@ -657,13 +660,21 @@ ${pageLinks}
         <section class="qa-section">
           <h3>${escapeHtml(metadata.statusTitle)}</h3>
           <ul class="qa-links">
-            <li><a href="${prefix}/404${extension}">${escapeHtml(metadata.links.notFound)}</a></li>
-            <li><a href="${prefix}/expired${extension}">${escapeHtml(metadata.links.expired)}</a></li>
-            <li><a href="${prefix}/disabled${extension}">${escapeHtml(metadata.links.disabled)}</a></li>
-            <li><a href="${prefix}/maintenance${extension}">${escapeHtml(metadata.links.maintenance)}</a></li>
+${renderTestsLink(`${prefix}/404${extension}`, metadata.links.notFound)}
+${renderTestsLink(`${prefix}/expired${extension}`, metadata.links.expired)}
+${renderTestsLink(`${prefix}/disabled${extension}`, metadata.links.disabled)}
+${renderTestsLink(`${prefix}/maintenance${extension}`, metadata.links.maintenance)}
           </ul>
         </section>
       </article>`;
+}
+
+function renderTestsLink(href, label) {
+  return `            <li><a href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a></li>`;
+}
+
+function encodePathSegment(value) {
+  return encodeURIComponent(String(value || "").trim()).replace(/%2F/gi, "/");
 }
 
 function escapeHtml(value) {
