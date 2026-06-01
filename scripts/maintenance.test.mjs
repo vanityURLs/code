@@ -78,6 +78,10 @@ function run(cwd, args) {
       (issue) => issue.code === "html-head-assets-stale" && issue.path === "custom/public/en/index.html"
     )
   );
+  const doctorText = run(fixture, ["scripts/doctor.mjs"]);
+  assert.match(doctorText, /Recommended fix:/);
+  assert.match(doctorText, /npm run reconcile -- --head-assets/);
+  assert.match(doctorText, /--head-assets: 1 issue/);
 
   run(fixture, ["scripts/reconcile.mjs", "--head-assets"]);
   const fixedHtml = fs.readFileSync(indexPath, "utf8");

@@ -32,7 +32,26 @@ function main() {
   console.log(`[doctor] Found ${issues.length} custom public issue${issues.length === 1 ? "" : "s"}:`);
   for (const issue of issues) {
     console.log(`- [${issue.severity}] ${issue.path}: ${issue.message}`);
-    console.log(`  Fix: npm run reconcile -- --${issue.fix}`);
+  }
+
+  printRecommendedFixes(issues);
+}
+
+function printRecommendedFixes(issues) {
+  const fixes = [...new Set(issues.map((issue) => issue.fix))];
+  const fixCounts = fixes.map((fix) => ({
+    fix,
+    count: issues.filter((issue) => issue.fix === fix).length
+  }));
+
+  console.log("");
+  console.log("[doctor] Recommended fix:");
+  console.log(`  npm run reconcile -- ${fixes.map((fix) => `--${fix}`).join(" ")}`);
+
+  console.log("");
+  console.log("[doctor] Fix groups:");
+  for (const { fix, count } of fixCounts) {
+    console.log(`- --${fix}: ${count} issue${count === 1 ? "" : "s"}`);
   }
 }
 
