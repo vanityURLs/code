@@ -161,6 +161,10 @@ function runSetup(cwd, extraArgs) {
   const builtStats = fs.readFileSync(path.join(fixture, "build", "_stats", "index.html"), "utf8");
   assert.match(builtStats, /<img src="\/logo\.svg" alt="VanityURLs" \/>/);
   assert.doesNotMatch(builtStats, /<a class="brand-mark brand-mark-wordmark"/);
+
+  const manifest = JSON.parse(fs.readFileSync(path.join(fixture, "build", "site.webmanifest"), "utf8"));
+  assert.equal(manifest.short_name, "v8s.link");
+  assert.equal(manifest.name, "v8s.link short links");
 }
 
 console.log("install tests ok");

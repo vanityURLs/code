@@ -191,6 +191,31 @@ function removeSecurityTxt() {
   }
 }
 
+function renderSiteWebManifests(siteConfig) {
+  const shortName = siteManifestShortName(siteConfig);
+  const name = `${shortName} short links`;
+
+  for (const filePath of findFiles(BUILD_DIR, "site.webmanifest")) {
+    const manifest = readJsonFile(filePath);
+    manifest.name = name;
+    manifest.short_name = shortName;
+    fs.writeFileSync(filePath, `${JSON.stringify(manifest)}\n`);
+  }
+}
+
+function siteManifestShortName(siteConfig) {
+  const branding = siteConfig?.branding || {};
+  const wordmark = branding.wordmark || {};
+  const candidates = [
+    branding.domain,
+    siteConfig?.operator?.short_domain,
+    `${wordmark.black || ""}${wordmark.green || ""}`,
+    "VanityURLs"
+  ];
+
+  return candidates.map((value) => String(value || "").trim()).find(Boolean) || "VanityURLs";
+}
+
 function normalizeSecurityTxtValue(value) {
   return String(value || "")
     .trim()
@@ -214,6 +239,16 @@ function rewriteHtmlFiles(directory, transform) {
       fs.writeFileSync(entryPath, transform(fs.readFileSync(entryPath, "utf8"), entryPath));
     }
   }
+}
+
+function findFiles(directory, basename) {
+  if (!fs.existsSync(directory)) return [];
+
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return findFiles(entryPath, basename);
+    return entry.isFile() && entry.name === basename ? [entryPath] : [];
+  });
 }
 
 function normalizeHtmlHeadAssets() {
@@ -1008,6 +1043,7 @@ function main() {
   applyPublicBranding(siteConfig);
   renderLegalPages(siteConfig);
   renderSecurityTxt(siteConfig);
+  renderSiteWebManifests(siteConfig);
   writeRuntimeSiteConfig(runtimeSiteConfig(siteConfig), RUNTIME_SITE_CONFIG_PATH);
   removeDeferredLegalPages(siteConfig);
   buildTestsPage(siteConfig);
