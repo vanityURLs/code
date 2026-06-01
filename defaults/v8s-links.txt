@@ -1,6 +1,7 @@
 # slug|target|state|title|description|tags|owner|expires_at|notes
-home|https://example.com|permanent|Home|Primary website|core|owner||
+
 contact|https://www.youtube.com/watch?v=dQw4w9WgXcQ|permanent|Contact|Scheduled contact example|contact,schedule|owner||
   @schedule timezone=America/New_York
   @schedule 9to5=https://www.youtube.com/watch?v=UbxUSsFXYo4
 docs|https://www.vanityurls.link/en/docs/|permanent|Docs|vanityURLs documentation|docs|owner||
+home|https://example.com|permanent|Home|Primary website|core|owner||

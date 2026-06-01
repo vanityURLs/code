@@ -32,7 +32,7 @@
     "test:registry": "node scripts/registry.test.mjs",
     "test:worker": "node scripts/workers/worker.test.mjs",
     "upgrade": "node scripts/upgrade.mjs",
-    "update": "npm run upgrade",
+    "update": "node scripts/upgrade.mjs",
     "validate": "npm run validate:all",
     "validate:all": "npm run validate:registry",
     "validate:registry": "node scripts/validate-registry.mjs build/v8s.json",

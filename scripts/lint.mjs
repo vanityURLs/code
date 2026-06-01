@@ -24,6 +24,10 @@ function walk(directory) {
 }
 
 function lintFile(filePath) {
+  if (path.basename(filePath) === "v8s-links.txt") {
+    sortV8sLinksFile(filePath);
+  }
+
   const text = fs.readFileSync(filePath, "utf8");
   const relative = path.relative(ROOT, filePath);
 
@@ -61,6 +65,71 @@ function lintFile(filePath) {
       failures.push(`${relative}: JavaScript syntax check failed${output ? `\n${output}` : ""}`);
     }
   }
+}
+
+function sortV8sLinksFile(filePath) {
+  const text = fs.readFileSync(filePath, "utf8");
+  const sorted = sortedV8sLinksText(text);
+  if (sorted !== text) {
+    fs.writeFileSync(filePath, sorted);
+  }
+}
+
+function sortedV8sLinksText(text) {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  if (lines.at(-1) === "") lines.pop();
+
+  const header = [];
+  const blocks = [];
+  let current = null;
+  let seenLink = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!seenLink && (!trimmed || trimmed.startsWith("#"))) {
+      header.push(line);
+      continue;
+    }
+
+    if (!trimmed) continue;
+
+    if (/^\s+@schedule\b/.test(line) && current) {
+      current.lines.push(line);
+      continue;
+    }
+
+    const slug = trimmed.startsWith("#") ? `~${blocks.length}` : normalizeLinkSlug(line.split("|")[0]);
+    current = {
+      slug,
+      lines: [line]
+    };
+    blocks.push(current);
+    if (!trimmed.startsWith("#")) seenLink = true;
+  }
+
+  const sortedBlocks = blocks.sort((left, right) => left.slug.localeCompare(right.slug));
+  const output = [...trimTrailingBlankLines(header)];
+  if (output.length && sortedBlocks.length) output.push("");
+
+  for (const block of sortedBlocks) {
+    output.push(...block.lines);
+  }
+
+  return `${output.join("\n")}\n`;
+}
+
+function normalizeLinkSlug(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+}
+
+function trimTrailingBlankLines(lines) {
+  const trimmed = [...lines];
+  while (trimmed.length && !trimmed.at(-1).trim()) trimmed.pop();
+  return trimmed;
 }
 
 function lintWrangler() {

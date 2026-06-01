@@ -3,13 +3,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 
 const ROOT = process.cwd();
 const DEFAULT_REMOTE = "https://github.com/vanityurls/code.git";
 const DEFAULT_REF = "main";
 const DEFAULT_PATHS = ["defaults", "scripts", "package.json", "package-lock.json", "LICENSE"];
 const PROTECTED_PATHS = ["custom", "wrangler.toml", ".dev.vars", "README.md"];
+const GENERATED_PATHS = ["build", "functions", "src"];
 
 function parseArgs(argv) {
   const args = {
@@ -95,7 +96,7 @@ Options:
   --paths <a,b>           Product-owned paths to replace. Default: ${DEFAULT_PATHS.join(",")}
   --path <path>           Add one product-owned path to replace
   --dry-run               Show what would happen without changing files
-  --no-check              Skip npm run check after syncing
+  --no-check              Skip upgrade verification after syncing
   --no-clean              Skip npm run clean before syncing
   --allow-dirty           Allow a dirty worktree before upgrade
 `);
@@ -113,11 +114,16 @@ function run(command, args, options = {}) {
   });
 
   if (result.status !== 0) {
-    const stderr = result.stderr ? `\n${result.stderr.trim()}` : "";
-    throw new Error(`${command} ${args.join(" ")} failed${stderr}`);
+    throw commandError(command, args, result);
   }
 
   return result.stdout || "";
+}
+
+function commandError(command, args, result) {
+  const stdout = result.stdout ? `\nstdout:\n${result.stdout.trim()}` : "";
+  const stderr = result.stderr ? `\nstderr:\n${result.stderr.trim()}` : "";
+  return new Error(`${command} ${args.join(" ")} failed${stdout}${stderr}`);
 }
 
 function git(args, options) {
@@ -162,21 +168,52 @@ function resolveSource(args) {
     return "HEAD";
   }
 
-  git(["fetch", "--depth=1", remote, args.ref]);
+  console.log(`[fetch] ${remoteLabel(remote)} ${args.ref}`);
+  git(["fetch", "--depth=1", remote, args.ref], { capture: true });
   return "FETCH_HEAD";
 }
 
 function clean(args) {
   if (!args.clean) return;
   if (args.dryRun) {
-    console.log("[dry-run] would run npm run clean");
+    console.log(`[dry-run] would remove ${GENERATED_PATHS.map((entry) => `${entry}/`).join(", ")}`);
     return;
   }
 
-  execFileSync("npm", ["run", "clean"], {
+  for (const relativePath of GENERATED_PATHS) {
+    fs.rmSync(path.join(ROOT, relativePath), {
+      recursive: true,
+      force: true
+    });
+  }
+  console.log(`[clean] Removed ${GENERATED_PATHS.map((entry) => `${entry}/`).join(", ")}`);
+}
+
+function remoteLabel(remote) {
+  const cleanRemote = String(remote || "").replace(/\.git$/i, "");
+  const githubHttps = cleanRemote.match(/^https?:\/\/github\.com\/(.+)$/i);
+  if (githubHttps) return `github.com/${githubHttps[1]}`;
+  const githubSsh = cleanRemote.match(/^git@github\.com:(.+)$/i);
+  if (githubSsh) return `github.com/${githubSsh[1]}`;
+  return remote;
+}
+
+function runQuiet(command, args) {
+  const result = spawnSync(command, args, {
     cwd: ROOT,
-    stdio: "inherit"
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      LC_ALL: "C"
+    },
+    stdio: "pipe"
   });
+
+  if (result.status !== 0) {
+    throw commandError(command, args, result);
+  }
+
+  return result.stdout || "";
 }
 
 function extractSource(source, paths) {
@@ -228,28 +265,29 @@ function syncPaths(args, source) {
 function runCheck(args) {
   if (!args.check) return;
   if (args.dryRun) {
-    console.log("[dry-run] would run npm run check");
+    console.log("[dry-run] would run upgrade verification");
     return;
   }
 
-  execFileSync("npm", ["run", "check"], {
-    cwd: ROOT,
-    stdio: "inherit"
-  });
+  const buildOutput = runQuiet("npm", ["run", "build"], "build");
+  const linkCount = buildOutput.match(/Wrote build\/v8s\.json with (\d+) links/)?.[1] || "unknown";
+  console.log(`[build] Built v8s-blocklist.json and v8s.json with ${linkCount} links`);
+
+  runQuiet(process.execPath, ["scripts/registry.test.mjs"], "registry tests");
+  console.log("[test] registry tests ok");
+  runQuiet(process.execPath, ["scripts/install.test.mjs"], "install tests");
+  console.log("[test] install tests ok");
+  runQuiet(process.execPath, ["scripts/maintenance.test.mjs"], "maintenance tests");
+  console.log("[test] maintenance tests ok");
 }
 
 function printSummary(args, source, result) {
-  console.log("\nUpgrade summary");
-  console.log(`Source: ${source}`);
-  console.log(`Synced: ${result.synced.length ? result.synced.join(", ") : "none"}`);
-  if (result.missing.length) console.log(`Missing upstream paths: ${result.missing.join(", ")}`);
+  console.log(`Summary: Synced ${result.synced.length ? result.synced.join(", ") : "none"}`);
+  if (result.missing.length) console.log(`Summary: Missing upstream paths: ${result.missing.join(", ")}`);
 
   if (!args.dryRun) {
     const status = worktreeStatus();
-    console.log("\nReview with:");
-    console.log("  git status --short");
-    console.log("  git diff");
-    if (status) console.log("\nCommit after review and successful checks.");
+    if (status) console.log("Review with git status --short and git diff, then commit and push.");
   }
 }
 
@@ -262,6 +300,10 @@ async function main() {
 
   const source = resolveSource(args);
   const result = syncPaths(args, source);
+  if (!args.dryRun) {
+    console.log(`[sync] Synced ${result.synced.length ? result.synced.join(", ") : "none"}`);
+    if (result.missing.length) console.log(`[sync] Missing upstream paths: ${result.missing.join(", ")}`);
+  }
 
   runCheck(args);
   printSummary(args, source, result);
