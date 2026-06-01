@@ -295,9 +295,7 @@
 
       <footer>
         <span class="release-status" id="release-status"></span>
-        <a class="download-link" href="/_stats/api/v8s.json" download="v8s.json" data-i18n="download"
-          >Download v8s.json</a
-        >
+        <a class="download-link" href="api/v8s.json" download="v8s.json" data-i18n="download">Download v8s.json</a>
       </footer>
     </main>
 
@@ -513,7 +511,7 @@
 
       async function main() {
         applyTranslations();
-        const response = await fetch("/_stats/api/v8s.json", { cache: "no-store" });
+        const response = await fetch("api/v8s.json", { cache: "no-store" });
         registry = await response.json();
         allLinks = flattenRegistry(registry);
         generatedEl.innerHTML = renderGeneratedLine(registry);

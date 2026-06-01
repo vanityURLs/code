@@ -796,12 +796,12 @@ function buildLocalizedStatsPages(siteConfig) {
 
   const html = fs.readFileSync(sourcePath, "utf8");
   for (const language of supportedLanguages(siteConfig)) {
-    if (language === "en") continue;
-
     const targetPath = path.join(BUILD_DIR, language, "_stats", "index.html");
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
     fs.writeFileSync(targetPath, html.replace(/<html lang="[^"]*">/, `<html lang="${escapeHtmlAttribute(language)}">`));
   }
+
+  fs.rmSync(path.join(BUILD_DIR, "_stats"), { recursive: true, force: true });
 }
 
 function renderConfiguredWordmark(siteConfig) {
@@ -825,7 +825,7 @@ function renderTestsPanel(language, siteConfig) {
   const extension = language === "en" ? "" : ".html";
   const indexHref = language === "en" ? "/" : `${prefix}/index.html`;
   const expandHref = language === "en" ? "/expand" : `${prefix}/${encodePathSegment(metadata.expandSlug || "expand")}`;
-  const statsHref = language === "en" ? "/_stats/" : `${prefix}/_stats/`;
+  const statsHref = `${prefix || "/en"}/_stats/`;
   const legalContent = LEGAL_DATA.content?.[language] || {};
   const enabledPolicySlugs = new Set(legalPageSlugs(siteConfig));
   const policyLinks = [

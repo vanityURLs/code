@@ -53,6 +53,11 @@ async function handleRequest(context) {
     return renderAsset(request, env, "/.well-known/security.txt", 200, ctx);
   }
 
+  const legacyStatsRedirectPath = legacyStatsRedirect(slug);
+  if (legacyStatsRedirectPath) {
+    return Response.redirect(new URL(legacyStatsRedirectPath, request.url).toString(), 308);
+  }
+
   if (isProtectedPath(slug)) {
     const accessResponse = await requireCloudflareAccess(request, env);
     if (accessResponse) return accessResponse;
@@ -66,11 +71,12 @@ async function handleRequest(context) {
     return methodNotAllowedResponse();
   }
 
-  if (slug === "_stats/api/v8s.json") {
+  const statsApiEndpoint = localizedStatsApiEndpoint(slug);
+  if (statsApiEndpoint === "v8s.json") {
     return renderStatsRegistry(request, env);
   }
 
-  if (slug === "_stats/api/redirects") {
+  if (statsApiEndpoint === "redirects") {
     return renderStatsRedirects(request, env);
   }
 
@@ -279,12 +285,27 @@ function expandPageAssetPath(slug) {
 }
 
 function statsPageAssetPath(slug) {
-  if (slug === "_stats" || slug === "_stats/index.html") return "/_stats/index.html";
-
   const [language, stats, file = "", ...rest] = slug.split("/");
-  if (rest.length || stats !== "_stats" || !LOCALIZED_HTML_LANGUAGES.includes(language)) return "";
+  if (rest.length || stats !== "_stats" || !statsPageLanguages().includes(language)) return "";
 
   return file === "" || file === "index.html" ? `/${language}/_stats/index.html` : "";
+}
+
+function legacyStatsRedirect(slug) {
+  if (slug === "_stats" || slug === "_stats/index.html") return "/en/_stats/";
+  if (slug === "_stats/api/v8s.json") return "/en/_stats/api/v8s.json";
+  if (slug === "_stats/api/redirects") return "/en/_stats/api/redirects";
+  return "";
+}
+
+function localizedStatsApiEndpoint(slug) {
+  const [language, stats, api, endpoint, ...rest] = slug.split("/");
+  if (rest.length || stats !== "_stats" || api !== "api" || !statsPageLanguages().includes(language)) return "";
+  return endpoint === "v8s.json" || endpoint === "redirects" ? endpoint : "";
+}
+
+function statsPageLanguages() {
+  return ["en", ...LOCALIZED_HTML_LANGUAGES];
 }
 
 function isSecurityTxtPath(slug) {
@@ -292,7 +313,7 @@ function isSecurityTxtPath(slug) {
 }
 
 function isProtectedPath(slug) {
-  return slug === "_stats" || slug.startsWith("_stats/") || Boolean(statsPageAssetPath(slug)) || isTestsPath(slug);
+  return Boolean(statsPageAssetPath(slug)) || Boolean(localizedStatsApiEndpoint(slug)) || isTestsPath(slug);
 }
 
 function isTestsPath(slug) {
@@ -1120,7 +1141,7 @@ async function renderStatsRedirects(request, env) {
   const dynamicRoutes = all.filter((redirect) => redirect.type === "dynamic");
   const reservedPrefixes = ["/_stats", "/api", "/_worker", "/v8s.json", "/v8s-blocklist.json", "/v8s-site-config.json"];
   const reservedViolations = all.filter((redirect) => {
-    return reservedPrefixes.some((prefix) => redirect.source.startsWith(prefix));
+    return reservedPrefixes.some((prefix) => redirect.source.startsWith(prefix)) || redirect.source.includes("/_stats");
   });
   const statusCounts = {};
 

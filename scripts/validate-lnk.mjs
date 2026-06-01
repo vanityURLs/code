@@ -111,6 +111,7 @@ if (!fs.existsSync(file)) {
     }
 
     if (reservedTopLevel.has(segments[0])) fail(`${displayPath}: top-level path '${segments[0]}' is reserved`);
+    if (segments.slice(1).includes("_stats")) fail(`${displayPath}: path segment '_stats' is reserved`);
     const effectiveState = state || "permanent";
 
     if (!validUrl(target)) {

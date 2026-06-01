@@ -158,9 +158,10 @@ function runSetup(cwd, extraArgs) {
   assert.match(builtIndex, /<span>v8s\.<\/span><span>link<\/span>/);
   assert.match(builtIndex, /The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects/);
 
-  const builtStats = fs.readFileSync(path.join(fixture, "build", "_stats", "index.html"), "utf8");
+  const builtStats = fs.readFileSync(path.join(fixture, "build", "en", "_stats", "index.html"), "utf8");
   assert.match(builtStats, /<img src="\/logo\.svg" alt="VanityURLs" \/>/);
   assert.doesNotMatch(builtStats, /<a class="brand-mark brand-mark-wordmark"/);
+  assert.equal(fs.existsSync(path.join(fixture, "build", "_stats", "index.html")), false);
 
   const manifest = JSON.parse(fs.readFileSync(path.join(fixture, "build", "site.webmanifest"), "utf8"));
   assert.equal(manifest.short_name, "v8s.link");

@@ -84,7 +84,7 @@ const assets = {
   "/fr/maintenance.html": html("<main>maintenance fr</main>"),
   "/fr/404.html": html("<main>fr {{SLUG_MESSAGE}}{{REFERENCE_LINE}}</main>"),
   "/_tests/index.html": html("<main>tests</main>"),
-  "/_stats/index.html": html("<main>stats</main>"),
+  "/en/_stats/index.html": html("<main>stats en</main>"),
   "/fr/_stats/index.html": html("<main>stats fr</main>"),
   "/.well-known/security.txt": new Response("Contact: mailto:security@example.com\n", {
     headers: { "content-type": "text/plain; charset=utf-8" }
@@ -464,7 +464,7 @@ await run("requires Cloudflare Access config for protected paths", async () => {
 
 await run("requires Cloudflare Access token for protected paths", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_stats"), await accessEnv(), ctx);
+  const response = await worker.fetch(request("/en/_stats/"), await accessEnv(), ctx);
   assert(response.status === 403, "status");
   await ctx.flush();
   assert(analyticsCalls.length === 0, "no analytics");
@@ -472,8 +472,26 @@ await run("requires Cloudflare Access token for protected paths", async () => {
 
 await run("protects non-GET requests to protected paths before method handling", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_stats", { method: "POST" }), await accessEnv(), ctx);
+  const response = await worker.fetch(request("/en/_stats/", { method: "POST" }), await accessEnv(), ctx);
   assert(response.status === 403, "status");
+  await ctx.flush();
+  assert(analyticsCalls.length === 0, "no analytics");
+});
+
+await run("redirects legacy stats page paths to English stats", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(request("/_stats"), env(), ctx);
+  assert(response.status === 308, "status");
+  assert(response.headers.get("location") === "https://dicai.re/en/_stats/", "location");
+  await ctx.flush();
+  assert(analyticsCalls.length === 0, "no analytics");
+});
+
+await run("redirects legacy stats API paths to English stats API", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(request("/_stats/api/v8s.json"), env(), ctx);
+  assert(response.status === 308, "status");
+  assert(response.headers.get("location") === "https://dicai.re/en/_stats/api/v8s.json", "location");
   await ctx.flush();
   assert(analyticsCalls.length === 0, "no analytics");
 });
@@ -506,6 +524,21 @@ await run("serves localized stats page with valid Cloudflare Access token", asyn
   );
   assert(response.status === 200, "status");
   assert((await response.text()).includes("stats fr"), "body");
+});
+
+await run("serves English stats page with valid Cloudflare Access token", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(
+    request("/en/_stats/", {
+      headers: {
+        ...(await accessHeaders())
+      }
+    }),
+    await accessEnv(),
+    ctx
+  );
+  assert(response.status === 200, "status");
+  assert((await response.text()).includes("stats en"), "body");
 });
 
 await run("protects direct tests asset path with Cloudflare Access", async () => {
@@ -569,7 +602,7 @@ await run("blocks PHP and WordPress scanner probes", async () => {
 await run("exposes registry through stats API", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(
-    request("/_stats/api/v8s.json", {
+    request("/en/_stats/api/v8s.json", {
       headers: {
         ...(await accessHeaders())
       }
@@ -585,7 +618,7 @@ await run("exposes registry through stats API", async () => {
 await run("summarizes redirects through stats API", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(
-    request("/_stats/api/redirects", {
+    request("/en/_stats/api/redirects", {
       headers: {
         ...(await accessHeaders())
       }
