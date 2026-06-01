@@ -91,6 +91,8 @@ Environment:
 
 Notes:
   Slugs may contain / to create API-like paths.
+  Quote URLs that contain shell glob characters such as ?, &, #, [, or ].
+  In zsh, an unquoted ? is expanded before this script can read the URL.
   Random slugs use the configured readable alphabet. The product default is ${DEFAULT_RANDOM_SLUG_ALPHABET}.
   Tag-specific random slug lengths use the shortest matching tag default.
   Successful write operations run npm run check, then commit and push automatically.
@@ -101,6 +103,7 @@ Examples:
   ./scripts/lnk list domain allow
   ./scripts/lnk list keyword --format json
   ./scripts/lnk https://github.com/vanityURLs github
+  ./scripts/lnk "https://example.com/search?q=vanityURLs" search/example
   ./scripts/lnk https://github.com/houba/styleGuide --random-slug-length 5
   ./scripts/lnk tag set social --random-slug-length 5
   ./scripts/lnk https://x.com/vanityURLs social/x
@@ -137,10 +140,12 @@ function resolveLinksFile() {
   return "custom/v8s-links.txt";
 }
 
-function run(command, args) {
+function run(command, args, options = {}) {
+  const capture = options.capture === true;
   const result = spawnSync(command, args, {
     cwd: process.cwd(),
-    stdio: "inherit",
+    encoding: capture ? "utf8" : undefined,
+    stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
     shell: process.platform === "win32"
   });
 
@@ -149,8 +154,68 @@ function run(command, args) {
   }
 
   if (result.status !== 0) {
+    if (capture) {
+      printCommandFailure(command, args, result, options.label);
+    }
     process.exit(result.status ?? 1);
   }
+
+  return result;
+}
+
+function runCaptured(command, args, label) {
+  return run(command, args, {
+    capture: true,
+    label
+  });
+}
+
+function commandLine(command, args) {
+  return [command, ...args].join(" ");
+}
+
+function printCommandFailure(command, args, result, label) {
+  console.error(`${label || command} failed.`);
+  console.error(`Command: ${commandLine(command, args)}`);
+
+  const stdout = String(result.stdout || "").trim();
+  const stderr = String(result.stderr || "").trim();
+
+  if (stdout) {
+    console.error(`\nstdout:\n${stdout}`);
+  }
+
+  if (stderr) {
+    console.error(`\nstderr:\n${stderr}`);
+  }
+}
+
+function gitOutput(args) {
+  return String(runCaptured("git", args, `git ${args.join(" ")}`).stdout || "").trim();
+}
+
+function remoteLabel() {
+  const remote = gitOutput(["config", "--get", "remote.origin.url"]);
+  return normalizeRemoteLabel(remote);
+}
+
+function normalizeRemoteLabel(remote) {
+  const clean = String(remote || "").trim().replace(/\.git$/i, "");
+  if (!clean) return "origin";
+
+  const githubSsh = clean.match(/^git@github\.com:(.+)$/i);
+  if (githubSsh) return `GitHub/${githubSsh[1]}`;
+
+  const githubHttps = clean.match(/^https?:\/\/github\.com\/(.+)$/i);
+  if (githubHttps) return `GitHub/${githubHttps[1]}`;
+
+  const genericSsh = clean.match(/^git@([^:]+):(.+)$/);
+  if (genericSsh) return `${genericSsh[1]}/${genericSsh[2]}`;
+
+  const genericHttps = clean.match(/^https?:\/\/([^/]+)\/(.+)$/i);
+  if (genericHttps) return `${genericHttps[1]}/${genericHttps[2]}`;
+
+  return clean;
 }
 
 function parseArgs(argv) {
@@ -637,7 +702,10 @@ function saveTagConfig(config, dryRun, message) {
   }
 
   writeCustomSiteConfig(config);
-  finalizeChange(CUSTOM_SITE_CONFIG_FILE, message);
+  finalizeChange(CUSTOM_SITE_CONFIG_FILE, message, {
+    action: "updated",
+    item: "tag defaults"
+  });
 }
 
 function scheduleUsage() {
@@ -712,7 +780,11 @@ function saveScheduleConfig(filePath, config, dryRun, slug) {
   }
 
   writeJson(filePath, config);
-  finalizeChange(filePath, `feat(schedules): update ${slug}`);
+  finalizeChange(filePath, `feat(schedules): update ${slug}`, {
+    action: "updated",
+    item: slug,
+    noun: "Schedule"
+  });
 }
 
 function listSchedules(config, requestedSlug) {
@@ -939,20 +1011,41 @@ async function main() {
     }
 
     replaceLine(LINKS_FILE, existingEntry.index, line);
-    finalizeChange(LINKS_FILE, `feat(links): update ${slug}`);
+    finalizeChange(LINKS_FILE, `feat(links): update ${slug}`, {
+      action: "updated",
+      item: slug,
+      noun: "Link"
+    });
     return;
   }
 
   appendLine(LINKS_FILE, line);
 
-  finalizeChange(LINKS_FILE, `feat(links): add ${slug}`);
+  finalizeChange(LINKS_FILE, `feat(links): add ${slug}`, {
+    action: "added",
+    item: slug,
+    noun: "Link"
+  });
 }
 
-function finalizeChange(filePath, message) {
-  run("npm", ["run", "check"]);
-  run("git", ["add", filePath]);
-  run("git", ["commit", "-m", message]);
-  run("git", ["push"]);
+function finalizeChange(filePath, message, summary = {}) {
+  runCaptured("npm", ["run", "check"], "Verification");
+  runCaptured("git", ["add", filePath], "Staging");
+  runCaptured("git", ["commit", "-m", message], "Commit");
+  const commit = gitOutput(["rev-parse", "--short", "HEAD"]);
+  runCaptured("git", ["push"], "Push");
+  printPublishSummary(filePath, commit, summary);
+}
+
+function printPublishSummary(filePath, commit, summary) {
+  const noun = summary.noun || "Item";
+  const action = summary.action || "updated";
+  const item = summary.item ? ` ${summary.item}` : "";
+  const preposition = action === "added" ? "to" : "in";
+
+  console.log(`${noun}${item} ${action}.`);
+  console.log(`${noun} ${action} ${preposition} ${path.resolve(filePath)}.`);
+  console.log(`Deployed to ${remoteLabel()} with commit ${commit}.`);
 }
 
 main().catch((error) => {
