@@ -157,7 +157,7 @@
           ],
           [
             "Intellectual property",
-            "The vanityURLs software is open source and released under the license stated in the project repository at https://github.com/vanityURLs/code. The short domain name, branding, and link configuration are the property of the Operator."
+            "The vanityURLs software is open source and released under the license stated in the project repository at https://github.com/vanityurls/code. The short domain name, branding, and link configuration are the property of the Operator."
           ],
           [
             "No warranty",
@@ -216,7 +216,7 @@
           ],
           [
             "Out of scope",
-            "Vulnerabilities in Cloudflare infrastructure should be reported directly to Cloudflare's HackerOne program at https://hackerone.com/cloudflare. Vulnerabilities in GitHub should be reported through GitHub's HackerOne program at https://hackerone.com/github. Vulnerabilities in the upstream vanityURLs open-source software should be reported through the project's GitHub Security Advisories at https://github.com/vanityURLs/code/security/advisories, not through a public GitHub issue. Findings that require credentials, social engineering of the Operator, denial of service, or physical access are out of scope."
+            "Vulnerabilities in Cloudflare infrastructure should be reported directly to Cloudflare's HackerOne program at https://hackerone.com/cloudflare. Vulnerabilities in GitHub should be reported through GitHub's HackerOne program at https://hackerone.com/github. Vulnerabilities in the upstream vanityURLs open-source software should be reported through the project's GitHub Security Advisories at https://github.com/vanityurls/code/security/advisories, not through a public GitHub issue. Findings that require credentials, social engineering of the Operator, denial of service, or physical access are out of scope."
           ],
           [
             "Safe harbour",
@@ -234,10 +234,10 @@
             "Reference material",
             {
               "list": [
-                "Source code: https://github.com/vanityURLs/code",
+                "Source code: https://github.com/vanityurls/code",
                 "Documentation: https://www.vanityurls.link/en/docs/",
                 "Machine-readable security contact: /.well-known/security.txt",
-                "Block-keyword policy: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json"
+                "Block-keyword policy: https://github.com/vanityurls/code/blob/main/defaults/v8s-policies.json"
               ]
             }
           ]
@@ -370,7 +370,7 @@
           ],
           [
             "Propriété intellectuelle",
-            "Le logiciel vanityURLs est open source et publié sous la licence indiquée dans le dépôt du projet à l'adresse https://github.com/vanityURLs/code. Le nom de domaine court, l'image de marque et la configuration des liens sont la propriété de l'Opérateur."
+            "Le logiciel vanityURLs est open source et publié sous la licence indiquée dans le dépôt du projet à l'adresse https://github.com/vanityurls/code. Le nom de domaine court, l'image de marque et la configuration des liens sont la propriété de l'Opérateur."
           ],
           [
             "Aucune garantie",
@@ -445,7 +445,7 @@
           ],
           [
             "Références",
-            "Code source : https://github.com/vanityURLs/code. Documentation : https://www.vanityurls.link/fr/docs/. Contact de sécurité lisible par machine : /.well-known/security.txt. Politique de mots-clés bloqués : https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
+            "Code source : https://github.com/vanityurls/code. Documentation : https://www.vanityurls.link/fr/docs/. Contact de sécurité lisible par machine : /.well-known/security.txt. Politique de mots-clés bloqués : https://github.com/vanityurls/code/blob/main/defaults/v8s-policies.json."
           ]
         ]
       },
@@ -576,7 +576,7 @@
           ],
           [
             "Propiedad intelectual",
-            "El software vanityURLs es de código abierto y se publica bajo la licencia indicada en el repositorio del proyecto en https://github.com/vanityURLs/code. El nombre del dominio corto, la marca y la configuración de enlaces son propiedad del Operador."
+            "El software vanityURLs es de código abierto y se publica bajo la licencia indicada en el repositorio del proyecto en https://github.com/vanityurls/code. El nombre del dominio corto, la marca y la configuración de enlaces son propiedad del Operador."
           ],
           [
             "Sin garantía",
@@ -651,7 +651,7 @@
           ],
           [
             "Material de referencia",
-            "Código fuente: https://github.com/vanityURLs/code. Documentación: https://www.vanityurls.link/en/docs/. Contacto de seguridad legible por máquina: /.well-known/security.txt. Política de palabras clave bloqueadas: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
+            "Código fuente: https://github.com/vanityurls/code. Documentación: https://www.vanityurls.link/en/docs/. Contacto de seguridad legible por máquina: /.well-known/security.txt. Política de palabras clave bloqueadas: https://github.com/vanityurls/code/blob/main/defaults/v8s-policies.json."
           ]
         ]
       }
@@ -760,7 +760,7 @@
           ],
           [
             "Proprietà intellettuale",
-            "Il software vanityURLs è open source ed è rilasciato con la licenza indicata nel repository del progetto all'indirizzo https://github.com/vanityURLs/code. Il nome del dominio breve, il marchio e la configurazione dei link sono proprietà dell'Operatore."
+            "Il software vanityURLs è open source ed è rilasciato con la licenza indicata nel repository del progetto all'indirizzo https://github.com/vanityurls/code. Il nome del dominio breve, il marchio e la configurazione dei link sono proprietà dell'Operatore."
           ],
           [
             "Nessuna garanzia",
@@ -835,7 +835,7 @@
           ],
           [
             "Materiale di riferimento",
-            "Codice sorgente: https://github.com/vanityURLs/code. Documentazione: https://www.vanityurls.link/en/docs/. Contatto di sicurezza leggibile automaticamente: /.well-known/security.txt. Policy delle parole chiave bloccate: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
+            "Codice sorgente: https://github.com/vanityurls/code. Documentazione: https://www.vanityurls.link/en/docs/. Contatto di sicurezza leggibile automaticamente: /.well-known/security.txt. Policy delle parole chiave bloccate: https://github.com/vanityurls/code/blob/main/defaults/v8s-policies.json."
           ]
         ]
       }
@@ -944,7 +944,7 @@
           ],
           [
             "Geistiges Eigentum",
-            "Die vanityURLs-Software ist Open Source und wird unter der im Projekt-Repository unter https://github.com/vanityURLs/code angegebenen Lizenz veröffentlicht. Der Kurzdomainname, das Branding und die Linkkonfiguration sind Eigentum des Betreibers."
+            "Die vanityURLs-Software ist Open Source und wird unter der im Projekt-Repository unter https://github.com/vanityurls/code angegebenen Lizenz veröffentlicht. Der Kurzdomainname, das Branding und die Linkkonfiguration sind Eigentum des Betreibers."
           ],
           [
             "Keine Gewährleistung",
@@ -1019,7 +1019,7 @@
           ],
           [
             "Referenzmaterial",
-            "Quellcode: https://github.com/vanityURLs/code. Dokumentation: https://www.vanityurls.link/en/docs/. Maschinenlesbarer Sicherheitskontakt: /.well-known/security.txt. Block-Keyword-Policy: https://github.com/vanityURLs/code/blob/main/defaults/v8s-policies.json."
+            "Quellcode: https://github.com/vanityurls/code. Dokumentation: https://www.vanityurls.link/en/docs/. Maschinenlesbarer Sicherheitskontakt: /.well-known/security.txt. Block-Keyword-Policy: https://github.com/vanityurls/code/blob/main/defaults/v8s-policies.json."
           ]
         ]
       }

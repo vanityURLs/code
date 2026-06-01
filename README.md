@@ -25,7 +25,7 @@ a text editor. The short domain must use Cloudflare as its authoritative DNS pro
 Clone the vanityURLs code, detach the clone from the upstream project, then install dependencies:
 
 ```bash
-git clone https://github.com/vanityURLs/code.git redirector
+git clone https://github.com/vanityurls/code.git redirector
 cd redirector
 npm run detach
 npm install
@@ -77,11 +77,11 @@ abide by its terms.
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="16.66%"><a href="https://github.com/bhdicaire"><img src="https://avatars.githubusercontent.com/u/1316765?v=4?s=100" width="100px;" alt="Benoît H. Dicaire"/><br /><sub><b>Benoît H. Dicaire</b></sub></a><br /><a href="https://github.com/vanityURLs/code/commits?author=bhdicaire" title="Code">💻</a> <a href="https://github.com/vanityURLs/code/commits?author=bhdicaire" title="Documentation">📖</a> <a href="#security-bhdicaire" title="Security">🛡️</a></td>
+      <td align="center" valign="top" width="16.66%"><a href="https://github.com/bhdicaire"><img src="https://avatars.githubusercontent.com/u/1316765?v=4?s=100" width="100px;" alt="Benoît H. Dicaire"/><br /><sub><b>Benoît H. Dicaire</b></sub></a><br /><a href="https://github.com/vanityurls/code/commits?author=bhdicaire" title="Code">💻</a> <a href="https://github.com/vanityurls/code/commits?author=bhdicaire" title="Documentation">📖</a> <a href="#security-bhdicaire" title="Security">🛡️</a></td>
       <td align="center" valign="top" width="16.66%"><a href="https://github.com/0xBJA"><img src="https://avatars.githubusercontent.com/u/224307522?v=4?s=100" width="100px;" alt="Brian J. Adams"/><br /><sub><b>Brian J. Adams</b></sub></a><br /><a href="#ideas-0xBJA" title="Ideas, Planning, & Feedback">🤔</a> <a href="#userTesting-0xBJA" title="User Testing">📓</a></td>
       <td align="center" valign="top" width="16.66%"><a href="http://felixleger.com"><img src="https://avatars.githubusercontent.com/u/7781739?v=4?s=100" width="100px;" alt="Félix Léger"/><br /><sub><b>Félix Léger</b></sub></a><br /><a href="#ideas-felleg" title="Ideas, Planning, & Feedback">🤔</a> <a href="#userTesting-felleg" title="User Testing">📓</a> <a href="#promotion-felleg" title="Promotion">📣</a></td>
-      <td align="center" valign="top" width="16.66%"><a href="https://xvii.au"><img src="https://avatars.githubusercontent.com/u/446329?v=4?s=100" width="100px;" alt="Jake Edwards"/><br /><sub><b>Jake Edwards</b></sub></a><br /><a href="https://github.com/vanityURLs/code/commits?author=XVII" title="Documentation">📖</a></td>
-      <td align="center" valign="top" width="16.66%"><a href="https://github.com/slig"><img src="https://avatars.githubusercontent.com/u/37779?v=4?s=100" width="100px;" alt="Tiago Serafim"/><br /><sub><b>Tiago Serafim</b></sub></a><br /><a href="https://github.com/vanityURLs/code/commits?author=slig" title="Code">💻</a></td>
+      <td align="center" valign="top" width="16.66%"><a href="https://xvii.au"><img src="https://avatars.githubusercontent.com/u/446329?v=4?s=100" width="100px;" alt="Jake Edwards"/><br /><sub><b>Jake Edwards</b></sub></a><br /><a href="https://github.com/vanityurls/code/commits?author=XVII" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="16.66%"><a href="https://github.com/slig"><img src="https://avatars.githubusercontent.com/u/37779?v=4?s=100" width="100px;" alt="Tiago Serafim"/><br /><sub><b>Tiago Serafim</b></sub></a><br /><a href="https://github.com/vanityurls/code/commits?author=slig" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
@@ -99,4 +99,4 @@ abide by its terms.
 ## Licence
 
 **vanityURLs** is Copyright 2023 Benoît H. Dicaire and
-[licensed under the MIT licence](https://github.com/vanityURLs/code/blob/main/LICENSE).
+[licensed under the MIT licence](https://github.com/vanityurls/code/blob/main/LICENSE).

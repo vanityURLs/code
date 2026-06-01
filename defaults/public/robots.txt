@@ -5,6 +5,7 @@ Allow: /robots.txt
 Allow: /llms.txt
 Allow: /llms-full.txt
 Disallow: /_stats/
+Disallow: /_tests/
 Disallow: /expand/
 
 # VanityURLs instances are redirect engines, not public content sites

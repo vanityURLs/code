@@ -2,4 +2,3 @@ Contact: https://www.vanityURLs.link/en/docs/
 Policy: https://www.vanityURLs.link/en/docs/
 Canonical: https://www.vanityURLs.link/.well-known/security.txt
 Preferred-Languages: en
-Expires: 2027-01-01T00:00:00Z

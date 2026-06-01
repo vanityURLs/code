@@ -248,8 +248,9 @@ function listSharedDefaultAssets(context) {
     const parts = relative.split(path.sep);
     const extension = path.extname(filePath).toLowerCase();
 
-    if (![".css", ".js", ".png", ".svg", ".webmanifest", ".woff2"].includes(extension)) return false;
+    if (![".css", ".js", ".png", ".svg", ".txt", ".webmanifest", ".woff2"].includes(extension)) return false;
     if (parts[0] === "fonts") return true;
+    if (extension === ".txt" && parts.length > 1) return false;
     if (!Object.hasOwn(context.languageMetadata, parts[0])) return true;
     return parts[0] === "en" || supported.has(parts[0]);
   });

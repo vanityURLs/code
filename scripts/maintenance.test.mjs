@@ -116,6 +116,8 @@ function run(cwd, args) {
 
   const logoPath = path.join(fixture, "custom", "public", "logo.svg");
   fs.writeFileSync(logoPath, "<svg><title>old logo</title></svg>\n");
+  const llmsPath = path.join(fixture, "custom", "public", "llms.txt");
+  fs.writeFileSync(llmsPath, "old llms context\n");
 
   const doctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
   assert(doctorJson.issues.some((issue) => issue.code === "shared-asset-stale" && issue.fix === "assets"));
@@ -124,6 +126,10 @@ function run(cwd, args) {
   assert.equal(
     fs.readFileSync(logoPath, "utf8"),
     fs.readFileSync(path.join(fixture, "defaults", "public", "logo.svg"), "utf8")
+  );
+  assert.equal(
+    fs.readFileSync(llmsPath, "utf8"),
+    fs.readFileSync(path.join(fixture, "defaults", "public", "llms.txt"), "utf8")
   );
 }
 

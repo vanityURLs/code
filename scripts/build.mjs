@@ -134,13 +134,11 @@ function renderSecurityTxt(siteConfig) {
 
   const shortDomain = normalizeSecurityTxtValue(operator.short_domain);
   const securityContact = normalizeSecurityTxtValue(operator.security_contact);
-  const expires = securityTxtExpires(operator.last_updated);
   const content = [
     `Contact: mailto:${securityContact}`,
     `Policy: https://${shortDomain}/trust-safety`,
     `Canonical: https://${shortDomain}/.well-known/security.txt`,
     "Preferred-Languages: en",
-    `Expires: ${expires}`,
     ""
   ].join("\n");
 
@@ -196,13 +194,6 @@ function normalizeSecurityTxtValue(value) {
   return String(value || "")
     .trim()
     .replace(/[\r\n]/g, "");
-}
-
-function securityTxtExpires(lastUpdated) {
-  const date = new Date(`${lastUpdated}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) return new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
-  date.setUTCFullYear(date.getUTCFullYear() + 1);
-  return date.toISOString().replace(".000Z", "Z");
 }
 
 function legalPagePaths(language, slug) {

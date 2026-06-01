@@ -13,10 +13,12 @@ The default public surface is intentionally small:
 - `/expand/` previews the destination of an exact short link without opening it
 - `/404.html`, `/disabled.html`, `/expired.html`, and `/maintenance.html` provide default state pages
 - `/_stats/` is a read-only dashboard and should be protected with Cloudflare Access before publishing
+- `/_tests/` is a protected QA page for checking localized pages, machine-readable files, and light/dark rendering after template changes
+- `/robots.txt`, `/.well-known/security.txt`, `/llms.txt`, and `/llms-full.txt` provide machine-readable policy and context files
 
 ## Runtime Model
 
-Links are generated into a private runtime registry named `v8s.json`. The Cloudflare Pages Function reads that registry internally and resolves the requested path. Direct public access to the registry is blocked by default.
+Links are generated into a private runtime registry named `v8s.json`. The Cloudflare Worker reads that registry internally and resolves the requested path. Direct public access to the registry is blocked by default.
 
 Lifecycle state controls behavior:
 
@@ -27,18 +29,18 @@ Lifecycle state controls behavior:
 - `maintenance`: shows the maintenance status flow
 - `deactivated`: returns a regular 404 so the category is not disclosed
 
-An `expires_at` value can make a link effectively expired even when its stored state is different.
+Targets may be a single URL or a scheduled set of targets. An `expires_at` value can make a link effectively expired even when its stored state is different. Nested aliases are supported when parent and child aliases are explicitly defined.
 
 ## Default Pages
 
 Default pages are intentionally instance-neutral. They should work on any user-owned domain, such as `sho.rt`, `example.link`, or a branded company short-link domain. Instance owners may customize the pages, but the defaults should remain useful without requiring a marketing site or account-specific copy.
 
-The status pages use a consistent search-style VanityURLs layout:
+The public pages use a consistent search-style VanityURLs layout:
 
 - a `VanityURLs` wordmark
-- a large status number such as `404`, `403`, `410`, or `503`
-- a rounded message bar
+- a short-link input or status message
 - a `v8s-redirected.svg` attribution badge linking to `https://vanityURLs.link`
+- light/dark styling controlled by browser preference, with `?theme=light` and `?theme=dark` available for QA links
 
 ## Trust And Safety Notes
 
@@ -46,9 +48,15 @@ The `/expand/` page is exact-match only. It does not list links, autocomplete en
 
 The runtime registry is private to the Worker runtime. Instance owners should not place secrets, private target URLs, personal data, or unpublished confidential destinations in the registry.
 
-The `/_stats/` dashboard exposes routing inventory and should be protected with Cloudflare Access or equivalent controls when deployed publicly.
+The `/_stats/` dashboard exposes routing inventory and should be protected with Cloudflare Access or equivalent controls when deployed publicly. The `/_tests/` page is also intended for protected QA access.
 
 The default policy rejects risky destinations such as credentialed URLs, non-HTTP(S) protocols, private IP ranges, known shortener chains, phishing lures, and high-risk executable downloads. Instance owners should add local policy in `custom/v8s-policies.json` and must not use the redirect engine for phishing, malware, undisclosed tracking, or other harmful activity.
+
+## Instance Maintenance
+
+Product defaults live in `defaults/`. Instance-owned files live in `custom/` and are not overwritten automatically during updates. The build copies defaults first, overlays `custom/public`, and then generates runtime files.
+
+Use `npm run doctor` to detect stale copied public assets, unsupported copied language folders, stale branding, and missing shared head assets. Use `npm run reconcile -- --assets`, `--head-assets`, `--languages`, `--branding`, or `--all` to apply explicit maintenance fixes to copied public files.
 
 ## Useful Files
 
@@ -58,17 +66,20 @@ The default policy rejects risky destinations such as credentialed URLs, non-HTT
 - [Disabled page](/disabled.html): Disabled short links
 - [Expired page](/expired.html): Expired short links
 - [Maintenance page](/maintenance.html): Temporarily unavailable short links
+- [robots.txt](/robots.txt): Default crawler policy
+- [security.txt](/.well-known/security.txt): Security contact and policy pointer
+- [LLM context](/llms.txt): Short machine-readable project context
 
 ## Project Documentation
 
-- [Project README](https://github.com/bhdicaire/vanityURLs): Overview, setup notes, and source repository
+- [Source repository](https://github.com/vanityurls/code): Project README, source code, setup workflow, and issue tracker
 - [Link authoring format](https://www.vanityurls.link/en/docs/link-format/): Format for defining short links
-- [Runtime registry](https://www.vanityurls.link/en/docs/runtime-registry/): Runtime redirect model and schema 3.0 registry
+- [Runtime registry](https://www.vanityurls.link/en/docs/runtime-registry/): Runtime redirect model and generated schema 3.0 registry
 - [Admin and stats dashboard](https://www.vanityurls.link/en/docs/admin-dashboard/): Read-only dashboard and protection guidance
 - [Analytics](https://www.vanityurls.link/en/docs/server-side-analytics/): Server-side analytics model
 - [Validation and CI](https://www.vanityurls.link/en/docs/validation-ci/): Validation and build checks
 
 ## Optional
 
-- [VanityURLs website](https://vanityURLs.link): Public project website
+- [VanityURLs website](https://www.vanityurls.link): Public project documentation site
 - [llms.txt proposal](https://llmstxt.org/): Standard used by this file

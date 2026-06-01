@@ -2,28 +2,33 @@
 
 > VanityURLs is open source software for running a budget-friendly short-link and vanity URL service on a user's own Cloudflare account and selected domain.
 
-This deployed instance is a redirect engine, not a public content site. It resolves short paths against a generated registry, applies lifecycle state, and redirects visitors or shows a default status page. Instance owners can customize links, domains, branding, static pages, and policy files.
+This deployed instance is a redirect engine, not a public content site. It resolves short paths against a generated registry, applies lifecycle state, and redirects visitors or shows a default status page. Instance owners can customize links, domains, branding, static pages, policy files, and localized public pages.
 
-Do not crawl this instance for link inventory. Respect `/robots.txt`; the default policy disallows crawling except for the explicit policy/context files.
+Do not crawl this instance for link inventory. Respect `/robots.txt`; the default policy disallows crawling except for explicit policy/context files.
 
 ## Core Runtime
 
 - [Short-link home](/): Default search-style entry page for typing a short link
-- [Expand a short link](/expand/): Exact-match preview page for checking a short link destination without opening it
+- [Expand a short link](/expand/): Exact-match destination preview without opening the target
 - [Not found page](/404.html): Default 404 page for missing or deactivated links
 - [Disabled page](/disabled.html): Default page for disabled links
 - [Expired page](/expired.html): Default page for expired links
 - [Maintenance page](/maintenance.html): Default page for temporarily unavailable links
 
+## Machine-Readable Files
+
+- [robots.txt](/robots.txt): Default crawler policy for this redirect instance
+- [security.txt](/.well-known/security.txt): Security contact and policy pointer when operator security contact is configured
+- [Full LLM context](/llms-full.txt): Longer project summary for agents that can use more context
+
 ## Project Documentation
 
-- [Project README](https://github.com/bhdicaire/vanityURLs): Overview, setup notes, and source repository
+- [Source repository](https://github.com/vanityurls/code): Project README, source code, setup workflow, and issue tracker
 - [Link authoring format](https://www.vanityurls.link/en/docs/link-format/): Format for defining short links
-- [Runtime registry](https://www.vanityurls.link/en/docs/runtime-registry/): Runtime redirect model and schema 3.0 registry
+- [Runtime registry](https://www.vanityurls.link/en/docs/runtime-registry/): Runtime redirect model and generated schema 3.0 registry
 - [Validation and CI](https://www.vanityurls.link/en/docs/validation-ci/): Validation and build checks
 - [Admin and stats dashboard](https://www.vanityurls.link/en/docs/admin-dashboard/): Read-only dashboard and protection guidance
 
 ## Optional
 
-- [Full LLM context](/llms-full.txt): Longer project summary for agents that can use more context
-- [VanityURLs website](https://vanityURLs.link): Public project website
+- [VanityURLs website](https://www.vanityurls.link): Public project documentation site
