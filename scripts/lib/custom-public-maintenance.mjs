@@ -5,6 +5,7 @@ import path from "node:path";
 import { copyDirectory, hasCopyableFiles, mergeSiteConfig, supportedLanguages } from "./build-assets.mjs";
 
 const PROJECT_SITE_URL = "https://www.vanityURLs.link";
+const PUBLIC_ASSET_VERSION = "20260601";
 
 export function loadMaintenanceContext(root = process.cwd()) {
   const defaultsDir = path.join(root, "defaults");
@@ -265,6 +266,7 @@ function sameFile(leftPath, rightPath) {
 
 function normalizeHtmlHead(html) {
   let normalized = html;
+  normalized = normalizePublicAssetVersions(normalized);
 
   if (!normalized.includes('rel="icon"')) {
     normalized = insertBeforeHeadClose(
@@ -285,6 +287,10 @@ function normalizeHtmlHead(html) {
   }
 
   return normalized;
+}
+
+function normalizePublicAssetVersions(html) {
+  return html.replace(/(href=["']\/style\.css)(?:\?v=\d+)?(["'])/g, `$1?v=${PUBLIC_ASSET_VERSION}$2`);
 }
 
 function insertBeforeHeadClose(html, insertion) {

@@ -23,6 +23,7 @@ const DEFAULT_OPERATOR_TIMEZONE = "UTC";
 const MAX_RANDOM_SLUG_LENGTH = 64;
 const MAX_WORKER_NAME_LENGTH = 63;
 const PROJECT_SITE_URL = "https://www.vanityURLs.link";
+const PUBLIC_ASSET_VERSION = "20260601";
 
 function parseArgs(argv) {
   const args = {
@@ -824,6 +825,7 @@ function rewriteHtmlFiles(directory, transform) {
 
 function normalizeHtmlHead(html) {
   let normalized = html;
+  normalized = normalizePublicAssetVersions(normalized);
 
   if (!normalized.includes('rel="icon"')) {
     normalized = insertBeforeHeadClose(
@@ -844,6 +846,10 @@ function normalizeHtmlHead(html) {
   }
 
   return normalized;
+}
+
+function normalizePublicAssetVersions(html) {
+  return html.replace(/(href=["']\/style\.css)(?:\?v=\d+)?(["'])/g, `$1?v=${PUBLIC_ASSET_VERSION}$2`);
 }
 
 function insertBeforeHeadClose(html, insertion) {

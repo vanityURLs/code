@@ -27,6 +27,7 @@ const WORKER_SOURCE_DIR = path.join(ROOT, "scripts", "workers");
 const RUNTIME_SOURCE_DIR = path.join(ROOT, "src");
 const LANGUAGE_METADATA_PATH = path.join(DEFAULTS_DIR, "v8s-language-metadata.json");
 const LEGAL_CONTENT_PATH = path.join(DEFAULTS_DIR, "legal", "v8s-legal-content.json");
+const PUBLIC_ASSET_VERSION = "20260601";
 
 // Build order matters: product defaults are copied first, instance custom files overlay them,
 // then runtime JSON and generated Worker source are written for Wrangler.
@@ -221,6 +222,7 @@ function normalizeHtmlHeadAssets() {
 
 function normalizeHtmlHead(html) {
   let normalized = html;
+  normalized = normalizePublicAssetVersions(normalized);
 
   if (!normalized.includes('rel="icon"')) {
     normalized = insertBeforeHeadClose(normalized, '  <link rel="icon" type="image/svg+xml" href="/favicon.svg">\n');
@@ -235,6 +237,10 @@ function normalizeHtmlHead(html) {
   }
 
   return normalized;
+}
+
+function normalizePublicAssetVersions(html) {
+  return html.replace(/(href=["']\/style\.css)(?:\?v=\d+)?(["'])/g, `$1?v=${PUBLIC_ASSET_VERSION}$2`);
 }
 
 function insertBeforeHeadClose(html, insertion) {
@@ -719,7 +725,7 @@ function buildTestsPage(siteConfig) {
   <title>VanityURLs QA Tests</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=20260504">
+  <link rel="stylesheet" href="/style.css?v=20260601">
 </head>
 <body>
   <main class="home-shell qa-shell">
