@@ -774,7 +774,9 @@ function customizePublicPages(args) {
   fs.rmSync(CUSTOM_PUBLIC_DIR, { recursive: true, force: true });
   copyDirectory(DEFAULT_PUBLIC_DIR, CUSTOM_PUBLIC_DIR);
   pruneUnsupportedLanguageDirs(CUSTOM_PUBLIC_DIR, args.languages);
-  rewriteHtmlFiles(CUSTOM_PUBLIC_DIR, (html, filePath) => applyBranding(html, args, languageForPublicFile(filePath)));
+  rewriteHtmlFiles(CUSTOM_PUBLIC_DIR, (html, filePath) =>
+    normalizeHtmlHead(applyBranding(html, args, languageForPublicFile(filePath)))
+  );
   formatFiles(CUSTOM_PUBLIC_DIR, [".html"]);
 }
 
@@ -821,6 +823,67 @@ function rewriteHtmlFiles(directory, transform) {
     }
   }
 }
+
+function normalizeHtmlHead(html) {
+  let normalized = html;
+
+  if (!normalized.includes('rel="icon"')) {
+    normalized = insertBeforeHeadClose(
+      normalized,
+      '    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />\n'
+    );
+  }
+
+  if (!normalized.includes('rel="apple-touch-icon"')) {
+    normalized = insertBeforeHeadClose(
+      normalized,
+      '    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />\n'
+    );
+  }
+
+  if (!normalized.includes("data-v8s-theme-override")) {
+    normalized = insertBeforeFirstStylesheet(normalized, `${THEME_OVERRIDE_SCRIPT}\n`);
+  }
+
+  return normalized;
+}
+
+function insertBeforeHeadClose(html, insertion) {
+  return html.replace(/<\/head>/i, `${insertion}</head>`);
+}
+
+function insertBeforeFirstStylesheet(html, insertion) {
+  if (/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i.test(html)) {
+    return html.replace(/(<link\s+[^>]*rel=["']stylesheet["'][^>]*>)/i, `${insertion}$1`);
+  }
+
+  return insertBeforeHeadClose(html, insertion);
+}
+
+const THEME_OVERRIDE_SCRIPT = `    <script data-v8s-theme-override>
+      (() => {
+        const theme = new URLSearchParams(window.location.search).get("theme");
+        if (theme !== "light" && theme !== "dark") return;
+
+        document.documentElement.dataset.theme = theme;
+
+        const applyThemeImages = () => {
+          if (theme !== "dark") return;
+
+          document.querySelectorAll('picture source[media*="prefers-color-scheme"][srcset]').forEach((source) => {
+            const image = source.parentElement?.querySelector("img");
+            const candidate = source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0];
+            if (image && candidate) image.src = candidate;
+          });
+        };
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", applyThemeImages, { once: true });
+        } else {
+          applyThemeImages();
+        }
+      })();
+    </script>`;
 
 function languageForPublicFile(filePath) {
   const [language] = path.relative(CUSTOM_PUBLIC_DIR, filePath).split(path.sep);

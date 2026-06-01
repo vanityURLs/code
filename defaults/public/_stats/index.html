@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <style>
       @font-face {
         font-family: "InterVariable";
@@ -20,7 +22,7 @@
         src: url("/fonts/jetbrainsmono.woff2") format("woff2");
       }
       :root {
-        color-scheme: light;
+        color-scheme: light dark;
         --bg: #f9fafb;
         --panel: #ffffff;
         --text: #111827;
@@ -28,6 +30,30 @@
         --border: #e5e7eb;
         --soft: #f3f4f6;
         --brand: #0f766e;
+      }
+      :root[data-theme="light"] {
+        color-scheme: light;
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #101418;
+        --panel: #171d22;
+        --text: #eef4f3;
+        --muted: #a8b3b1;
+        --border: #2d3836;
+        --soft: #202a2f;
+        --brand: #4fd1c5;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+          --bg: #101418;
+          --panel: #171d22;
+          --text: #eef4f3;
+          --muted: #a8b3b1;
+          --border: #2d3836;
+          --soft: #202a2f;
+          --brand: #4fd1c5;
+        }
       }
       * {
         box-sizing: border-box;

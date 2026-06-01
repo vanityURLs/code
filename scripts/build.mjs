@@ -219,10 +219,69 @@ function rewriteHtmlFiles(directory, transform) {
     if (entry.isDirectory()) {
       rewriteHtmlFiles(entryPath, transform);
     } else if (entry.isFile() && entry.name.endsWith(".html")) {
-      fs.writeFileSync(entryPath, transform(fs.readFileSync(entryPath, "utf8")));
+      fs.writeFileSync(entryPath, transform(fs.readFileSync(entryPath, "utf8"), entryPath));
     }
   }
 }
+
+function normalizeHtmlHeadAssets() {
+  rewriteHtmlFiles(BUILD_DIR, (html) => normalizeHtmlHead(html));
+}
+
+function normalizeHtmlHead(html) {
+  let normalized = html;
+
+  if (!normalized.includes('rel="icon"')) {
+    normalized = insertBeforeHeadClose(normalized, '  <link rel="icon" type="image/svg+xml" href="/favicon.svg">\n');
+  }
+
+  if (!normalized.includes('rel="apple-touch-icon"')) {
+    normalized = insertBeforeHeadClose(normalized, '  <link rel="apple-touch-icon" href="/apple-touch-icon.png">\n');
+  }
+
+  if (!normalized.includes("data-v8s-theme-override")) {
+    normalized = insertBeforeFirstStylesheet(normalized, `${THEME_OVERRIDE_SCRIPT}\n`);
+  }
+
+  return normalized;
+}
+
+function insertBeforeHeadClose(html, insertion) {
+  return html.replace(/<\/head>/i, `${insertion}</head>`);
+}
+
+function insertBeforeFirstStylesheet(html, insertion) {
+  if (/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i.test(html)) {
+    return html.replace(/(<link\s+[^>]*rel=["']stylesheet["'][^>]*>)/i, `${insertion}$1`);
+  }
+
+  return insertBeforeHeadClose(html, insertion);
+}
+
+const THEME_OVERRIDE_SCRIPT = `  <script data-v8s-theme-override>
+    (() => {
+      const theme = new URLSearchParams(window.location.search).get("theme");
+      if (theme !== "light" && theme !== "dark") return;
+
+      document.documentElement.dataset.theme = theme;
+
+      const applyThemeImages = () => {
+        if (theme !== "dark") return;
+
+        document.querySelectorAll('picture source[media*="prefers-color-scheme"][srcset]').forEach((source) => {
+          const image = source.parentElement?.querySelector("img");
+          const candidate = source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0];
+          if (image && candidate) image.src = candidate;
+        });
+      };
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyThemeImages, { once: true });
+      } else {
+        applyThemeImages();
+      }
+    })();
+  </script>`;
 
 function isDefaultLegalTemplate(filePath) {
   if (!fs.existsSync(filePath)) return false;
@@ -714,6 +773,7 @@ ${pageLinks}
           </ul>
         </section>
 ${language === "en" ? renderMachineReadableTestsSection() : ""}
+${language === "en" ? renderThemeTestsSection() : ""}
         <section class="qa-section">
           <h3>${escapeHtml(metadata.statusTitle)}</h3>
           <ul class="qa-links">
@@ -748,6 +808,36 @@ function renderMachineReadableTestsSection() {
 ${links}
           </ul>
         </section>`;
+}
+
+function renderThemeTestsSection() {
+  const links = [
+    ["/", "Index"],
+    ["/expand", "Expand"],
+    ["/404", "404"],
+    ["/expired", "Expired"],
+    ["/disabled", "Disabled"],
+    ["/maintenance", "Maintenance"],
+    ["/_stats/", "Stats"]
+  ]
+    .flatMap(([href, label]) => [
+      [withTheme(href, "light"), `${label} light`],
+      [withTheme(href, "dark"), `${label} dark`]
+    ])
+    .map(([href, label]) => renderTestsLink(href, label))
+    .join("\n");
+
+  return `        <section class="qa-section">
+          <h3>Theme checks</h3>
+          <ul class="qa-links">
+${links}
+          </ul>
+        </section>`;
+}
+
+function withTheme(href, theme) {
+  const separator = href.includes("?") ? "&" : "?";
+  return `${href}${separator}theme=${theme}`;
 }
 
 function encodePathSegment(value) {
@@ -907,6 +997,7 @@ function main() {
   writeRuntimeSiteConfig(runtimeSiteConfig(siteConfig), RUNTIME_SITE_CONFIG_PATH);
   removeDeferredLegalPages(siteConfig);
   buildTestsPage(siteConfig);
+  normalizeHtmlHeadAssets();
   copyRuntimeBlocklist();
   buildRedirectTargets();
   validateRuntimeRegistry();
