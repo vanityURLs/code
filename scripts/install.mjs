@@ -868,11 +868,12 @@ const THEME_OVERRIDE_SCRIPT = `    <script data-v8s-theme-override>
         document.documentElement.dataset.theme = theme;
 
         const applyThemeImages = () => {
-          if (theme !== "dark") return;
-
           document.querySelectorAll('picture source[media*="prefers-color-scheme"][srcset]').forEach((source) => {
             const image = source.parentElement?.querySelector("img");
-            const candidate = source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0];
+            const candidate =
+              theme === "dark"
+                ? source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0]
+                : image?.getAttribute("src");
             if (image && candidate) image.src = candidate;
           });
         };

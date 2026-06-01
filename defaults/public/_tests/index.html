@@ -7,6 +7,31 @@
     <title>VanityURLs QA Tests</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script data-v8s-theme-override>
+      (() => {
+        const theme = new URLSearchParams(window.location.search).get("theme");
+        if (theme !== "light" && theme !== "dark") return;
+
+        document.documentElement.dataset.theme = theme;
+
+        const applyThemeImages = () => {
+          document.querySelectorAll('picture source[media*="prefers-color-scheme"][srcset]').forEach((source) => {
+            const image = source.parentElement?.querySelector("img");
+            const candidate =
+              theme === "dark"
+                ? source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\s+/)[0]
+                : image?.getAttribute("src");
+            if (image && candidate) image.src = candidate;
+          });
+        };
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", applyThemeImages, { once: true });
+        } else {
+          applyThemeImages();
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="/style.css?v=20260504" />
   </head>
   <body>
@@ -17,82 +42,534 @@
       </header>
 
       <section class="qa-grid" aria-label="Page test links">
+        <article class="qa-panel" lang="de">
+          <h2>Deutsch</h2>
+          <section class="qa-section">
+            <h3>Seiten</h3>
+            <ul class="qa-links">
+              <li>
+                <a class="qa-link-main" href="/de/index.html" target="_blank" rel="noreferrer">Start</a
+                ><span class="qa-theme-controls" aria-label="Start theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/index.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Start light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/index.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Start dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/de/erweitern" target="_blank" rel="noreferrer">Erweitern</a
+                ><span class="qa-theme-controls" aria-label="Erweitern theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/erweitern?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Erweitern light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/erweitern?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Erweitern dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/_stats/" target="_blank" rel="noreferrer">Stats</a
+                ><span class="qa-theme-controls" aria-label="Stats theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/de/privacy.html" target="_blank" rel="noreferrer">Datenschutz</a
+                ><span class="qa-theme-controls" aria-label="Datenschutz theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/privacy.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Datenschutz light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/privacy.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Datenschutz dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/de/terms.html" target="_blank" rel="noreferrer">Bedingungen</a
+                ><span class="qa-theme-controls" aria-label="Bedingungen theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/terms.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Bedingungen light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/terms.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Bedingungen dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/de/abuse.html" target="_blank" rel="noreferrer"
+                  >Vertrauen und Sicherheit</a
+                ><span class="qa-theme-controls" aria-label="Vertrauen und Sicherheit theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/abuse.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Vertrauen und Sicherheit light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/abuse.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Vertrauen und Sicherheit dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="qa-section">
+            <h3>Statusseiten</h3>
+            <ul class="qa-links">
+              <li>
+                <a class="qa-link-main" href="/de/404.html" target="_blank" rel="noreferrer">404</a
+                ><span class="qa-theme-controls" aria-label="404 theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/404.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/404.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/de/expired.html" target="_blank" rel="noreferrer">Abgelaufen</a
+                ><span class="qa-theme-controls" aria-label="Abgelaufen theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/expired.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Abgelaufen light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/expired.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Abgelaufen dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/de/disabled.html" target="_blank" rel="noreferrer">Deaktiviert</a
+                ><span class="qa-theme-controls" aria-label="Deaktiviert theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/disabled.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Deaktiviert light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/disabled.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Deaktiviert dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/de/maintenance.html" target="_blank" rel="noreferrer">Wartung</a
+                ><span class="qa-theme-controls" aria-label="Wartung theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/de/maintenance.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Wartung light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/de/maintenance.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Wartung dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+            </ul>
+          </section>
+        </article>
+
         <article class="qa-panel">
           <h2>English</h2>
           <section class="qa-section">
             <h3>Pages</h3>
             <ul class="qa-links">
-              <li><a href="/" target="_blank" rel="noreferrer">Index</a></li>
-              <li><a href="/expand" target="_blank" rel="noreferrer">Expand</a></li>
-              <li><a href="/_stats/" target="_blank" rel="noreferrer">Stats</a></li>
-              <li><a href="/privacy" target="_blank" rel="noreferrer">Privacy</a></li>
-              <li><a href="/terms" target="_blank" rel="noreferrer">Terms</a></li>
-              <li><a href="/trust-safety" target="_blank" rel="noreferrer">Trust &amp; Safety</a></li>
-              <li><a href="/security" target="_blank" rel="noreferrer">Security</a></li>
+              <li>
+                <a class="qa-link-main" href="/" target="_blank" rel="noreferrer">Index</a
+                ><span class="qa-theme-controls" aria-label="Index theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Index light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Index dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/expand" target="_blank" rel="noreferrer">Expand</a
+                ><span class="qa-theme-controls" aria-label="Expand theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/expand?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Expand light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/expand?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Expand dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/_stats/" target="_blank" rel="noreferrer">Stats</a
+                ><span class="qa-theme-controls" aria-label="Stats theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/privacy" target="_blank" rel="noreferrer">Privacy</a
+                ><span class="qa-theme-controls" aria-label="Privacy theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/privacy?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Privacy light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/privacy?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Privacy dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/terms" target="_blank" rel="noreferrer">Terms</a
+                ><span class="qa-theme-controls" aria-label="Terms theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/terms?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Terms light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/terms?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Terms dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/trust-safety" target="_blank" rel="noreferrer">Trust &amp; Safety</a
+                ><span class="qa-theme-controls" aria-label="Trust &amp; Safety theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/trust-safety?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Trust &amp; Safety light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/trust-safety?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Trust &amp; Safety dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/security" target="_blank" rel="noreferrer">Security</a
+                ><span class="qa-theme-controls" aria-label="Security theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/security?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Security light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/security?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Security dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
             </ul>
           </section>
           <section class="qa-section">
             <h3>Machine-readable files</h3>
             <ul class="qa-links">
-              <li><a href="/.well-known/security.txt" target="_blank" rel="noreferrer">.well-known/security.txt</a></li>
-              <li><a href="/security.txt" target="_blank" rel="noreferrer">security.txt redirect</a></li>
-              <li><a href="/robots.txt" target="_blank" rel="noreferrer">robots.txt</a></li>
-              <li><a href="/llms.txt" target="_blank" rel="noreferrer">llms.txt</a></li>
-              <li><a href="/llms-full.txt" target="_blank" rel="noreferrer">llms-full.txt</a></li>
-              <li><a href="/site.webmanifest" target="_blank" rel="noreferrer">site.webmanifest</a></li>
-            </ul>
-          </section>
-          <section class="qa-section">
-            <h3>Theme checks</h3>
-            <ul class="qa-links">
-              <li><a href="/?theme=light" target="_blank" rel="noreferrer">Index light</a></li>
-              <li><a href="/?theme=dark" target="_blank" rel="noreferrer">Index dark</a></li>
-              <li><a href="/expand?theme=light" target="_blank" rel="noreferrer">Expand light</a></li>
-              <li><a href="/expand?theme=dark" target="_blank" rel="noreferrer">Expand dark</a></li>
-              <li><a href="/404?theme=light" target="_blank" rel="noreferrer">404 light</a></li>
-              <li><a href="/404?theme=dark" target="_blank" rel="noreferrer">404 dark</a></li>
-              <li><a href="/expired?theme=light" target="_blank" rel="noreferrer">Expired light</a></li>
-              <li><a href="/expired?theme=dark" target="_blank" rel="noreferrer">Expired dark</a></li>
-              <li><a href="/disabled?theme=light" target="_blank" rel="noreferrer">Disabled light</a></li>
-              <li><a href="/disabled?theme=dark" target="_blank" rel="noreferrer">Disabled dark</a></li>
-              <li><a href="/maintenance?theme=light" target="_blank" rel="noreferrer">Maintenance light</a></li>
-              <li><a href="/maintenance?theme=dark" target="_blank" rel="noreferrer">Maintenance dark</a></li>
-              <li><a href="/_stats/?theme=light" target="_blank" rel="noreferrer">Stats light</a></li>
-              <li><a href="/_stats/?theme=dark" target="_blank" rel="noreferrer">Stats dark</a></li>
+              <li>
+                <a class="qa-link-main" href="/.well-known/security.txt" target="_blank" rel="noreferrer"
+                  >.well-known/security.txt</a
+                >
+              </li>
+              <li>
+                <a class="qa-link-main" href="/security.txt" target="_blank" rel="noreferrer">security.txt redirect</a>
+              </li>
+              <li><a class="qa-link-main" href="/robots.txt" target="_blank" rel="noreferrer">robots.txt</a></li>
+              <li><a class="qa-link-main" href="/llms.txt" target="_blank" rel="noreferrer">llms.txt</a></li>
+              <li><a class="qa-link-main" href="/llms-full.txt" target="_blank" rel="noreferrer">llms-full.txt</a></li>
+              <li>
+                <a class="qa-link-main" href="/site.webmanifest" target="_blank" rel="noreferrer">site.webmanifest</a>
+              </li>
             </ul>
           </section>
           <section class="qa-section">
             <h3>Status Pages</h3>
             <ul class="qa-links">
-              <li><a href="/404" target="_blank" rel="noreferrer">404</a></li>
-              <li><a href="/expired" target="_blank" rel="noreferrer">Expired</a></li>
-              <li><a href="/disabled" target="_blank" rel="noreferrer">Disabled</a></li>
-              <li><a href="/maintenance" target="_blank" rel="noreferrer">Maintenance</a></li>
-            </ul>
-          </section>
-        </article>
-
-        <article class="qa-panel" lang="fr">
-          <h2>Français</h2>
-          <section class="qa-section">
-            <h3>Pages</h3>
-            <ul class="qa-links">
-              <li><a href="/fr/index.html" target="_blank" rel="noreferrer">Accueil</a></li>
-              <li><a href="/fr/deplier" target="_blank" rel="noreferrer">Développer</a></li>
-              <li><a href="/_stats/" target="_blank" rel="noreferrer">Stats</a></li>
-              <li><a href="/fr/privacy.html" target="_blank" rel="noreferrer">Confidentialité</a></li>
-              <li><a href="/fr/terms.html" target="_blank" rel="noreferrer">Conditions</a></li>
-              <li><a href="/fr/abuse.html" target="_blank" rel="noreferrer">Confiance et sécurité</a></li>
-              <li><a href="/fr/security.html" target="_blank" rel="noreferrer">Sécurité</a></li>
-            </ul>
-          </section>
-          <section class="qa-section">
-            <h3>Pages d'état</h3>
-            <ul class="qa-links">
-              <li><a href="/fr/404.html" target="_blank" rel="noreferrer">404</a></li>
-              <li><a href="/fr/expired.html" target="_blank" rel="noreferrer">Expiré</a></li>
-              <li><a href="/fr/disabled.html" target="_blank" rel="noreferrer">Désactivé</a></li>
-              <li><a href="/fr/maintenance.html" target="_blank" rel="noreferrer">Maintenance</a></li>
+              <li>
+                <a class="qa-link-main" href="/404" target="_blank" rel="noreferrer">404</a
+                ><span class="qa-theme-controls" aria-label="404 theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/404?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/404?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/expired" target="_blank" rel="noreferrer">Expired</a
+                ><span class="qa-theme-controls" aria-label="Expired theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/expired?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Expired light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/expired?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Expired dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/disabled" target="_blank" rel="noreferrer">Disabled</a
+                ><span class="qa-theme-controls" aria-label="Disabled theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/disabled?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Disabled light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/disabled?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Disabled dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/maintenance" target="_blank" rel="noreferrer">Maintenance</a
+                ><span class="qa-theme-controls" aria-label="Maintenance theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/maintenance?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Maintenance light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/maintenance?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Maintenance dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
             </ul>
           </section>
         </article>
@@ -102,18 +579,510 @@
           <section class="qa-section">
             <h3>Páginas</h3>
             <ul class="qa-links">
-              <li><a href="/es/index.html" target="_blank" rel="noreferrer">Inicio</a></li>
-              <li><a href="/es/expandir" target="_blank" rel="noreferrer">Expandir</a></li>
-              <li><a href="/_stats/" target="_blank" rel="noreferrer">Stats</a></li>
+              <li>
+                <a class="qa-link-main" href="/es/index.html" target="_blank" rel="noreferrer">Inicio</a
+                ><span class="qa-theme-controls" aria-label="Inicio theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/index.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Inicio light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/index.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Inicio dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/es/expandir" target="_blank" rel="noreferrer">Expandir</a
+                ><span class="qa-theme-controls" aria-label="Expandir theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/expandir?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Expandir light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/expandir?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Expandir dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/_stats/" target="_blank" rel="noreferrer">Stats</a
+                ><span class="qa-theme-controls" aria-label="Stats theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/es/privacy.html" target="_blank" rel="noreferrer">Privacidad</a
+                ><span class="qa-theme-controls" aria-label="Privacidad theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/privacy.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Privacidad light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/privacy.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Privacidad dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/es/terms.html" target="_blank" rel="noreferrer">Términos</a
+                ><span class="qa-theme-controls" aria-label="Términos theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/terms.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Términos light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/terms.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Términos dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/es/abuse.html" target="_blank" rel="noreferrer">Confianza y seguridad</a
+                ><span class="qa-theme-controls" aria-label="Confianza y seguridad theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/abuse.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Confianza y seguridad light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/abuse.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Confianza y seguridad dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
             </ul>
           </section>
+
           <section class="qa-section">
             <h3>Páginas de estado</h3>
             <ul class="qa-links">
-              <li><a href="/es/404.html" target="_blank" rel="noreferrer">404</a></li>
-              <li><a href="/es/expired.html" target="_blank" rel="noreferrer">Caducado</a></li>
-              <li><a href="/es/disabled.html" target="_blank" rel="noreferrer">Desactivado</a></li>
-              <li><a href="/es/maintenance.html" target="_blank" rel="noreferrer">Mantenimiento</a></li>
+              <li>
+                <a class="qa-link-main" href="/es/404.html" target="_blank" rel="noreferrer">404</a
+                ><span class="qa-theme-controls" aria-label="404 theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/404.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/404.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/es/expired.html" target="_blank" rel="noreferrer">Caducado</a
+                ><span class="qa-theme-controls" aria-label="Caducado theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/expired.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Caducado light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/expired.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Caducado dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/es/disabled.html" target="_blank" rel="noreferrer">Desactivado</a
+                ><span class="qa-theme-controls" aria-label="Desactivado theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/disabled.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Desactivado light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/disabled.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Desactivado dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/es/maintenance.html" target="_blank" rel="noreferrer">Mantenimiento</a
+                ><span class="qa-theme-controls" aria-label="Mantenimiento theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/es/maintenance.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Mantenimiento light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/es/maintenance.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Mantenimiento dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+            </ul>
+          </section>
+        </article>
+
+        <article class="qa-panel" lang="fr">
+          <h2>Français</h2>
+          <section class="qa-section">
+            <h3>Pages</h3>
+            <ul class="qa-links">
+              <li>
+                <a class="qa-link-main" href="/fr/index.html" target="_blank" rel="noreferrer">Accueil</a
+                ><span class="qa-theme-controls" aria-label="Accueil theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/index.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Accueil light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/index.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Accueil dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/fr/deplier" target="_blank" rel="noreferrer">Développer</a
+                ><span class="qa-theme-controls" aria-label="Développer theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/deplier?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Développer light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/deplier?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Développer dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/_stats/" target="_blank" rel="noreferrer">Stats</a
+                ><span class="qa-theme-controls" aria-label="Stats theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/fr/privacy.html" target="_blank" rel="noreferrer">Confidentialité</a
+                ><span class="qa-theme-controls" aria-label="Confidentialité theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/privacy.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Confidentialité light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/privacy.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Confidentialité dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/fr/terms.html" target="_blank" rel="noreferrer">Conditions</a
+                ><span class="qa-theme-controls" aria-label="Conditions theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/terms.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Conditions light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/terms.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Conditions dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/fr/abuse.html" target="_blank" rel="noreferrer">Confiance et sécurité</a
+                ><span class="qa-theme-controls" aria-label="Confiance et sécurité theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/abuse.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Confiance et sécurité light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/abuse.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Confiance et sécurité dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/fr/security.html" target="_blank" rel="noreferrer">Sécurité</a
+                ><span class="qa-theme-controls" aria-label="Sécurité theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/security.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Sécurité light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/security.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Sécurité dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="qa-section">
+            <h3>Pages d'état</h3>
+            <ul class="qa-links">
+              <li>
+                <a class="qa-link-main" href="/fr/404.html" target="_blank" rel="noreferrer">404</a
+                ><span class="qa-theme-controls" aria-label="404 theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/404.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/404.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/fr/expired.html" target="_blank" rel="noreferrer">Expiré</a
+                ><span class="qa-theme-controls" aria-label="Expiré theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/expired.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Expiré light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/expired.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Expiré dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/fr/disabled.html" target="_blank" rel="noreferrer">Désactivé</a
+                ><span class="qa-theme-controls" aria-label="Désactivé theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/disabled.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Désactivé light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/disabled.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Désactivé dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/fr/maintenance.html" target="_blank" rel="noreferrer">Maintenance</a
+                ><span class="qa-theme-controls" aria-label="Maintenance theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/maintenance.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Maintenance light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/fr/maintenance.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Maintenance dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
             </ul>
           </section>
         </article>
@@ -123,39 +1092,242 @@
           <section class="qa-section">
             <h3>Pagine</h3>
             <ul class="qa-links">
-              <li><a href="/it/index.html" target="_blank" rel="noreferrer">Home</a></li>
-              <li><a href="/it/espandi" target="_blank" rel="noreferrer">Espandi</a></li>
-              <li><a href="/_stats/" target="_blank" rel="noreferrer">Stats</a></li>
+              <li>
+                <a class="qa-link-main" href="/it/index.html" target="_blank" rel="noreferrer">Home</a
+                ><span class="qa-theme-controls" aria-label="Home theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/index.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Home light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/index.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Home dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/it/espandi" target="_blank" rel="noreferrer">Espandi</a
+                ><span class="qa-theme-controls" aria-label="Espandi theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/espandi?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Espandi light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/espandi?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Espandi dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/_stats/" target="_blank" rel="noreferrer">Stats</a
+                ><span class="qa-theme-controls" aria-label="Stats theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/_stats/?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Stats dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/it/privacy.html" target="_blank" rel="noreferrer">Privacy</a
+                ><span class="qa-theme-controls" aria-label="Privacy theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/privacy.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Privacy light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/privacy.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Privacy dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/it/terms.html" target="_blank" rel="noreferrer">Condizioni</a
+                ><span class="qa-theme-controls" aria-label="Condizioni theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/terms.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Condizioni light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/terms.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Condizioni dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/it/abuse.html" target="_blank" rel="noreferrer">Fiducia e sicurezza</a
+                ><span class="qa-theme-controls" aria-label="Fiducia e sicurezza theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/abuse.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Fiducia e sicurezza light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/abuse.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Fiducia e sicurezza dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
             </ul>
           </section>
+
           <section class="qa-section">
             <h3>Pagine di stato</h3>
             <ul class="qa-links">
-              <li><a href="/it/404.html" target="_blank" rel="noreferrer">404</a></li>
-              <li><a href="/it/expired.html" target="_blank" rel="noreferrer">Scaduto</a></li>
-              <li><a href="/it/disabled.html" target="_blank" rel="noreferrer">Disattivato</a></li>
-              <li><a href="/it/maintenance.html" target="_blank" rel="noreferrer">Manutenzione</a></li>
-            </ul>
-          </section>
-        </article>
-
-        <article class="qa-panel" lang="de">
-          <h2>Deutsch</h2>
-          <section class="qa-section">
-            <h3>Seiten</h3>
-            <ul class="qa-links">
-              <li><a href="/de/index.html" target="_blank" rel="noreferrer">Start</a></li>
-              <li><a href="/de/erweitern" target="_blank" rel="noreferrer">Erweitern</a></li>
-              <li><a href="/_stats/" target="_blank" rel="noreferrer">Stats</a></li>
-            </ul>
-          </section>
-          <section class="qa-section">
-            <h3>Statusseiten</h3>
-            <ul class="qa-links">
-              <li><a href="/de/404.html" target="_blank" rel="noreferrer">404</a></li>
-              <li><a href="/de/expired.html" target="_blank" rel="noreferrer">Abgelaufen</a></li>
-              <li><a href="/de/disabled.html" target="_blank" rel="noreferrer">Deaktiviert</a></li>
-              <li><a href="/de/maintenance.html" target="_blank" rel="noreferrer">Wartung</a></li>
+              <li>
+                <a class="qa-link-main" href="/it/404.html" target="_blank" rel="noreferrer">404</a
+                ><span class="qa-theme-controls" aria-label="404 theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/404.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/404.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="404 dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/it/expired.html" target="_blank" rel="noreferrer">Scaduto</a
+                ><span class="qa-theme-controls" aria-label="Scaduto theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/expired.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Scaduto light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/expired.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Scaduto dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/it/disabled.html" target="_blank" rel="noreferrer">Disattivato</a
+                ><span class="qa-theme-controls" aria-label="Disattivato theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/disabled.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Disattivato light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/disabled.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Disattivato dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
+              <li>
+                <a class="qa-link-main" href="/it/maintenance.html" target="_blank" rel="noreferrer">Manutenzione</a
+                ><span class="qa-theme-controls" aria-label="Manutenzione theme previews">
+                  <a
+                    class="qa-theme-link"
+                    href="/it/maintenance.html?theme=light"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Manutenzione light preview"
+                    title="Light preview"
+                    >☼</a
+                  >
+                  <a
+                    class="qa-theme-link"
+                    href="/it/maintenance.html?theme=dark"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Manutenzione dark preview"
+                    title="Dark preview"
+                    >◑</a
+                  >
+                </span>
+              </li>
             </ul>
           </section>
         </article>

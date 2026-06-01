@@ -364,7 +364,7 @@ button svg {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 22px;
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
 }
 
 .qa-panel h2 {
@@ -401,22 +401,59 @@ button svg {
   list-style: none;
 }
 
-.qa-links a {
-  display: block;
+.qa-links li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   min-height: 44px;
-  padding: 11px 13px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  background: var(--panel);
+}
+
+.qa-links li:hover,
+.qa-links li:focus-within {
+  border-color: var(--brand);
+}
+
+.qa-links a {
   color: var(--brand);
-  background: var(--surface);
   text-decoration: none;
   font-weight: 700;
 }
 
+.qa-link-main {
+  display: block;
+  min-height: 44px;
+  padding: 11px 13px;
+}
+
+.qa-theme-controls {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px 6px 4px 0;
+}
+
+.qa-theme-link {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .qa-links a:hover,
 .qa-links a:focus-visible {
-  border-color: var(--brand);
+  color: var(--brand-strong);
   outline: 0;
+}
+
+.qa-theme-link:hover,
+.qa-theme-link:focus-visible {
+  background: var(--hover-panel);
 }
 
 .sr-only {

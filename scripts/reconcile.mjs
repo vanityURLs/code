@@ -9,9 +9,9 @@ import {
 
 function main() {
   const options = parseReconcileArgs(process.argv.slice(2));
-  const selected = options.public || options.languages || options.branding || options.headAssets;
+  const selected = options.public || options.languages || options.assets || options.branding || options.headAssets;
   if (!selected) {
-    throw new Error("Choose at least one fix: --head-assets, --languages, --branding, --public, or --all.");
+    throw new Error("Choose at least one fix: --head-assets, --assets, --languages, --branding, --public, or --all.");
   }
 
   const context = loadMaintenanceContext();

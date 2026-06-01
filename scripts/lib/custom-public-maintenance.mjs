@@ -51,6 +51,7 @@ export function diagnoseCustomPublic(context) {
   }
 
   issues.push(...diagnoseHtmlHeadAssets(context));
+  issues.push(...diagnoseSharedAssets(context));
   issues.push(...diagnoseBranding(context));
 
   const supported = new Set(languages);
@@ -103,6 +104,11 @@ export function reconcileCustomPublic(context, options = {}) {
       actions.push(`pruned custom/public to supported languages: ${languages.join(",")}`);
     }
 
+    if (options.assets) {
+      syncSharedAssets(context);
+      actions.push("synced shared CSS, script, logo, icon, font, and badge assets from defaults");
+    }
+
     if (options.branding) {
       rewriteHtmlFiles(customPublicDir, (html, filePath) =>
         applyBranding(html, context, languageForPublicFile(context, filePath))
@@ -122,6 +128,7 @@ export function reconcileCustomPublic(context, options = {}) {
 
 export function parseReconcileArgs(argv) {
   const options = {
+    assets: false,
     branding: false,
     dryRun: false,
     headAssets: false,
@@ -131,9 +138,12 @@ export function parseReconcileArgs(argv) {
 
   for (const arg of argv) {
     if (arg === "--all") {
+      options.assets = true;
       options.branding = true;
       options.headAssets = true;
       options.languages = true;
+    } else if (arg === "--assets") {
+      options.assets = true;
     } else if (arg === "--branding") {
       options.branding = true;
     } else if (arg === "--dry-run") {
@@ -162,6 +172,24 @@ function diagnoseHtmlHeadAssets(context) {
       path: relativePath(context, filePath),
       message: "HTML is missing the shared favicon/apple-touch-icon/theme head assets."
     }));
+}
+
+function diagnoseSharedAssets(context) {
+  return listSharedDefaultAssets(context)
+    .filter((defaultPath) => {
+      const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
+      return !fs.existsSync(customPath) || !sameFile(defaultPath, customPath);
+    })
+    .map((defaultPath) => {
+      const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
+      return {
+        code: "shared-asset-stale",
+        severity: "warn",
+        fix: "assets",
+        path: relativePath(context, customPath),
+        message: "Shared public asset is missing or differs from defaults."
+      };
+    });
 }
 
 function diagnoseBranding(context) {
@@ -201,6 +229,36 @@ function pruneUnsupportedLanguageDirs(context) {
       force: true
     });
   }
+}
+
+function syncSharedAssets(context) {
+  for (const defaultPath of listSharedDefaultAssets(context)) {
+    const relative = path.relative(context.defaultPublicDir, defaultPath);
+    const customPath = path.join(context.customPublicDir, relative);
+    fs.mkdirSync(path.dirname(customPath), { recursive: true });
+    fs.copyFileSync(defaultPath, customPath);
+  }
+}
+
+function listSharedDefaultAssets(context) {
+  const supported = new Set(context.languages);
+  return listFiles(context.defaultPublicDir).filter((filePath) => {
+    const relative = path.relative(context.defaultPublicDir, filePath);
+    const parts = relative.split(path.sep);
+    const extension = path.extname(filePath).toLowerCase();
+
+    if (![".css", ".js", ".png", ".svg", ".webmanifest", ".woff2"].includes(extension)) return false;
+    if (parts[0] === "fonts") return true;
+    if (!Object.hasOwn(context.languageMetadata, parts[0])) return true;
+    return parts[0] === "en" || supported.has(parts[0]);
+  });
+}
+
+function sameFile(leftPath, rightPath) {
+  if (!fs.existsSync(leftPath) || !fs.existsSync(rightPath)) return false;
+  const left = fs.readFileSync(leftPath);
+  const right = fs.readFileSync(rightPath);
+  return left.length === right.length && left.equals(right);
 }
 
 function normalizeHtmlHead(html) {
@@ -247,11 +305,12 @@ const THEME_OVERRIDE_SCRIPT = `    <script data-v8s-theme-override>
         document.documentElement.dataset.theme = theme;
 
         const applyThemeImages = () => {
-          if (theme !== "dark") return;
-
           document.querySelectorAll('picture source[media*="prefers-color-scheme"][srcset]').forEach((source) => {
             const image = source.parentElement?.querySelector("img");
-            const candidate = source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0];
+            const candidate =
+              theme === "dark"
+                ? source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0]
+                : image?.getAttribute("src");
             if (image && candidate) image.src = candidate;
           });
         };

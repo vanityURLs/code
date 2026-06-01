@@ -266,11 +266,12 @@ const THEME_OVERRIDE_SCRIPT = `  <script data-v8s-theme-override>
       document.documentElement.dataset.theme = theme;
 
       const applyThemeImages = () => {
-        if (theme !== "dark") return;
-
         document.querySelectorAll('picture source[media*="prefers-color-scheme"][srcset]').forEach((source) => {
           const image = source.parentElement?.querySelector("img");
-          const candidate = source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0];
+          const candidate =
+            theme === "dark"
+              ? source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0]
+              : image?.getAttribute("src");
           if (image && candidate) image.src = candidate;
         });
       };
@@ -755,12 +756,12 @@ function renderTestsPanel(language, siteConfig) {
     ["security", metadata.links.security || "Security"]
   ].filter(([slug]) => enabledPolicySlugs.has(slug) && Boolean(legalContent[slug]));
   const pageLinks = [
-    renderTestsLink(indexHref, metadata.links.index),
-    renderTestsLink(expandHref, metadata.links.expand),
-    renderTestsLink("/_stats/", metadata.links.stats),
+    renderTestsLink(indexHref, metadata.links.index, { themeControls: true }),
+    renderTestsLink(expandHref, metadata.links.expand, { themeControls: true }),
+    renderTestsLink("/_stats/", metadata.links.stats, { themeControls: true }),
     ...policyLinks.map(([slug, label]) => {
       const hrefSlug = language === "en" && slug === "abuse" ? "trust-safety" : slug;
-      return renderTestsLink(`${prefix}/${hrefSlug}${extension}`, label);
+      return renderTestsLink(`${prefix}/${hrefSlug}${extension}`, label, { themeControls: true });
     })
   ].join("\n");
 
@@ -773,21 +774,28 @@ ${pageLinks}
           </ul>
         </section>
 ${language === "en" ? renderMachineReadableTestsSection() : ""}
-${language === "en" ? renderThemeTestsSection() : ""}
         <section class="qa-section">
           <h3>${escapeHtml(metadata.statusTitle)}</h3>
           <ul class="qa-links">
-${renderTestsLink(`${prefix}/404${extension}`, metadata.links.notFound)}
-${renderTestsLink(`${prefix}/expired${extension}`, metadata.links.expired)}
-${renderTestsLink(`${prefix}/disabled${extension}`, metadata.links.disabled)}
-${renderTestsLink(`${prefix}/maintenance${extension}`, metadata.links.maintenance)}
+${renderTestsLink(`${prefix}/404${extension}`, metadata.links.notFound, { themeControls: true })}
+${renderTestsLink(`${prefix}/expired${extension}`, metadata.links.expired, { themeControls: true })}
+${renderTestsLink(`${prefix}/disabled${extension}`, metadata.links.disabled, { themeControls: true })}
+${renderTestsLink(`${prefix}/maintenance${extension}`, metadata.links.maintenance, { themeControls: true })}
           </ul>
         </section>
       </article>`;
 }
 
-function renderTestsLink(href, label) {
-  return `            <li><a href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a></li>`;
+function renderTestsLink(href, label, options = {}) {
+  const themeControls = options.themeControls ? renderTestsThemeControls(href, label) : "";
+  return `            <li><a class="qa-link-main" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>${themeControls}</li>`;
+}
+
+function renderTestsThemeControls(href, label) {
+  return `<span class="qa-theme-controls" aria-label="${escapeHtmlAttribute(`${label} theme previews`)}">
+                <a class="qa-theme-link" href="${escapeHtml(withTheme(href, "light"))}" target="_blank" rel="noreferrer" aria-label="${escapeHtmlAttribute(`${label} light preview`)}" title="Light preview">☼</a>
+                <a class="qa-theme-link" href="${escapeHtml(withTheme(href, "dark"))}" target="_blank" rel="noreferrer" aria-label="${escapeHtmlAttribute(`${label} dark preview`)}" title="Dark preview">◑</a>
+              </span>`;
 }
 
 function renderMachineReadableTestsSection() {
@@ -804,31 +812,6 @@ function renderMachineReadableTestsSection() {
 
   return `        <section class="qa-section">
           <h3>Machine-readable files</h3>
-          <ul class="qa-links">
-${links}
-          </ul>
-        </section>`;
-}
-
-function renderThemeTestsSection() {
-  const links = [
-    ["/", "Index"],
-    ["/expand", "Expand"],
-    ["/404", "404"],
-    ["/expired", "Expired"],
-    ["/disabled", "Disabled"],
-    ["/maintenance", "Maintenance"],
-    ["/_stats/", "Stats"]
-  ]
-    .flatMap(([href, label]) => [
-      [withTheme(href, "light"), `${label} light`],
-      [withTheme(href, "dark"), `${label} dark`]
-    ])
-    .map(([href, label]) => renderTestsLink(href, label))
-    .join("\n");
-
-  return `        <section class="qa-section">
-          <h3>Theme checks</h3>
           <ul class="qa-links">
 ${links}
           </ul>

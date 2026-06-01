@@ -114,6 +114,47 @@ function run(cwd, args) {
     "--customize-public"
   ]);
 
+  const logoPath = path.join(fixture, "custom", "public", "logo.svg");
+  fs.writeFileSync(logoPath, "<svg><title>old logo</title></svg>\n");
+
+  const doctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
+  assert(doctorJson.issues.some((issue) => issue.code === "shared-asset-stale" && issue.fix === "assets"));
+
+  run(fixture, ["scripts/reconcile.mjs", "--assets"]);
+  assert.equal(
+    fs.readFileSync(logoPath, "utf8"),
+    fs.readFileSync(path.join(fixture, "defaults", "public", "logo.svg"), "utf8")
+  );
+}
+
+{
+  const fixture = makeFixture();
+  run(fixture, [
+    "scripts/install.mjs",
+    "--no-check",
+    "--domain",
+    "go.example",
+    "--worker-name",
+    "go-example",
+    "--owner",
+    "team",
+    "--languages",
+    "en,fr",
+    "--operator-timezone",
+    "America/Toronto",
+    "--operator-legal-name",
+    "Example Inc.",
+    "--operator-domain",
+    "example.com",
+    "--operator-abuse-contact",
+    "abuse@example.com",
+    "--operator-security-contact",
+    "security@example.com",
+    "--branding-slogan",
+    "A short-link service for Example Inc.'s projects",
+    "--customize-public"
+  ]);
+
   const configPath = path.join(fixture, "custom", "v8s-site-config.json");
   const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
   config.i18n.supported_languages = ["en"];
