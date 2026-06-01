@@ -78,6 +78,11 @@ async function handleRequest(context) {
     return renderTestsPage(request, env, ctx);
   }
 
+  const statsAssetPath = statsPageAssetPath(slug);
+  if (statsAssetPath) {
+    return renderAsset(request, env, statsAssetPath, 200, ctx);
+  }
+
   const scannerProbe = await findScannerProbe(request, env);
 
   if (scannerProbe) {
@@ -256,7 +261,6 @@ function normalizeSlug(pathname) {
 function shouldBypassToAssets(slug) {
   if (slug === "") return true;
 
-  if (slug === "_stats" || slug.startsWith("_stats/")) return true;
   if (slug === "expand" || slug.startsWith("expand/")) return true;
 
   if (isPrivateRuntimeAsset(slug)) return false;
@@ -274,12 +278,21 @@ function expandPageAssetPath(slug) {
   return aliases.includes(alias) ? `/${language}/expand/index.html` : "";
 }
 
+function statsPageAssetPath(slug) {
+  if (slug === "_stats" || slug === "_stats/index.html") return "/_stats/index.html";
+
+  const [language, stats, file = "", ...rest] = slug.split("/");
+  if (rest.length || stats !== "_stats" || !LOCALIZED_HTML_LANGUAGES.includes(language)) return "";
+
+  return file === "" || file === "index.html" ? `/${language}/_stats/index.html` : "";
+}
+
 function isSecurityTxtPath(slug) {
   return slug.toLowerCase() === ".well-known/security.txt";
 }
 
 function isProtectedPath(slug) {
-  return slug === "_stats" || slug.startsWith("_stats/") || isTestsPath(slug);
+  return slug === "_stats" || slug.startsWith("_stats/") || Boolean(statsPageAssetPath(slug)) || isTestsPath(slug);
 }
 
 function isTestsPath(slug) {

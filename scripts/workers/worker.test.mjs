@@ -84,6 +84,8 @@ const assets = {
   "/fr/maintenance.html": html("<main>maintenance fr</main>"),
   "/fr/404.html": html("<main>fr {{SLUG_MESSAGE}}{{REFERENCE_LINE}}</main>"),
   "/_tests/index.html": html("<main>tests</main>"),
+  "/_stats/index.html": html("<main>stats</main>"),
+  "/fr/_stats/index.html": html("<main>stats fr</main>"),
   "/.well-known/security.txt": new Response("Contact: mailto:security@example.com\n", {
     headers: { "content-type": "text/plain; charset=utf-8" }
   }),
@@ -489,6 +491,21 @@ await run("serves tests page with valid Cloudflare Access token", async () => {
   );
   assert(response.status === 200, "status");
   assert((await response.text()).includes("tests"), "body");
+});
+
+await run("serves localized stats page with valid Cloudflare Access token", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(
+    request("/fr/_stats/", {
+      headers: {
+        ...(await accessHeaders())
+      }
+    }),
+    await accessEnv(),
+    ctx
+  );
+  assert(response.status === 200, "status");
+  assert((await response.text()).includes("stats fr"), "body");
 });
 
 await run("protects direct tests asset path with Cloudflare Access", async () => {

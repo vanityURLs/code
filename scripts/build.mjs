@@ -790,6 +790,20 @@ ${panels}
   fs.writeFileSync(testsPath, html);
 }
 
+function buildLocalizedStatsPages(siteConfig) {
+  const sourcePath = path.join(BUILD_DIR, "_stats", "index.html");
+  if (!fs.existsSync(sourcePath)) return;
+
+  const html = fs.readFileSync(sourcePath, "utf8");
+  for (const language of supportedLanguages(siteConfig)) {
+    if (language === "en") continue;
+
+    const targetPath = path.join(BUILD_DIR, language, "_stats", "index.html");
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.writeFileSync(targetPath, html.replace(/<html lang="[^"]*">/, `<html lang="${escapeHtmlAttribute(language)}">`));
+  }
+}
+
 function renderConfiguredWordmark(siteConfig) {
   const wordmark = siteConfig?.branding?.wordmark;
   if (!wordmark?.black && !wordmark?.green) {
@@ -811,6 +825,7 @@ function renderTestsPanel(language, siteConfig) {
   const extension = language === "en" ? "" : ".html";
   const indexHref = language === "en" ? "/" : `${prefix}/index.html`;
   const expandHref = language === "en" ? "/expand" : `${prefix}/${encodePathSegment(metadata.expandSlug || "expand")}`;
+  const statsHref = language === "en" ? "/_stats/" : `${prefix}/_stats/`;
   const legalContent = LEGAL_DATA.content?.[language] || {};
   const enabledPolicySlugs = new Set(legalPageSlugs(siteConfig));
   const policyLinks = [
@@ -822,7 +837,7 @@ function renderTestsPanel(language, siteConfig) {
   const pageLinks = [
     renderTestsLink(indexHref, metadata.links.index, { themeControls: true }),
     renderTestsLink(expandHref, metadata.links.expand, { themeControls: true }),
-    renderTestsLink("/_stats/", metadata.links.stats, { themeControls: true }),
+    renderTestsLink(statsHref, metadata.links.stats, { themeControls: true }),
     ...policyLinks.map(([slug, label]) => {
       const hrefSlug = language === "en" && slug === "abuse" ? "trust-safety" : slug;
       return renderTestsLink(`${prefix}/${hrefSlug}${extension}`, label, { themeControls: true });
@@ -1047,6 +1062,7 @@ function main() {
   writeRuntimeSiteConfig(runtimeSiteConfig(siteConfig), RUNTIME_SITE_CONFIG_PATH);
   removeDeferredLegalPages(siteConfig);
   buildTestsPage(siteConfig);
+  buildLocalizedStatsPages(siteConfig);
   normalizeHtmlHeadAssets();
   copyRuntimeBlocklist();
   buildRedirectTargets();

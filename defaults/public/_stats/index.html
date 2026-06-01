@@ -72,7 +72,7 @@
         display: flex;
         justify-content: space-between;
         gap: 1rem;
-        align-items: start;
+        align-items: center;
         margin-bottom: 2rem;
       }
       h1 {
@@ -80,13 +80,17 @@
         font-size: clamp(2rem, 4vw, 3rem);
         line-height: 1;
       }
+      .header-meta {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
       .brand-mark {
         display: inline-flex;
         flex: 0 0 auto;
         align-items: center;
         justify-content: flex-end;
-        width: min(48vw, 560px);
-        min-height: 4.5rem;
+        width: min(34vw, 420px);
+        min-height: 3.25rem;
         color: var(--text);
         text-decoration: none;
       }
@@ -94,7 +98,7 @@
         display: block;
         width: auto;
         max-width: 100%;
-        max-height: 4.5rem;
+        max-height: 3.25rem;
         height: auto;
       }
       .brand-mark-wordmark {
@@ -240,6 +244,13 @@
         color: var(--brand);
         font-weight: 700;
       }
+      .release-status {
+        color: var(--muted);
+      }
+      .release-status a {
+        color: var(--brand);
+        font-weight: 700;
+      }
       .filter-summary {
         min-height: 1.2rem;
         color: var(--muted);
@@ -254,7 +265,8 @@
     <main>
       <header>
         <div>
-          <h1>Dashboard</h1>
+          <h1 data-i18n="title">Dashboard</h1>
+          <div class="header-meta" id="generated"></div>
         </div>
         <a class="brand-mark" href="https://vanityURLs.link" target="_blank" rel="noreferrer" aria-label="VanityURLs">
           <img src="/logo.svg" alt="VanityURLs" />
@@ -269,21 +281,23 @@
       <table>
         <thead>
           <tr>
-            <th class="slug-cell">Slug</th>
-            <th class="state-cell">State</th>
-            <th class="title-cell">Title</th>
-            <th class="target-cell">Target</th>
-            <th class="owner-cell">Owner</th>
-            <th class="tags-cell">Tags</th>
-            <th class="expires-cell">Expires</th>
+            <th class="slug-cell" data-i18n="columns.slug">Slug</th>
+            <th class="state-cell" data-i18n="columns.state">State</th>
+            <th class="title-cell" data-i18n="columns.title">Title</th>
+            <th class="target-cell" data-i18n="columns.target">Target</th>
+            <th class="owner-cell" data-i18n="columns.owner">Owner</th>
+            <th class="tags-cell" data-i18n="columns.tags">Tags</th>
+            <th class="expires-cell" data-i18n="columns.expires">Expires</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
 
       <footer>
-        <span id="generated"></span>
-        <a class="download-link" href="/_stats/api/v8s.json" download="v8s.json">Download v8s.json</a>
+        <span class="release-status" id="release-status"></span>
+        <a class="download-link" href="/_stats/api/v8s.json" download="v8s.json" data-i18n="download"
+          >Download v8s.json</a
+        >
       </footer>
     </main>
 
@@ -293,20 +307,217 @@
       const searchEl = document.getElementById("search");
       const filterSummaryEl = document.getElementById("filter-summary");
       const generatedEl = document.getElementById("generated");
+      const releaseStatusEl = document.getElementById("release-status");
+      const locale = document.documentElement.lang || "en";
+      const messages = {
+        en: {
+          title: "Dashboard",
+          searchPlaceholder: "Search path, target, title, description, owner, tags…",
+          loadError: "Failed to load registry",
+          download: "Download v8s.json",
+          noMatches: "No matching routes.",
+          generatedFallback: "Generated date unavailable",
+          generatedPrefix: "Generated",
+          commit: "commit",
+          matchingRoutes: "matching route",
+          matchingRoutesPlural: "matching routes",
+          where: "where",
+          search: "search",
+          state: "state",
+          and: "and",
+          or: "or",
+          release: "vanityURLs release",
+          releaseUnknown: "vanityURLs release unavailable",
+          newRelease: "new release available",
+          columns: {
+            slug: "Slug",
+            state: "State",
+            title: "Title",
+            target: "Target",
+            owner: "Owner",
+            tags: "Tags",
+            expires: "Expires"
+          },
+          states: {
+            total: "Total",
+            permanent: "Permanent",
+            ephemeral: "Ephemeral",
+            expired: "Expired",
+            disabled: "Disabled",
+            maintenance: "Maintenance",
+            deactivated: "Deactivated"
+          }
+        },
+        fr: {
+          title: "Tableau de bord",
+          searchPlaceholder: "Rechercher chemin, cible, titre, description, responsable, étiquettes…",
+          loadError: "Impossible de charger le registre",
+          download: "Télécharger v8s.json",
+          noMatches: "Aucune route correspondante.",
+          generatedFallback: "Date de génération indisponible",
+          generatedPrefix: "Généré",
+          commit: "commit",
+          matchingRoutes: "route correspondante",
+          matchingRoutesPlural: "routes correspondantes",
+          where: "où",
+          search: "recherche",
+          state: "état",
+          and: "et",
+          or: "ou",
+          release: "version vanityURLs",
+          releaseUnknown: "version vanityURLs indisponible",
+          newRelease: "nouvelle version disponible",
+          columns: {
+            slug: "Slug",
+            state: "État",
+            title: "Titre",
+            target: "Cible",
+            owner: "Responsable",
+            tags: "Étiquettes",
+            expires: "Expiration"
+          },
+          states: {
+            total: "Total",
+            permanent: "Permanent",
+            ephemeral: "Éphémère",
+            expired: "Expiré",
+            disabled: "Désactivé",
+            maintenance: "Maintenance",
+            deactivated: "Désactivé"
+          }
+        },
+        es: {
+          title: "Panel",
+          searchPlaceholder: "Buscar ruta, destino, título, descripción, responsable, etiquetas…",
+          loadError: "No se pudo cargar el registro",
+          download: "Descargar v8s.json",
+          noMatches: "No hay rutas coincidentes.",
+          generatedFallback: "Fecha de generación no disponible",
+          generatedPrefix: "Generado",
+          commit: "commit",
+          matchingRoutes: "ruta coincidente",
+          matchingRoutesPlural: "rutas coincidentes",
+          where: "donde",
+          search: "búsqueda",
+          state: "estado",
+          and: "y",
+          or: "o",
+          release: "versión vanityURLs",
+          releaseUnknown: "versión vanityURLs no disponible",
+          newRelease: "nueva versión disponible",
+          columns: {
+            slug: "Slug",
+            state: "Estado",
+            title: "Título",
+            target: "Destino",
+            owner: "Responsable",
+            tags: "Etiquetas",
+            expires: "Caduca"
+          },
+          states: {
+            total: "Total",
+            permanent: "Permanente",
+            ephemeral: "Efímero",
+            expired: "Caducado",
+            disabled: "Desactivado",
+            maintenance: "Mantenimiento",
+            deactivated: "Desactivado"
+          }
+        },
+        it: {
+          title: "Dashboard",
+          searchPlaceholder: "Cerca percorso, destinazione, titolo, descrizione, proprietario, tag…",
+          loadError: "Impossibile caricare il registro",
+          download: "Scarica v8s.json",
+          noMatches: "Nessuna rotta corrispondente.",
+          generatedFallback: "Data di generazione non disponibile",
+          generatedPrefix: "Generato",
+          commit: "commit",
+          matchingRoutes: "rotta corrispondente",
+          matchingRoutesPlural: "rotte corrispondenti",
+          where: "dove",
+          search: "ricerca",
+          state: "stato",
+          and: "e",
+          or: "o",
+          release: "versione vanityURLs",
+          releaseUnknown: "versione vanityURLs non disponibile",
+          newRelease: "nuova versione disponibile",
+          columns: {
+            slug: "Slug",
+            state: "Stato",
+            title: "Titolo",
+            target: "Destinazione",
+            owner: "Proprietario",
+            tags: "Tag",
+            expires: "Scade"
+          },
+          states: {
+            total: "Totale",
+            permanent: "Permanente",
+            ephemeral: "Effimero",
+            expired: "Scaduto",
+            disabled: "Disattivato",
+            maintenance: "Manutenzione",
+            deactivated: "Disattivato"
+          }
+        },
+        de: {
+          title: "Dashboard",
+          searchPlaceholder: "Pfad, Ziel, Titel, Beschreibung, Besitzer, Tags suchen…",
+          loadError: "Registry konnte nicht geladen werden",
+          download: "v8s.json herunterladen",
+          noMatches: "Keine passenden Routen.",
+          generatedFallback: "Erstellungsdatum nicht verfügbar",
+          generatedPrefix: "Generiert",
+          commit: "Commit",
+          matchingRoutes: "passende Route",
+          matchingRoutesPlural: "passende Routen",
+          where: "mit",
+          search: "Suche",
+          state: "Status",
+          and: "und",
+          or: "oder",
+          release: "vanityURLs-Version",
+          releaseUnknown: "vanityURLs-Version nicht verfügbar",
+          newRelease: "neue Version verfügbar",
+          columns: {
+            slug: "Slug",
+            state: "Status",
+            title: "Titel",
+            target: "Ziel",
+            owner: "Besitzer",
+            tags: "Tags",
+            expires: "Läuft ab"
+          },
+          states: {
+            total: "Gesamt",
+            permanent: "Permanent",
+            ephemeral: "Ephemer",
+            expired: "Abgelaufen",
+            disabled: "Deaktiviert",
+            maintenance: "Wartung",
+            deactivated: "Deaktiviert"
+          }
+        }
+      };
+      const msg = messages[locale] || messages.en;
 
       let allLinks = [];
       let registry = null;
       const activeStates = new Set();
 
       main().catch((error) => {
-        rowsEl.innerHTML = `<tr><td colspan="7">Failed to load registry: ${escapeHtml(error.message)}</td></tr>`;
+        rowsEl.innerHTML = `<tr><td colspan="7">${escapeHtml(msg.loadError)}: ${escapeHtml(error.message)}</td></tr>`;
       });
 
       async function main() {
+        applyTranslations();
         const response = await fetch("/_stats/api/v8s.json", { cache: "no-store" });
         registry = await response.json();
         allLinks = flattenRegistry(registry);
-        generatedEl.innerHTML = renderGeneratedFooter(registry);
+        generatedEl.innerHTML = renderGeneratedLine(registry);
+        renderReleaseStatus();
         renderMetrics(allLinks);
         applyFilters();
       }
@@ -396,7 +607,7 @@
         metricsEl.innerHTML = items
           .map(
             (key) => `
-        <button class="card" type="button" data-filter-state="${escapeAttr(key)}" aria-pressed="${key !== "total" && activeStates.has(key) ? "true" : "false"}" title="${key === "total" ? "Clear filters" : `Filter by ${label(key)}`}">
+        <button class="card" type="button" data-filter-state="${escapeAttr(key)}" aria-pressed="${key !== "total" && activeStates.has(key) ? "true" : "false"}" title="${key === "total" ? msg.states.total : msg.states[key]}">
           <div class="metric">${counts[key] || 0}</div>
           <div class="muted">${label(key)}</div>
         </button>
@@ -419,19 +630,19 @@
 
       function renderFilterSummary(count, query) {
         const filters = [];
-        if (query) filters.push(`search <strong>${escapeHtml(query)}</strong>`);
+        if (query) filters.push(`${msg.search} <strong>${escapeHtml(query)}</strong>`);
         if (activeStates.size) {
-          filters.push(`state <strong>${[...activeStates].map(label).join(" or ")}</strong>`);
+          filters.push(`${msg.state} <strong>${[...activeStates].map(label).join(` ${msg.or} `)}</strong>`);
         }
 
         filterSummaryEl.innerHTML = filters.length
-          ? `${count} matching route${count === 1 ? "" : "s"} where ${filters.join(" and ")}`
+          ? `${count} ${count === 1 ? msg.matchingRoutes : msg.matchingRoutesPlural} ${msg.where} ${filters.join(` ${msg.and} `)}`
           : "";
       }
 
       function renderRows(links) {
         if (!links.length) {
-          rowsEl.innerHTML = `<tr><td colspan="7" class="muted">No matching routes.</td></tr>`;
+          rowsEl.innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml(msg.noMatches)}</td></tr>`;
           return;
         }
 
@@ -441,7 +652,7 @@
             return `
           <tr>
             <td class="slug-cell"><code>/${escapeHtml(link.path)}</code></td>
-            <td class="state-cell"><span class="state ${stateClass(state)}">${escapeHtml(state)}</span></td>
+            <td class="state-cell"><span class="state ${stateClass(state)}">${escapeHtml(label(state))}</span></td>
             <td class="title-cell"><strong>${escapeHtml(link.title || "—")}</strong><br><span class="muted">${escapeHtml(link.description || "")}</span></td>
             <td class="target-cell"><a href="${escapeAttr(link.target)}" target="_blank" rel="noreferrer">${wrapLongText(link.target, 60)}</a></td>
             <td class="owner-cell">${escapeHtml(link.owner || "—")}</td>
@@ -454,17 +665,17 @@
       }
 
       function label(value) {
-        return value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+        return msg.states[value] || value.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
       }
 
-      function renderGeneratedFooter(registry) {
-        const generated = formatGeneratedFooter(registry?.generated_at, registry?.generated_timezone);
+      function renderGeneratedLine(registry) {
+        const generated = formatGeneratedLine(registry?.generated_at, registry?.generated_timezone);
         const commit = String(registry?.generated_git?.commit || "").trim();
         const commitUrl = String(registry?.generated_git?.commit_url || "").trim();
         if (!commit) return escapeHtml(generated);
 
         const shortCommit = commit.slice(0, 7);
-        const commitLabel = `commit ${shortCommit}`;
+        const commitLabel = `${msg.commit} ${shortCommit}`;
         const commitHtml = commitUrl
           ? `<a href="${escapeAttr(commitUrl)}" target="_blank" rel="noreferrer">${escapeHtml(commitLabel)}</a>`
           : escapeHtml(commitLabel);
@@ -472,25 +683,87 @@
         return `${escapeHtml(generated)} / ${commitHtml}`;
       }
 
-      function formatGeneratedFooter(value, timezone) {
-        if (!value) return "View of links";
+      function formatGeneratedLine(value, timezone) {
+        if (!value) return msg.generatedFallback;
 
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return "View of links";
+        if (Number.isNaN(date.getTime())) return msg.generatedFallback;
 
         const displayTimezone = validTimezone(timezone) ? timezone : undefined;
-        const formatted = date.toLocaleString(undefined, {
+        const formatted = date.toLocaleString(locale, {
           year: "numeric",
           month: "short",
           day: "numeric",
           hour: "numeric",
           minute: "2-digit",
-          second: "2-digit",
           timeZoneName: "short",
           ...(displayTimezone ? { timeZone: displayTimezone } : {})
         });
 
-        return `View of links, generated ${formatted}`;
+        return `${msg.generatedPrefix} ${formatted}`;
+      }
+
+      async function renderReleaseStatus() {
+        try {
+          const response = await fetch("/v8s-release-manifest.json", { cache: "no-store" });
+          if (!response.ok) throw new Error("release manifest unavailable");
+          const releaseManifest = await response.json();
+          const version = String(releaseManifest?.package?.version || "").trim();
+          if (!version) throw new Error("release version unavailable");
+          releaseStatusEl.innerHTML = `${escapeHtml(msg.release)} ${escapeHtml(version)}`;
+          checkLatestRelease(version);
+        } catch {
+          releaseStatusEl.textContent = msg.releaseUnknown;
+        }
+      }
+
+      async function checkLatestRelease(currentVersion) {
+        try {
+          const response = await fetch("https://api.github.com/repos/vanityURLs/code/releases/latest", {
+            headers: { accept: "application/vnd.github+json" }
+          });
+          if (!response.ok) return;
+          const latest = await response.json();
+          const latestVersion = String(latest?.tag_name || latest?.name || "").replace(/^v/i, "");
+          if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) return;
+          const htmlUrl = String(latest?.html_url || "https://github.com/vanityURLs/code/releases/latest");
+          releaseStatusEl.innerHTML += ` · <a href="${escapeAttr(htmlUrl)}" target="_blank" rel="noreferrer">${escapeHtml(msg.newRelease)} ${escapeHtml(latestVersion)}</a>`;
+        } catch {
+          // Release checks are helpful, not required for dashboard operation.
+        }
+      }
+
+      function isNewerVersion(latest, current) {
+        const latestParts = semverParts(latest);
+        const currentParts = semverParts(current);
+        for (let index = 0; index < Math.max(latestParts.length, currentParts.length); index += 1) {
+          const left = latestParts[index] || 0;
+          const right = currentParts[index] || 0;
+          if (left !== right) return left > right;
+        }
+        return false;
+      }
+
+      function semverParts(value) {
+        return String(value)
+          .split(/[.-]/)
+          .map((part) => Number.parseInt(part, 10))
+          .filter((part) => Number.isFinite(part));
+      }
+
+      function applyTranslations() {
+        document.title = msg.title;
+        searchEl.placeholder = msg.searchPlaceholder;
+        for (const element of document.querySelectorAll("[data-i18n]")) {
+          const value = lookupMessage(element.dataset.i18n);
+          if (value) element.textContent = value;
+        }
+      }
+
+      function lookupMessage(path) {
+        return String(path || "")
+          .split(".")
+          .reduce((value, key) => value?.[key], msg);
       }
 
       function wrapLongText(value, size = 60) {
