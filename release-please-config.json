@@ -3,8 +3,30 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "changelog-path": "CHANGELOG.txt",
-      "include-component-in-tag": false
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false,
+      "bump-map": {
+        "docs": "patch",
+        "style": "patch",
+        "refactor": "patch",
+        "test": "patch",
+        "build": "patch",
+        "ci": "patch",
+        "chore": "patch"
+      },
+      "changelog-sections": [
+        { "type": "feat", "section": "✨ Features", "hidden": false },
+        { "type": "fix", "section": "🐛 Bug Fixes", "hidden": false },
+        { "type": "docs", "section": "📚 Documentation", "hidden": false },
+        { "type": "style", "section": "🎨 Styles/Formatting", "hidden": false },
+        { "type": "refactor", "section": "🔧 Code Refactoring", "hidden": false },
+        { "type": "perf", "section": "⚡ Performance Improvements", "hidden": false },
+        { "type": "test", "section": "🧪 Tests", "hidden": false },
+        { "type": "build", "section": "🏗️ Build System", "hidden": false },
+        { "type": "ci", "section": "💚 Continuous Integration", "hidden": false },
+        { "type": "chore", "section": "🧹 Chores", "hidden": false },
+        { "type": "revert", "section": "⏪ Reverts", "hidden": false }
+      ]
     }
   }
 }
