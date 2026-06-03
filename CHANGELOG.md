@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.1.4](https://github.com/vanityURLs/code/compare/v3.1.3...v3.1.4) (2026-06-03)
+
+
+### 🐛 Bug Fixes
+
+* include prettier ignore in updates ([b7fa97d](https://github.com/vanityURLs/code/commit/b7fa97d478cb2d52ab010e5f70ea2e53cafb62af))
+
+
+### 💚 Continuous Integration
+
+* ignore release changelog formatting ([9a8ad63](https://github.com/vanityURLs/code/commit/9a8ad638da8b801ce0df0119835172e50be49751))
+
 ## [3.1.3](https://github.com/vanityURLs/code/compare/v3.1.2...v3.1.3) (2026-06-03)
 
 
