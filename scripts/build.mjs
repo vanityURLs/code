@@ -818,13 +818,13 @@ function renderTestsPanel(language, siteConfig) {
     name: language,
     pagesTitle: "Pages",
     statusTitle: "Status Pages",
-    expandSlug: "expand",
+    lookupSlug: "lookup",
     links: LANGUAGE_METADATA.en.links
   };
   const prefix = language === "en" ? "" : `/${language}`;
   const extension = language === "en" ? "" : ".html";
   const indexHref = language === "en" ? "/" : `${prefix}/index.html`;
-  const expandHref = language === "en" ? "/expand" : `${prefix}/${encodePathSegment(metadata.expandSlug || "expand")}`;
+  const lookupHref = language === "en" ? "/lookup" : `${prefix}/${encodePathSegment(metadata.lookupSlug || "lookup")}`;
   const statsHref = `${prefix || "/en"}/_stats/`;
   const legalContent = LEGAL_DATA.content?.[language] || {};
   const enabledPolicySlugs = new Set(legalPageSlugs(siteConfig));
@@ -836,7 +836,7 @@ function renderTestsPanel(language, siteConfig) {
   ].filter(([slug]) => enabledPolicySlugs.has(slug) && Boolean(legalContent[slug]));
   const pageLinks = [
     renderTestsLink(indexHref, metadata.links.index, { themeControls: true }),
-    renderTestsLink(expandHref, metadata.links.expand, { themeControls: true }),
+    renderTestsLink(lookupHref, metadata.links.lookup, { themeControls: true }),
     renderTestsLink(statsHref, metadata.links.stats, { themeControls: true }),
     ...policyLinks.map(([slug, label]) => {
       const hrefSlug = language === "en" && slug === "abuse" ? "trust-safety" : slug;
@@ -1007,7 +1007,7 @@ function syncHomeRegistry() {
     return;
   }
 
-  const homeRegistryPath = expandLocalPath(localConfig?.registry?.local_path || "~/.v8s.json");
+  const homeRegistryPath = resolveLocalPath(localConfig?.registry?.local_path || "~/.v8s.json");
 
   try {
     fs.mkdirSync(path.dirname(homeRegistryPath), { recursive: true });
@@ -1032,7 +1032,7 @@ function loadLocalConfig() {
   return readJsonFile(LOCAL_CONFIG_PATH);
 }
 
-function expandLocalPath(value) {
+function resolveLocalPath(value) {
   const fallbackXdgConfig = path.join(process.env.HOME || "", ".config");
   return String(value || "")
     .replace(/^~(?=$|\/)/, process.env.HOME || "")

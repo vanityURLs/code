@@ -7,6 +7,6 @@ Allow: /llms-full.txt
 Disallow: /en/_stats/
 Disallow: /*/_stats/
 Disallow: /_tests/
-Disallow: /expand/
+Disallow: /lookup/
 
 # VanityURLs instances are redirect engines, not public content sites

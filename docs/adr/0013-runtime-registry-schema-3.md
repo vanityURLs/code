@@ -7,7 +7,7 @@ Status: Accepted
 ## Context
 
 The generated runtime registry is deployed as `build/v8s.json`. Earlier 2.x builds exposed the redirect inventory as a
-flat `links[]` array. That shape is simple, but every runtime lookup has to scan the array, and future admin or expand
+flat `links[]` array. That shape is simple, but every runtime lookup has to scan the array, and future admin or lookup
 surfaces need a nested representation of aliases.
 
 An unused validator already described a schema `3.0` shape with a `tree` object. The generator, active validator,

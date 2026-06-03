@@ -74,7 +74,7 @@ const assets = {
   "/fr/terms.html": html("<main>conditions fr</main>"),
   "/fr/abuse.html": html("<main>abus fr</main>"),
   "/fr/security.html": html("<main>securite fr</main>"),
-  "/fr/expand/index.html": html("<main>expand fr</main>"),
+  "/fr/lookup/index.html": html("<main>lookup fr</main>"),
   "/disabled.html": html("<main>disabled</main>"),
   "/expired.html": html("<main>expired</main>"),
   "/maintenance.html": html("<main>maintenance</main>"),
@@ -127,7 +127,7 @@ for (const language of ["es", "it", "de"]) {
     [`/${language}/terms.html`]: html(`<main>terms ${language}</main>`),
     [`/${language}/abuse.html`]: html(`<main>abuse ${language}</main>`),
     [`/${language}/security.html`]: html(`<main>security ${language}</main>`),
-    [`/${language}/expand/index.html`]: html(`<main>expand ${language}</main>`),
+    [`/${language}/lookup/index.html`]: html(`<main>lookup ${language}</main>`),
     [`/${language}/disabled.html`]: html(`<main>disabled ${language}</main>`),
     [`/${language}/expired.html`]: html(`<main>expired ${language}</main>`),
     [`/${language}/maintenance.html`]: html(`<main>maintenance ${language}</main>`),
@@ -328,13 +328,13 @@ await run("serves homepage from static assets", async () => {
   assert(!("data" in analyticsCalls[0].body.payload), "regular pageview has no event data");
 });
 
-await run("serves localized policy and expand pages from Accept-Language", async () => {
+await run("serves localized policy and lookup pages from Accept-Language", async () => {
   for (const [path, expected] of [
     ["/privacy", "confidentialite fr"],
     ["/terms", "conditions fr"],
     ["/abuse", "abus fr"],
     ["/security", "securite fr"],
-    ["/expand", "expand fr"]
+    ["/lookup", "lookup fr"]
   ]) {
     const ctx = mockCtx();
     const response = await worker.fetch(request(path), env(), ctx);
@@ -345,16 +345,16 @@ await run("serves localized policy and expand pages from Accept-Language", async
   }
 });
 
-await run("serves localized expand aliases", async () => {
+await run("serves localized lookup aliases", async () => {
   for (const [path, expected] of [
-    ["/fr/deplier", "expand fr"],
-    ["/es/expandir", "expand es"],
-    ["/it/espandi", "expand it"],
-    ["/de/erweitern", "expand de"]
+    ["/fr/consultation", "lookup fr"],
+    ["/es/consulta", "lookup es"],
+    ["/it/consulta", "lookup it"],
+    ["/de/abfrage", "lookup de"]
   ]) {
     const response = await worker.fetch(request(path), env(), mockCtx());
     assert(response.status === 200, `${path} status`);
-    assert((await response.text()).includes(expected), `${path} localized expand body`);
+    assert((await response.text()).includes(expected), `${path} localized lookup body`);
   }
 });
 
@@ -633,10 +633,10 @@ await run("summarizes redirects through stats API", async () => {
   assert(body.dynamic === 1, "dynamic count");
 });
 
-await run("tracks expand preview lookups", async () => {
+await run("tracks lookup requests", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(
-    jsonRequest("/_analytics/expand", {
+    jsonRequest("/_analytics/lookup", {
       slug: "test",
       state: "permanent",
       target: "https://example.com/test",
@@ -648,16 +648,16 @@ await run("tracks expand preview lookups", async () => {
   await ctx.flush();
   assert(response.status === 204, "status");
   assert(analyticsCalls.length === 1, "analytics count");
-  assert(analyticsCalls[0].body.payload.name === "expand", "event name");
+  assert(analyticsCalls[0].body.payload.name === "lookup", "event name");
   assert(analyticsCalls[0].body.payload.data.slug === "test", "slug");
   assert(analyticsCalls[0].body.payload.data.effective_state === "permanent", "state");
   assert(analyticsCalls[0].body.payload.data.target_host === "example.com", "target host");
-  assert(analyticsCalls[0].body.payload.data.expand_result === "resolved", "result");
+  assert(analyticsCalls[0].body.payload.data.lookup_result === "resolved", "result");
 });
 
-await run("rejects non-POST expand analytics requests", async () => {
+await run("rejects non-POST lookup analytics requests", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_analytics/expand"), env(), ctx);
+  const response = await worker.fetch(request("/_analytics/lookup"), env(), ctx);
   await ctx.flush();
   assert(response.status === 405, "status");
   assert(analyticsCalls.length === 0, "no analytics");

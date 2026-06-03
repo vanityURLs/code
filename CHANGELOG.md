@@ -9,8 +9,7 @@
 - add QA theme checks ([4e48ed7](https://github.com/vanityURLs/code/commit/4e48ed71237be61139bf8a9c8f1602807c74552d))
 - add stats metric filters
   ([4405ae1](https://github.com/vanityURLs/code/commit/4405ae11dcbbb304b0d2c3ee4077903b2367ebdf))
-- clarify expand previews
-  ([527ecdf](https://github.com/vanityURLs/code/commit/527ecdfcade4226ddace6fb3f0f447f0748a0f6a))
+- clarify lookup pages ([527ecdf](https://github.com/vanityURLs/code/commit/527ecdfcade4226ddace6fb3f0f447f0748a0f6a))
 - **cli:** add fast link validation
   ([3455ea2](https://github.com/vanityURLs/code/commit/3455ea209527c0023f9e53269f32c3c8ddf708f2))
 - **cli:** add v8s-fix maintenance command
@@ -167,7 +166,7 @@
 
 - add trust safety defaults
   ([4e04a0c](https://github.com/vanityURLs/code/commit/4e04a0c974ce80ae9ac707d4d162eda2101482ba))
-- expand operator site config
+- add operator site config
   ([1cf399f](https://github.com/vanityURLs/code/commit/1cf399f5a898100c97bd36c4d7fc0558ee488183))
 - gate legal pages on operator config
   ([0fb6ce3](https://github.com/vanityURLs/code/commit/0fb6ce3ebd1d440c011bdf723184b479b49fd4f9))

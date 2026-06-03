@@ -39,10 +39,10 @@ const scenarios = paths.length
       { method: "GET", pathname: "/" },
       { method: "GET", pathname: `/${firstLink}` },
       { method: "GET", pathname: "/not-a-real-short-link" },
-      { method: "GET", pathname: "/expand" },
+      { method: "GET", pathname: "/lookup" },
       {
         method: "POST",
-        pathname: "/_analytics/expand",
+        pathname: "/_analytics/lookup",
         body: {
           slug: firstLink,
           result: "resolved",

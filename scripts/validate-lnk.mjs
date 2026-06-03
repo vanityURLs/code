@@ -12,7 +12,7 @@ const targetRedirectStates = new Set(["permanent", "ephemeral"]);
 const reservedTopLevel = new Set([
   "_stats",
   "assets",
-  "expand",
+  "lookup",
   "404",
   "404.html",
   "v8s.json",

@@ -40,7 +40,7 @@ fs.writeFileSync(
   linksPath,
   [
     "# slug|target|state|title|description|tags|owner|expires_at|notes",
-    "déplier|https://example.com/docs|permanent|Docs|Docs home|docs|team||",
+    "résumé|https://example.com/docs|permanent|Docs|Docs home|docs|team||",
     ""
   ].join("\n")
 );
