@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="fr-CA">
+<html lang="de">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Consultation d'un lien court | VanityURLs</title>
-    <meta name="description" content="Voir la destination d'un lien court VanityURLs avant de l'ouvrir" />
+    <title>Kurzlink erweitern | VanityURLs</title>
+    <meta name="description" content="Zeige das Ziel eines VanityURLs-Kurzlinks an, bevor du ihn öffnest" />
     <meta name="robots" content="noindex,nofollow" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/style.css?v=20260601" />
     <style>
-      .lookup-result {
+      .expand-result {
         display: none;
         width: min(100%, 620px);
         border: 1px solid var(--border);
@@ -21,11 +21,11 @@
         text-align: left;
       }
 
-      .lookup-result.is-visible {
+      .expand-result.is-visible {
         display: block;
       }
 
-      .lookup-label {
+      .expand-label {
         margin: 0 0 8px;
         color: var(--muted);
         font-size: 0.82rem;
@@ -34,7 +34,7 @@
         text-transform: uppercase;
       }
 
-      .lookup-target {
+      .expand-target {
         margin: 0;
         overflow-wrap: anywhere;
         color: var(--text);
@@ -42,7 +42,7 @@
         line-height: 1.55;
       }
 
-      .lookup-target a {
+      .expand-target a {
         color: var(--brand);
         font-weight: 650;
         text-decoration: underline;
@@ -50,7 +50,7 @@
         text-underline-offset: 3px;
       }
 
-      .lookup-meta {
+      .expand-meta {
         margin: 12px 0 0;
         color: var(--muted);
         font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -66,24 +66,24 @@
           <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
         </a>
 
-        <form class="redirect-form" id="lookupForm">
-          <label class="sr-only" for="lookupKey">Lien court</label>
+        <form class="redirect-form" id="expandForm">
+          <label class="sr-only" for="expandKey">Kurzlink</label>
           <div class="search-box">
             <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="m21 21-4.35-4.35m1.1-5.15a6.25 6.25 0 1 1-12.5 0 6.25 6.25 0 0 1 12.5 0Z" />
             </svg>
             <input
-              id="lookupKey"
+              id="expandKey"
               type="text"
               maxlength="99"
               autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
               inputmode="url"
-              placeholder="Saisir un lien court pour voir sa destination"
+              placeholder="Kurzlink eingeben, um sein Ziel anzuzeigen"
               required
             />
-            <button type="submit" aria-label="Voir la destination">
+            <button type="submit" aria-label="Kurzlink erweitern">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M5 12h12M13 6l6 6-6 6" />
               </svg>
@@ -91,7 +91,7 @@
           </div>
         </form>
 
-        <div class="lookup-result" id="lookupResult" aria-live="polite"></div>
+        <div class="expand-result" id="expandResult" aria-live="polite"></div>
 
         <a
           class="redirected-badge"
@@ -101,31 +101,24 @@
           aria-label="VanityURLs"
         >
           <picture>
-            <source srcset="/fr/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)" />
-            <img src="/fr/v8s-redirected.svg" alt="V8S redirigé par VanityURLs" />
+            <source srcset="/de/v8s-redirected-dark.svg" media="(prefers-color-scheme: dark)" />
+            <img src="/de/v8s-redirected.svg" alt="V8S weitergeleitet von VanityURLs" />
           </picture>
         </a>
-
-        <nav class="page-links" aria-label="Pages de l'instance">
-          <a href="/fr/privacy.html">Confidentialité</a>
-          <a href="/fr/terms.html">Conditions</a>
-          <a href="/fr/abuse.html">Confiance et sécurité</a>
-          <a href="/fr/security.html">Sécurité</a>
-        </nav>
       </section>
     </main>
 
     <script>
-      const form = document.getElementById("lookupForm");
-      const input = document.getElementById("lookupKey");
-      const result = document.getElementById("lookupResult");
+      const form = document.getElementById("expandForm");
+      const input = document.getElementById("expandKey");
+      const result = document.getElementById("expandResult");
       const labels = {
-        empty: "Saisissez un lien court pour voir sa destination",
-        miss: "Aucun lien court correspondant n'a été trouvé",
-        notRedirecting: "Ce lien court ne redirige pas actuellement",
-        error: "Impossible de charger les données des liens courts",
-        preview: "Aperçu",
-        destination: "Destination du lien"
+        empty: "Gib einen Kurzlink ein, um sein Ziel anzuzeigen",
+        miss: "Es wurde kein passender Kurzlink gefunden",
+        notRedirecting: "Dieser Kurzlink leitet derzeit nicht weiter",
+        error: "Kurzlink-Daten konnten nicht geladen werden",
+        preview: "Vorschau",
+        destination: "Linkziel"
       };
 
       let registryPromise = null;
@@ -148,7 +141,7 @@
 
           if (!resolved) {
             renderMessage(labels.miss);
-            trackLookup(slug, "", "", "miss");
+            trackExpand(slug, "", "", "miss");
             return;
           }
 
@@ -156,15 +149,15 @@
           const target = resolveTarget(registry.routing?.[state], resolved.link, resolved.splat);
           if (!target) {
             renderMessage(labels.notRedirecting);
-            trackLookup(slug, state, "", "not-redirecting");
+            trackExpand(slug, state, "", "not-redirecting");
             return;
           }
 
           renderTarget(slug, target, state);
-          trackLookup(slug, state, target, "resolved");
+          trackExpand(slug, state, target, "resolved");
         } catch {
           renderMessage(labels.error);
-          trackLookup(slug, "", "", "error");
+          trackExpand(slug, "", "", "error");
         }
       });
 
@@ -242,30 +235,30 @@
       function renderMessage(message) {
         result.classList.add("is-visible");
         result.innerHTML = `
-        <p class="lookup-label">${escapeHtml(labels.preview)}</p>
-        <p class="lookup-target">${escapeHtml(message)}</p>
+        <p class="expand-label">${escapeHtml(labels.preview)}</p>
+        <p class="expand-target">${escapeHtml(message)}</p>
       `;
       }
 
       function renderTarget(slug, target, state) {
         result.classList.add("is-visible");
         result.innerHTML = `
-        <p class="lookup-label">${escapeHtml(labels.destination)}</p>
-        <p class="lookup-target"><a href="${escapeAttr(target)}" target="_blank" rel="noreferrer">${escapeHtml(target)}</a></p>
-        <p class="lookup-meta">/${escapeHtml(slug)} · ${escapeHtml(state)}</p>
+        <p class="expand-label">${escapeHtml(labels.destination)}</p>
+        <p class="expand-target"><a href="${escapeAttr(target)}" target="_blank" rel="noreferrer">${escapeHtml(target)}</a></p>
+        <p class="expand-meta">/${escapeHtml(slug)} · ${escapeHtml(state)}</p>
       `;
       }
 
-      function trackLookup(slug, state, target, result) {
+      function trackExpand(slug, state, target, result) {
         const body = JSON.stringify({ slug, state, target, result });
 
         if (navigator.sendBeacon) {
           const blob = new Blob([body], { type: "application/json" });
-          navigator.sendBeacon("/_analytics/lookup", blob);
+          navigator.sendBeacon("/_analytics/expand", blob);
           return;
         }
 
-        fetch("/_analytics/lookup", {
+        fetch("/_analytics/expand", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body,

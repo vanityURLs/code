@@ -38,8 +38,8 @@ async function handleRequest(context) {
   const slug = normalizeSlug(url.pathname);
   const correlationId = crypto.randomUUID();
 
-  if (slug === "_analytics/lookup") {
-    return handleLookupAnalytics(request, env, ctx, correlationId);
+  if (slug === "_analytics/expand") {
+    return handleExpandAnalytics(request, env, ctx, correlationId);
   }
 
   if (slug === "security.txt") {
@@ -95,9 +95,9 @@ async function handleRequest(context) {
     return renderScannerProbe404(scannerProbe);
   }
 
-  const lookupAssetPath = lookupPageAssetPath(slug);
-  if (lookupAssetPath) {
-    return renderAsset(request, env, lookupAssetPath, 200, ctx);
+  const expandAssetPath = expandPageAssetPath(slug);
+  if (expandAssetPath) {
+    return renderAsset(request, env, expandAssetPath, 200, ctx);
   }
 
   if (slug === "") {
@@ -267,21 +267,21 @@ function normalizeSlug(pathname) {
 function shouldBypassToAssets(slug) {
   if (slug === "") return true;
 
-  if (slug === "lookup" || slug.startsWith("lookup/")) return true;
+  if (slug === "expand" || slug.startsWith("expand/")) return true;
 
   if (isPrivateRuntimeAsset(slug)) return false;
 
   return ASSET_EXT_RE.test(slug);
 }
 
-function lookupPageAssetPath(slug) {
-  if (slug === "lookup") return "/lookup/index.html";
+function expandPageAssetPath(slug) {
+  if (slug === "expand") return "/expand/index.html";
 
   const [language, alias, ...rest] = slug.split("/");
   if (rest.length || !LOCALIZED_HTML_LANGUAGES.includes(language)) return "";
 
-  const aliases = localizedLookupAliases[language] || [];
-  return aliases.includes(alias) ? `/${language}/lookup/index.html` : "";
+  const aliases = localizedExpandAliases[language] || [];
+  return aliases.includes(alias) ? `/${language}/expand/index.html` : "";
 }
 
 function statsPageAssetPath(slug) {
@@ -696,11 +696,11 @@ const staticPageAliases = new Map([
   ["trust-safety", "/abuse.html"]
 ]);
 
-const localizedLookupAliases = {
-  de: ["abfrage"],
-  es: ["consulta"],
-  fr: ["consultation"],
-  it: ["consulta"]
+const localizedExpandAliases = {
+  de: ["expand", "erweitern"],
+  es: ["expand", "expandir"],
+  fr: ["expand", "deplier"],
+  it: ["expand", "espandi"]
 };
 
 function hasStatePage(state) {
@@ -1162,7 +1162,7 @@ async function renderStatsRedirects(request, env) {
   });
 }
 
-async function handleLookupAnalytics(request, env, ctx, correlationId) {
+async function handleExpandAnalytics(request, env, ctx, correlationId) {
   if (request.method !== "POST") {
     return new Response("Method not allowed", {
       status: 405,
@@ -1189,12 +1189,12 @@ async function handleLookupAnalytics(request, env, ctx, correlationId) {
 
   ctx.waitUntil?.(
     logAnalyticsEvent(env, request, {
-      event: "lookup",
+      event: "expand",
       slug,
       correlation_id: correlationId,
       target_host: safeHostname(target),
       effective_state: state,
-      lookup_result: result
+      expand_result: result
     })
   );
 
@@ -1373,7 +1373,7 @@ function analyticsEventData(event) {
     effective_state: event.data.effective_state || "",
     schedule_label: event.data.schedule_label || "",
     redirect_error: event.data.redirect_error || "",
-    lookup_result: event.data.lookup_result || "",
+    expand_result: event.data.expand_result || "",
     status: String(event.data.status || ""),
     country: event.country,
     colo: event.colo,

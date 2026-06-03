@@ -100,12 +100,12 @@ function assertLinkedSlogan(html) {
   const indexHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "index.html"), "utf8");
   assertLinkedSlogan(indexHtml);
 
-  const lookupHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "lookup", "index.html"), "utf8");
-  assertLinkedSlogan(lookupHtml);
+  const expandHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "expand", "index.html"), "utf8");
+  assertLinkedSlogan(expandHtml);
 
   execFileSync(
     path.join(fixture, "node_modules", ".bin", process.platform === "win32" ? "prettier.cmd" : "prettier"),
-    ["--check", "custom/public/en/privacy.html", "custom/public/en/index.html", "custom/public/en/lookup/index.html"],
+    ["--check", "custom/public/en/privacy.html", "custom/public/en/index.html", "custom/public/en/expand/index.html"],
     {
       cwd: fixture,
       stdio: "pipe"

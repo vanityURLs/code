@@ -149,7 +149,7 @@ function shouldBypassToAssets(slug) {
   if (slug === "") return true;
 
   if (slug === "_stats" || slug.startsWith("_stats/")) return true;
-  if (slug === "lookup" || slug.startsWith("lookup/")) return true;
+  if (slug === "expand" || slug.startsWith("expand/")) return true;
 
   if (slug === "v8s.json" || slug === "v8s-blocklist.json" || slug === "v8s-site-config.json") return false;
 

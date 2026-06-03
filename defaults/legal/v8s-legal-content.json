@@ -84,7 +84,7 @@
           ],
           [
             "Analytics pipeline",
-            "When server-side analytics is enabled, the Worker forwards one event per redirect and one event per use of the /lookup pages to the configured provider. No event is forwarded when analytics is not configured."
+            "When server-side analytics is enabled, the Worker forwards one event per redirect and one event per use of the /expand preview pages to the configured provider. No event is forwarded when analytics is not configured."
           ],
           [
             "Umami analytics",
@@ -96,8 +96,8 @@
             "Fathom is called server-side by the Worker. As a consequence, Fathom does not receive the visitor's IP address; it sees only the Cloudflare Worker's egress IP. The Worker forwards the request origin and path, an allowlist of campaign and common content query parameters, the Referer header, and the visitor's User-Agent as the outgoing HTTP request header. A fresh random number is generated per event in place of a stable visitor identifier."
           ],
           [
-            "/lookup pages",
-            "A visitor can use localized /lookup pages to see a short-link destination without being redirected. Lookup requests post a small JSON body to /_analytics/lookup containing the slug, effective-state label, result classification, and resolved target hostname. No personal information beyond what is already described above is added by this path."
+            "/expand preview pages",
+            "A visitor can use localized /expand preview pages to see a short-link destination without being redirected. Preview requests post a small JSON body to /_analytics/expand containing the slug, effective-state label, result classification, and resolved target hostname. No personal information beyond what is already described above is added by this path."
           ],
           [
             "Retention",
@@ -297,7 +297,7 @@
           ],
           [
             "Pipeline analytique",
-            "Lorsque l'analytique côté serveur est activée, le Worker transmet un événement par redirection et un événement par utilisation des pages de consultation au fournisseur configuré. Aucun événement n'est transmis lorsque l'analytique n'est pas configurée."
+            "Lorsque l'analytique côté serveur est activée, le Worker transmet un événement par redirection et un événement par utilisation des pages de prévisualisation /expand au fournisseur configuré. Aucun événement n'est transmis lorsque l'analytique n'est pas configurée."
           ],
           [
             "Analytique Umami",
@@ -309,8 +309,8 @@
             "Fathom est appelé côté serveur par le Worker. Par conséquent, Fathom ne reçoit pas l'adresse IP du visiteur; il voit seulement l'adresse IP de sortie du Worker Cloudflare. Le Worker transmet l'origine et le chemin de la requête, une liste autorisée de paramètres de campagne et de contenu courants, Referer et User-Agent comme en-tête HTTP sortant. Un nombre aléatoire frais est généré par événement à la place d'un identifiant visiteur stable."
           ],
           [
-            "Pages de consultation",
-            "Un visiteur peut utiliser les pages de consultation localisées pour voir la destination d'un lien court sans être redirigé. Les demandes de consultation publient un petit corps JSON vers /_analytics/lookup contenant le slug, l'état effectif, la classification du résultat et l'hôte cible résolu. Aucun renseignement personnel au-delà de ce qui est déjà décrit n'est ajouté par ce chemin."
+            "Pages de prévisualisation /expand",
+            "Un visiteur peut utiliser les pages /expand localisées pour voir la destination d'un lien court sans être redirigé. Les demandes de prévisualisation publient un petit corps JSON vers /_analytics/expand contenant le slug, l'état effectif, la classification du résultat et l'hôte cible résolu. Aucun renseignement personnel au-delà de ce qui est déjà décrit n'est ajouté par ce chemin."
           ],
           [
             "Conservation",
@@ -503,7 +503,7 @@
           ],
           [
             "Analítica",
-            "Cuando la analítica del lado servidor está habilitada, el Worker envía un evento por redirección y un evento por uso de las páginas /lookup al proveedor configurado. No se envía ningún evento cuando la analítica no está configurada."
+            "Cuando la analítica del lado servidor está habilitada, el Worker envía un evento por redirección y un evento por uso de las páginas /expand al proveedor configurado. No se envía ningún evento cuando la analítica no está configurada."
           ],
           [
             "Umami",
@@ -515,8 +515,8 @@
             "Fathom es llamado del lado servidor por el Worker. Por ello, Fathom no recibe la IP del visitante; ve la IP de salida del Worker de Cloudflare. El Worker reenvía origen y ruta, una lista permitida de parámetros de campaña y contenido, Referer y User-Agent. Se genera un número aleatorio nuevo por evento en lugar de un identificador estable."
           ],
           [
-            "Páginas /lookup",
-            "Las páginas /lookup localizadas permiten ver el destino de un enlace corto sin redirección. Las solicitudes de consulta envían a /_analytics/lookup un cuerpo JSON pequeño con slug, estado efectivo, clasificación del resultado y hostname de destino resuelto."
+            "Páginas /expand",
+            "Las páginas /expand localizadas permiten ver el destino de un enlace corto sin redirección. Las solicitudes de vista previa envían a /_analytics/expand un cuerpo JSON pequeño con slug, estado efectivo, clasificación del resultado y hostname de destino resuelto."
           ],
           [
             "Retención",
@@ -687,7 +687,7 @@
           ],
           [
             "Pipeline analytics",
-            "Quando l'analytics server-side è abilitata, il Worker invia un evento per reindirizzamento e un evento per uso delle pagine /lookup al provider configurato. Nessun evento è inviato quando l'analytics non è configurata."
+            "Quando l'analytics server-side è abilitata, il Worker invia un evento per reindirizzamento e un evento per uso delle pagine /expand al provider configurato. Nessun evento è inviato quando l'analytics non è configurata."
           ],
           [
             "Umami",
@@ -699,8 +699,8 @@
             "Fathom è chiamato server-side dal Worker. Di conseguenza, Fathom non riceve l'IP del visitatore; vede solo l'IP di uscita del Worker Cloudflare. Il Worker inoltra origine e percorso, una allowlist di parametri campagna e contenuto, Referer e User-Agent. Un numero casuale nuovo viene generato per evento al posto di un identificatore stabile."
           ],
           [
-            "Pagine /lookup",
-            "Le pagine /lookup localizzate permettono di vedere la destinazione di un link breve senza reindirizzamento. Le richieste di consultazione inviano a /_analytics/lookup un piccolo corpo JSON con slug, stato effettivo, classificazione del risultato e hostname di destinazione risolto."
+            "Pagine /expand",
+            "Le pagine /expand localizzate permettono di vedere la destinazione di un link breve senza reindirizzamento. Le richieste di anteprima inviano a /_analytics/expand un piccolo corpo JSON con slug, stato effettivo, classificazione del risultato e hostname di destinazione risolto."
           ],
           [
             "Conservazione",
@@ -871,7 +871,7 @@
           ],
           [
             "Analytics-Pipeline",
-            "Wenn serverseitige Analytics aktiviert ist, sendet der Worker ein Ereignis pro Weiterleitung und ein Ereignis pro Nutzung der /lookup-Seiten an den konfigurierten Anbieter. Ohne konfigurierte Analytics wird kein Ereignis gesendet."
+            "Wenn serverseitige Analytics aktiviert ist, sendet der Worker ein Ereignis pro Weiterleitung und ein Ereignis pro Nutzung der /expand-Vorschauseiten an den konfigurierten Anbieter. Ohne konfigurierte Analytics wird kein Ereignis gesendet."
           ],
           [
             "Umami",
@@ -883,8 +883,8 @@
             "Fathom wird serverseitig vom Worker aufgerufen. Daher erhält Fathom nicht die IP-Adresse des Besuchers, sondern nur die Egress-IP des Cloudflare Workers. Der Worker leitet Ursprung und Pfad, eine Allowlist von Kampagnen- und Inhaltsparametern, Referer und User-Agent weiter. Pro Ereignis wird eine neue Zufallszahl statt einer stabilen Besucherkennung erzeugt."
           ],
           [
-            "/lookup-Seiten",
-            "Lokalisierte /lookup-Seiten ermöglichen es, das Ziel eines Kurzlinks ohne Weiterleitung zu sehen. Abfragen senden einen kleinen JSON-Body an /_analytics/lookup mit Slug, effektivem Status, Ergebnis-Klassifizierung und aufgelöstem Ziel-Hostname."
+            "/expand-Vorschauseiten",
+            "Lokalisierte /expand-Seiten ermöglichen es, das Ziel eines Kurzlinks ohne Weiterleitung zu sehen. Vorschauanfragen senden einen kleinen JSON-Body an /_analytics/expand mit Slug, effektivem Status, Ergebnis-Klassifizierung und aufgelöstem Ziel-Hostname."
           ],
           [
             "Aufbewahrung",

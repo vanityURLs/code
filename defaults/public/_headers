@@ -20,7 +20,7 @@
   Cache-Control: no-store
   Content-Type: text/markdown; charset=utf-8
 
-/lookup/*
+/expand/*
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
 

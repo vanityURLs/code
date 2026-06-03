@@ -24,7 +24,7 @@ the code-repository activities close to the scripts and generated artifacts they
 - Confirm an unknown slug returns 404
 - Confirm disabled, expired, and maintenance states render the expected pages
 - Confirm a splat route preserves and encodes the remaining path
-- Confirm `/lookup` loads and can resolve a known link
+- Confirm `/expand` loads and can resolve a known link
 - Confirm direct access to `/v8s.json`, `/v8s-blocklist.json`, and `/v8s-site-config.json` returns 404
 - Confirm `/_stats` and `/_tests` require Cloudflare Access when access variables are configured
 - Confirm runtime smoke behavior with `npm run smoke` when analytics are configured

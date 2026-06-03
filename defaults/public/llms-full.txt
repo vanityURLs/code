@@ -10,7 +10,7 @@ The default public surface is intentionally small:
 
 - `/` provides a search-style short-link entry page
 - `/<slug>` resolves and redirects a short link
-- `/lookup/` shows the destination of an exact short link without opening it
+- `/expand/` previews the destination of an exact short link without opening it
 - `/404.html`, `/disabled.html`, `/expired.html`, and `/maintenance.html` provide default state pages
 - `/en/_stats/` and other localized `_stats` paths are read-only dashboards and should be protected with Cloudflare Access before publishing
 - `/_tests/` is a protected QA page for checking localized pages, machine-readable files, and light/dark rendering after template changes
@@ -44,7 +44,7 @@ The public pages use a consistent search-style VanityURLs layout:
 
 ## Trust And Safety Notes
 
-The `/lookup/` page is exact-match only. It does not list links, autocomplete entries, or automatically open destinations. This reduces its value for bulk discovery while still allowing a visitor to inspect a short-link destination before clicking.
+The `/expand/` page is exact-match only. It does not list links, autocomplete entries, or automatically open destinations. This reduces its value for bulk discovery while still allowing a visitor to preview a short-link destination before clicking.
 
 The runtime registry is private to the Worker runtime. Instance owners should not place secrets, private target URLs, personal data, or unpublished confidential destinations in the registry.
 
@@ -61,7 +61,7 @@ Use `npm run doctor` to detect stale copied public assets, stale copied product 
 ## Useful Files
 
 - [Short-link home](/): Default entry page
-- [Lookup a short link](/lookup/): Exact-match destination inspection
+- [Expand a short link](/expand/): Exact-match destination preview
 - [Not found page](/404.html): Missing or deactivated short links
 - [Disabled page](/disabled.html): Disabled short links
 - [Expired page](/expired.html): Expired short links

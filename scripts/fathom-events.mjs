@@ -1,4 +1,4 @@
-const DEFAULT_EVENTS = ["redirect", "short-link-miss", "lookup", "bot"];
+const DEFAULT_EVENTS = ["redirect", "short-link-miss", "expand", "bot"];
 const API_BASE = "https://api.usefathom.com/v1";
 
 const args = new Set(process.argv.slice(2));
