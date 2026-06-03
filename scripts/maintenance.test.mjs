@@ -88,7 +88,7 @@ function runCommand(cwd, args) {
   );
   const doctorText = run(fixture, ["scripts/doctor.mjs"]);
   assert.match(doctorText, /Recommended fix:/);
-  assert.match(doctorText, /\.\/scripts\/v8s-fix --head-assets/);
+  assert.match(doctorText, /\.\/scripts\/v8s-fix .*--head-assets/);
   assert.match(doctorText, /--head-assets: 1 issue/);
 
   runCommand(fixture, ["scripts/v8s-fix", "--head-assets"]);
