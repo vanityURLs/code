@@ -106,7 +106,7 @@ async function promptForMissing(args) {
     );
     args.configureLegalPages = await confirm(
       rl,
-      "Configure jurisdiction, privacy, terms, and security pages now?",
+      "Configure jurisdiction and related pages?",
       configuredOperator.legal_pages_enabled !== false && hasConfiguredLegalPages(configuredOperator)
     );
     args.operatorLegalName = await question(
