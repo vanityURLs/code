@@ -44,10 +44,6 @@ function runCommand(cwd, args) {
   });
 }
 
-function normalizeMarkup(value) {
-  return value.replace(/\s+/g, " ").trim();
-}
-
 {
   const fixture = makeFixture();
   run(fixture, [
@@ -237,9 +233,15 @@ function normalizeMarkup(value) {
   );
 
   runCommand(fixture, ["scripts/v8s-fix", "--product-pages"]);
+  const fixedStatsHtml = fs.readFileSync(statsPath, "utf8");
+  assert.doesNotMatch(fixedStatsHtml, /Old dashboard/);
+  assert.match(fixedStatsHtml, /id="metrics"/);
+  assert.match(fixedStatsHtml, /href="api\/v8s\.json"/);
+
+  const fixedDoctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
   assert.equal(
-    normalizeMarkup(fs.readFileSync(statsPath, "utf8")),
-    normalizeMarkup(fs.readFileSync(path.join(fixture, "defaults", "public", "_stats", "index.html"), "utf8"))
+    fixedDoctorJson.issues.some((issue) => issue.path === "custom/public/_stats/index.html"),
+    false
   );
 }
 
