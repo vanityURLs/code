@@ -121,8 +121,6 @@
         destination: "Destinazione del link"
       };
 
-      let registryPromise = null;
-
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -136,25 +134,23 @@
         }
 
         try {
-          const registry = await loadRegistry();
-          const resolved = resolveLink(registry.links || [], slug);
+          const lookup = await lookupSlug(slug);
 
-          if (!resolved) {
+          if (lookup.result === "miss") {
             renderMessage(labels.miss);
             trackLookup(slug, "", "", "miss");
             return;
           }
 
-          const state = effectiveState(resolved.link, registry);
-          const target = resolveTarget(registry.routing?.[state], resolved.link, resolved.splat);
-          if (!target) {
+          const state = lookup.state || "";
+          if (lookup.result !== "resolved" || !lookup.target) {
             renderMessage(labels.notRedirecting);
             trackLookup(slug, state, "", "not-redirecting");
             return;
           }
 
-          renderTarget(slug, target, state);
-          trackLookup(slug, state, target, "resolved");
+          renderTarget(slug, lookup.target, state);
+          trackLookup(slug, state, lookup.target, "resolved");
         } catch {
           renderMessage(labels.error);
           trackLookup(slug, "", "", "error");
@@ -190,46 +186,10 @@
           .slice(0, 99);
       }
 
-      async function loadRegistry() {
-        if (!registryPromise) {
-          registryPromise = fetch("/_stats/api/v8s.json", { cache: "no-store" }).then((response) => {
-            if (!response.ok) throw new Error("Unable to load registry");
-            return response.json();
-          });
-        }
-
-        return registryPromise;
-      }
-
-      function resolveLink(links, slug) {
-        const exact = links.find((link) => (link.match || "exact") === "exact" && link.slug === slug);
-        if (exact) return { link: exact, splat: "" };
-
-        const splats = links.filter((link) => link.match === "splat").sort((a, b) => b.slug.length - a.slug.length);
-
-        for (const link of splats) {
-          if (slug.startsWith(`${link.slug}/`)) {
-            return { link, splat: slug.slice(link.slug.length + 1) };
-          }
-        }
-
-        return null;
-      }
-
-      function effectiveState(link, registry) {
-        if (link.expires_at) {
-          const expiry = new Date(link.expires_at);
-          if (!Number.isNaN(expiry.getTime()) && expiry < new Date()) return "expired";
-        }
-
-        return link.state || registry.default_state || "permanent";
-      }
-
-      function resolveTarget(route, link, splat) {
-        if (!route || route.type !== "redirect" || route.target !== "link.target") return "";
-
-        const target = route.target === "link.target" ? link.target : route.target;
-        return splat ? target.replaceAll(":splat", splat) : target;
+      async function lookupSlug(slug) {
+        const response = await fetch("/_lookup?slug=" + encodeURIComponent(slug), { cache: "no-store" });
+        if (!response.ok) throw new Error("Unable to load lookup data");
+        return response.json();
       }
 
       function renderMessage(message) {

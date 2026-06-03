@@ -36,6 +36,18 @@ const registry = {
       description: "Docs redirect"
     },
     {
+      slug: "sab",
+      target: "https://example.com/sab",
+      state: "permanent",
+      description: "Simple lookup redirect"
+    },
+    {
+      slug: "d/gv",
+      target: "https://example.com/d/gv",
+      state: "permanent",
+      description: "Nested lookup redirect"
+    },
+    {
       slug: "off",
       target: "https://example.com/off",
       state: "disabled",
@@ -432,6 +444,34 @@ await run("blocks raw site config asset", async () => {
   assert(response.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
 });
 
+await run("resolves public lookup API for exact and nested slugs", async () => {
+  for (const [slug, expectedTarget] of [
+    ["sab", "https://example.com/sab"],
+    ["d/gv", "https://example.com/d/gv"],
+    ["docs/page-1", "https://example.com/docs/page-1"]
+  ]) {
+    const response = await worker.fetch(request(`/_lookup?slug=${encodeURIComponent(slug)}`), env(), mockCtx());
+    assert(response.status === 200, `${slug} status`);
+    assert(response.headers.get("x-robots-tag") === "noindex, nofollow", `${slug} robots header`);
+    const body = await response.json();
+    assert(body.result === "resolved", `${slug} result`);
+    assert(body.slug === slug, `${slug} body slug`);
+    assert(body.target === expectedTarget, `${slug} target`);
+  }
+});
+
+await run("returns public lookup API miss and non-redirecting results", async () => {
+  const miss = await worker.fetch(request("/_lookup?slug=missing"), env(), mockCtx());
+  assert(miss.status === 200, "miss status");
+  assert((await miss.json()).result === "miss", "miss result");
+
+  const disabled = await worker.fetch(request("/_lookup?slug=off"), env(), mockCtx());
+  assert(disabled.status === 200, "disabled status");
+  const body = await disabled.json();
+  assert(body.result === "not-redirecting", "disabled result");
+  assert(body.state === "disabled", "disabled state");
+});
+
 await run("redirects legacy security.txt to well-known security.txt", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/security.txt"), env(), ctx);
@@ -612,7 +652,7 @@ await run("exposes registry through stats API", async () => {
   );
   assert(response.status === 200, "status");
   assert(response.headers.get("content-disposition") === 'attachment; filename="v8s.json"', "download header");
-  assert((await response.json()).links.length === 4, "registry body");
+  assert((await response.json()).links.length === 6, "registry body");
 });
 
 await run("summarizes redirects through stats API", async () => {
@@ -628,8 +668,8 @@ await run("summarizes redirects through stats API", async () => {
   );
   const body = await response.json();
   assert(response.status === 200, "status");
-  assert(body.total === 4, "total links");
-  assert(body.static === 3, "static count");
+  assert(body.total === 6, "total links");
+  assert(body.static === 5, "static count");
   assert(body.dynamic === 1, "dynamic count");
 });
 

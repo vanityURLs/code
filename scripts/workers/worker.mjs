@@ -71,6 +71,10 @@ async function handleRequest(context) {
     return methodNotAllowedResponse();
   }
 
+  if (slug === "_lookup") {
+    return renderLookupResponse(request, env);
+  }
+
   const statsApiEndpoint = localizedStatsApiEndpoint(slug);
   if (statsApiEndpoint === "v8s.json") {
     return renderStatsRegistry(request, env);
@@ -332,6 +336,37 @@ async function loadRegistry(request, env) {
   }
 
   return response.json();
+}
+
+async function renderLookupResponse(request, env) {
+  const url = new URL(request.url);
+  const slug = normalizeSlug(`/${String(url.searchParams.get("slug") || "")}`).slice(0, 99);
+
+  const headers = {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+    "x-robots-tag": "noindex, nofollow"
+  };
+
+  if (!slug) {
+    return Response.json({ result: "miss", slug: "" }, { headers });
+  }
+
+  const registry = await loadRegistry(request, env);
+  const resolved = resolveRegistryLink(registry, slug);
+
+  if (!resolved) {
+    return Response.json({ result: "miss", slug }, { headers });
+  }
+
+  const state = getEffectiveState(resolved.link, registry);
+  const { target } = resolveTarget(registry.routing?.[state], resolved.link, request, resolved.splat, env);
+
+  if (!target) {
+    return Response.json({ result: "not-redirecting", slug, state }, { headers });
+  }
+
+  return Response.json({ result: "resolved", slug, state, target }, { headers });
 }
 
 async function findScannerProbe(request, env) {
@@ -1139,7 +1174,15 @@ async function renderStatsRedirects(request, env) {
 
   const missingDescriptions = all.filter((redirect) => !redirect.description);
   const dynamicRoutes = all.filter((redirect) => redirect.type === "dynamic");
-  const reservedPrefixes = ["/_stats", "/api", "/_worker", "/v8s.json", "/v8s-blocklist.json", "/v8s-site-config.json"];
+  const reservedPrefixes = [
+    "/_lookup",
+    "/_stats",
+    "/api",
+    "/_worker",
+    "/v8s.json",
+    "/v8s-blocklist.json",
+    "/v8s-site-config.json"
+  ];
   const reservedViolations = all.filter((redirect) => {
     return reservedPrefixes.some((prefix) => redirect.source.startsWith(prefix)) || redirect.source.includes("/_stats");
   });
