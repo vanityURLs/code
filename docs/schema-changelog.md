@@ -30,7 +30,8 @@ Added optional fields under `links`:
 
 Compatibility: additive, no `schema_version` bump
 
-Migration: none required. `lnk` reads missing values from `defaults/v8s-site-config.json`.
+Migration: none required. Build and CLI config loading merge `defaults/v8s-site-config.json` with
+`custom/v8s-site-config.json`, so missing link defaults are inherited from the product baseline.
 
 ### v8s-site-config.json
 

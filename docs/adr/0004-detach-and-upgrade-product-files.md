@@ -22,6 +22,14 @@ The default upgrade path includes product files such as `defaults/`, `scripts/`,
 `LICENSE`, `.npmrc`, and `.prettierignore`. It does not refresh `README.md`, because `npm run detach` replaces the
 upstream README with the operator-focused instance README.
 
+When the upgrade detects missing verification tooling or changed package dependency definitions, it runs `npm install`
+before validation. That keeps `node_modules/` aligned with refreshed `package.json` and `package-lock.json` before
+`npm run check`-level verification runs.
+
+Config defaults stay in `defaults/v8s-site-config.json`. Instance files in `custom/v8s-site-config.json` store only
+operator choices and overrides. Build-time config loading deep-merges default and custom sections so additive product
+defaults can reach existing instances without asking operators to rerun setup or rewrite local config files.
+
 ## Consequences
 
 - New instances can start as independent repositories
@@ -30,3 +38,7 @@ upstream README with the operator-focused instance README.
 - Upgrades do not reintroduce the upstream product README into detached instances
 - Protected local paths remain the operator's responsibility
 - Release metadata and upstream workflow files do not leak into detached instances
+- Dependency updates during an upgrade can modify `package-lock.json`; operators should review and commit the resulting
+  diff with the refreshed product files
+- Additive default config fields can ship in `defaults/` and be inherited by existing instances without stored-config
+  migrations
