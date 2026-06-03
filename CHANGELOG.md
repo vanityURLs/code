@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.3](https://github.com/vanityURLs/code/compare/v3.1.2...v3.1.3) (2026-06-03)
+
+
+### 🧹 Chores
+
+* format changelog ([fd773bb](https://github.com/vanityURLs/code/commit/fd773bbd2984900c3f9cd65be8a8474d62953f1f))
+
 ## [3.1.2](https://github.com/vanityURLs/code/compare/v3.1.1...v3.1.2) (2026-06-03)
 
 ### 🐛 Bug Fixes
