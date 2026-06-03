@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.1.5](https://github.com/vanityURLs/code/compare/v3.1.4...v3.1.5) (2026-06-03)
+
+
+### 🐛 Bug Fixes
+
+* exclude release changelog from formatting ([98aa0a2](https://github.com/vanityURLs/code/commit/98aa0a236b9baebbf95bce0b43a1a5f760274d6a))
+* flag dependency changes during update ([70ba7c1](https://github.com/vanityURLs/code/commit/70ba7c105bb5b02bdae9cdab59f7e3f3a7231d74))
+* preflight upgrade dependencies ([6c4317e](https://github.com/vanityURLs/code/commit/6c4317eae0100f77f3dc57898fd715cc928667b2))
+* refresh dependencies during update ([d83e80d](https://github.com/vanityURLs/code/commit/d83e80d5e6501733f7ec81b419de2ed06e431f15))
+* tolerate missing prettier in install tests ([0e3ddd2](https://github.com/vanityURLs/code/commit/0e3ddd260e0e17bd56c65e6b74d817cae25dbcd0))
+
+
+### 📚 Documentation
+
+* document upgrade dependency refresh ([356ec81](https://github.com/vanityURLs/code/commit/356ec81454cc03353e50245965fa602b72462d4b))
+
 ## [3.1.4](https://github.com/vanityURLs/code/compare/v3.1.3...v3.1.4) (2026-06-03)
 
 
