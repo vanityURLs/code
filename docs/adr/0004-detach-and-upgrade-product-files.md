@@ -19,8 +19,8 @@ instance.
 `wrangler.toml`, `.dev.vars`, and `README.md`.
 
 The default upgrade path includes product files such as `defaults/`, `scripts/`, `package.json`, `package-lock.json`,
-and `LICENSE`. It does not refresh `README.md`, because `npm run detach` replaces the upstream README with the
-operator-focused instance README.
+`LICENSE`, `.npmrc`, and `.prettierignore`. It does not refresh `README.md`, because `npm run detach` replaces the
+upstream README with the operator-focused instance README.
 
 ## Consequences
 

@@ -8,7 +8,15 @@ import { spawnSync } from "node:child_process";
 const ROOT = process.cwd();
 const DEFAULT_REMOTE = "https://github.com/vanityurls/code.git";
 const DEFAULT_REF = "main";
-const DEFAULT_PATHS = ["defaults", "scripts", "package.json", "package-lock.json", "LICENSE", ".npmrc"];
+const DEFAULT_PATHS = [
+  "defaults",
+  "scripts",
+  "package.json",
+  "package-lock.json",
+  "LICENSE",
+  ".npmrc",
+  ".prettierignore"
+];
 const PROTECTED_PATHS = ["custom", "wrangler.toml", ".dev.vars", "README.md"];
 const GENERATED_PATHS = ["build", "functions", "src"];
 
