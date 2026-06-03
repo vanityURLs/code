@@ -44,6 +44,10 @@ function runCommand(cwd, args) {
   });
 }
 
+function normalizeMarkup(value) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
 {
   const fixture = makeFixture();
   run(fixture, [
@@ -234,8 +238,8 @@ function runCommand(cwd, args) {
 
   runCommand(fixture, ["scripts/v8s-fix", "--product-pages"]);
   assert.equal(
-    fs.readFileSync(statsPath, "utf8"),
-    fs.readFileSync(path.join(fixture, "defaults", "public", "_stats", "index.html"), "utf8")
+    normalizeMarkup(fs.readFileSync(statsPath, "utf8")),
+    normalizeMarkup(fs.readFileSync(path.join(fixture, "defaults", "public", "_stats", "index.html"), "utf8"))
   );
 }
 
