@@ -9,6 +9,7 @@ src/
 *.woff2
 
 CHANGELOG.txt
+CHANGELOG.md
 custom/v8s-links.txt
 defaults/v8s-links.txt
 defaults/public/_headers
