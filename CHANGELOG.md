@@ -2,10 +2,9 @@
 
 ## [3.1.2](https://github.com/vanityURLs/code/compare/v3.1.1...v3.1.2) (2026-06-03)
 
-
 ### 🐛 Bug Fixes
 
-* simplify setup prompts ([dc052d1](https://github.com/vanityURLs/code/commit/dc052d172ae72c42d492c472470c4bd5d66647a9))
+- simplify setup prompts ([dc052d1](https://github.com/vanityURLs/code/commit/dc052d172ae72c42d492c472470c4bd5d66647a9))
 
 ## [3.1.1](https://github.com/vanityURLs/code/compare/v3.1.0...v3.1.1) (2026-06-03)
 
