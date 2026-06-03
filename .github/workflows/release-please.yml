@@ -13,7 +13,7 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           # Standard GITHUB_TOKEN works perfectly for basic setups
           token: ${{ secrets.GITHUB_TOKEN }}
