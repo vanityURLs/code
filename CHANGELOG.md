@@ -2,10 +2,10 @@
 
 ## [3.1.1](https://github.com/vanityURLs/code/compare/v3.1.0...v3.1.1) (2026-06-03)
 
-
 ### 🐛 Bug Fixes
 
-* resolve lookup page data publicly ([e825a98](https://github.com/vanityURLs/code/commit/e825a986ff1a818f35d9f5e259c03274a9c583b0))
+- resolve lookup page data publicly
+  ([e825a98](https://github.com/vanityURLs/code/commit/e825a986ff1a818f35d9f5e259c03274a9c583b0))
 
 ## [3.1.0](https://github.com/vanityURLs/code/compare/v3.0.0...v3.1.0) (2026-06-03)
 

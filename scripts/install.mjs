@@ -64,8 +64,8 @@ function parseArgs(argv) {
 }
 
 async function promptForMissing(args) {
-  if (!process.stdin.isTTY && !args.domain) {
-    throw new Error("Missing --domain. Run interactively or pass --domain example.com.");
+  if (!process.stdin.isTTY && process.env.V8S_INTERNAL_SETUP !== "1") {
+    throw new Error("Run npm run setup in an interactive terminal.");
   }
   if (!process.stdin.isTTY) return args;
 
@@ -77,8 +77,6 @@ async function promptForMissing(args) {
   const configuredDomain = siteConfig.branding?.domain || args.domain || wranglerConfig.routeDomain || DEFAULT_DOMAIN;
   const configuredWorkerName = args.workerName || wranglerConfig.name || slugifyWorker(configuredDomain);
   const configuredOwner = args.owner === "owner" ? inferOwnerFromLinks() || args.owner : args.owner;
-  const configuredRandomSlugLength =
-    args.randomSlugLength || siteConfig.links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH;
   const configuredAnalytics =
     args.analytics === "disabled" ? wranglerConfig.analyticsProvider || args.analytics : args.analytics;
   const configuredAccessTeamDomain = args.accessTeamDomain || wranglerConfig.accessTeamDomain || "";
@@ -92,8 +90,14 @@ async function promptForMissing(args) {
     args.domain = args.domain || (await question(rl, "Short domain", configuredDomain));
     args.workerName = await question(rl, "Worker name", configuredWorkerName);
     args.owner = await question(rl, "Owner label", configuredOwner);
-    args.randomSlugLength = await question(rl, "Random slug length", configuredRandomSlugLength);
-    args.analytics = await question(rl, "Analytics provider", configuredAnalytics);
+    const configureAnalytics = await confirm(rl, "Configure analytics now?", !isAnalyticsDisabled(configuredAnalytics));
+    args.analytics = configureAnalytics
+      ? await question(
+          rl,
+          "Analytics provider",
+          isAnalyticsDisabled(configuredAnalytics) ? "umami" : configuredAnalytics
+        )
+      : "disabled";
     const analyticsEnabled = !isAnalyticsDisabled(args.analytics);
     args.accessTeamDomain = await question(rl, "Cloudflare Access team domain", configuredAccessTeamDomain);
     args.languages = normalizeLanguages(
@@ -253,20 +257,20 @@ async function promptForMissing(args) {
       args.brandingSlogans = args.brandingSloganEnabled
         ? await promptForBrandingSlogans(rl, args, configuredBranding.slogan)
         : {};
-      args.customizePublic = await confirm(
-        rl,
-        "Copy full default web pages to custom/public for manual template editing?",
-        siteConfig.branding?.custom_public === true
-      );
       args.wordmarkBlack = await question(
         rl,
-        "Black wordmark portion",
+        "Text logo first-color portion",
         args.wordmarkBlack || configuredBrand?.black || suggested.black
       );
       args.wordmarkGreen = await question(
         rl,
-        "Green wordmark portion",
+        "Text logo accent-color portion",
         args.wordmarkGreen || configuredBrand?.green || suggested.green
+      );
+      args.customizePublic = await confirm(
+        rl,
+        "Advanced: copy all default pages into custom/public for manual HTML editing? This is not needed for the two-color text logo.",
+        false
       );
     } else {
       args.customizePublic = args.customizePublic ?? siteConfig.branding?.custom_public === true;
@@ -285,7 +289,9 @@ function normalizeArgs(args) {
   args.workerName = args.workerName ? slugifyWorker(args.workerName) : slugifyWorker(args.domain);
   args.analytics = normalizeAnalyticsProviders(args.analytics);
   args.owner = slugifyOwner(args.owner);
-  args.randomSlugLength = normalizeRandomSlugLength(args.randomSlugLength || DEFAULT_RANDOM_SLUG_LENGTH);
+  args.randomSlugLength = normalizeRandomSlugLength(
+    args.randomSlugLength || loadSiteConfig().links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH
+  );
   args.languages = normalizeLanguages(args.languages);
   args.configureBranding =
     args.configureBranding ??

@@ -32,6 +32,7 @@ function run(cwd, args) {
   return execFileSync(process.execPath, args, {
     cwd,
     encoding: "utf8",
+    env: { ...process.env, V8S_INTERNAL_SETUP: "1" },
     stdio: ["ignore", "pipe", "pipe"]
   });
 }

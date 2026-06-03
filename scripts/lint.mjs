@@ -150,8 +150,18 @@ function lintWrangler() {
   }
 }
 
+function lintObsoleteDefaults() {
+  const obsoleteDefaultsFunctions = path.join(ROOT, "defaults", "functions");
+  if (fs.existsSync(obsoleteDefaultsFunctions)) {
+    failures.push(
+      "defaults/functions: obsolete Pages Functions runtime must not be shipped; use scripts/workers/ only"
+    );
+  }
+}
+
 walk(ROOT);
 lintWrangler();
+lintObsoleteDefaults();
 
 if (failures.length) {
   console.error(failures.join("\n"));
