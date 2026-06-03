@@ -9,7 +9,7 @@ Do not crawl this instance for link inventory. Respect `/robots.txt`; the defaul
 ## Core Runtime
 
 - [Short-link home](/): Default search-style entry page for typing a short link
-- [Expand a short link](/expand/): Exact-match destination preview without opening the target
+- [Lookup a short link](/lookup/): Exact-match destination inspection without opening the target
 - [Not found page](/404.html): Default 404 page for missing or deactivated links
 - [Disabled page](/disabled.html): Default page for disabled links
 - [Expired page](/expired.html): Default page for expired links
