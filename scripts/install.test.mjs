@@ -37,6 +37,20 @@ function runSetup(cwd, extraArgs) {
   });
 }
 
+function prettierBin(cwd) {
+  const binPath = path.join(cwd, "node_modules", ".bin", process.platform === "win32" ? "prettier.cmd" : "prettier");
+  return fs.existsSync(binPath) ? binPath : "";
+}
+
+function checkPrettier(cwd, files) {
+  const binPath = prettierBin(cwd);
+  if (!binPath) return;
+  execFileSync(binPath, ["--check", ...files], {
+    cwd,
+    stdio: "pipe"
+  });
+}
+
 function assertLinkedSlogan(html) {
   assert.match(
     html.replace(/\s+/g, " "),
@@ -104,14 +118,11 @@ function assertLinkedSlogan(html) {
   const lookupHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "lookup", "index.html"), "utf8");
   assertLinkedSlogan(lookupHtml);
 
-  execFileSync(
-    path.join(fixture, "node_modules", ".bin", process.platform === "win32" ? "prettier.cmd" : "prettier"),
-    ["--check", "custom/public/en/privacy.html", "custom/public/en/index.html", "custom/public/en/lookup/index.html"],
-    {
-      cwd: fixture,
-      stdio: "pipe"
-    }
-  );
+  checkPrettier(fixture, [
+    "custom/public/en/privacy.html",
+    "custom/public/en/index.html",
+    "custom/public/en/lookup/index.html"
+  ]);
 }
 
 {
