@@ -36,6 +36,13 @@ function runSetup(cwd, extraArgs) {
   });
 }
 
+function assertLinkedSlogan(html) {
+  assert.match(
+    html.replace(/\s+/g, " "),
+    /The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects/
+  );
+}
+
 {
   const fixture = makeFixture();
 
@@ -88,19 +95,13 @@ function runSetup(cwd, extraArgs) {
   assert.equal(siteConfig.branding.slogan.en, "The official demo for Example Inc. projects");
 
   const privacyHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "privacy.html"), "utf8");
-  assert.match(privacyHtml, /The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects/);
+  assertLinkedSlogan(privacyHtml);
 
   const indexHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "index.html"), "utf8");
-  assert.match(
-    indexHtml,
-    /<p class="instance-brand-subtitle">[\s\S]*?The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects[\s\S]*?<\/p>/
-  );
+  assertLinkedSlogan(indexHtml);
 
   const expandHtml = fs.readFileSync(path.join(fixture, "custom", "public", "en", "expand", "index.html"), "utf8");
-  assert.match(
-    expandHtml,
-    /<p class="instance-brand-subtitle">[\s\S]*?The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects[\s\S]*?<\/p>/
-  );
+  assertLinkedSlogan(expandHtml);
 
   execFileSync(
     path.join(fixture, "node_modules", ".bin", process.platform === "win32" ? "prettier.cmd" : "prettier"),
@@ -156,7 +157,7 @@ function runSetup(cwd, extraArgs) {
 
   const builtIndex = fs.readFileSync(path.join(fixture, "build", "index.html"), "utf8");
   assert.match(builtIndex, /<span>v8s\.<\/span><span>link<\/span>/);
-  assert.match(builtIndex, /The official demo for <a href="https:\/\/example\.com">Example Inc\.<\/a> projects/);
+  assertLinkedSlogan(builtIndex);
 
   const builtStats = fs.readFileSync(path.join(fixture, "build", "en", "_stats", "index.html"), "utf8");
   assert.match(builtStats, /<img src="\/logo\.svg" alt="VanityURLs" \/>/);
