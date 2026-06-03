@@ -172,6 +172,16 @@ function dependencyIssue() {
   return "";
 }
 
+function npmInstall(args, reason) {
+  if (args.dryRun) {
+    console.log(`[dry-run] would run npm install (${reason})`);
+    return;
+  }
+
+  console.log(`[deps] Running npm install (${reason})`);
+  run("npm", ["install"]);
+}
+
 function ensureDependencies(args, phase) {
   if (!args.check || args.dryRun) return;
 
@@ -179,12 +189,11 @@ function ensureDependencies(args, phase) {
   if (!issue) return;
 
   if (phase === "before-sync") {
-    throw new Error(
-      [
-        `Upgrade verification needs installed npm dependencies, but ${issue}.`,
-        "Run npm install, then run npm run update again."
-      ].join("\n")
-    );
+    console.log(`[deps] Upgrade verification needs installed npm dependencies, but ${issue}.`);
+    npmInstall(args, "missing verification dependencies before upgrade");
+    const nextIssue = dependencyIssue();
+    if (!nextIssue) return;
+    throw new Error(`Upgrade verification still needs installed npm dependencies, but ${nextIssue}.`);
   }
 
   throw new Error(
@@ -224,17 +233,11 @@ function changedDependencySections(before, after) {
   return DEPENDENCY_SECTIONS.filter((section) => before[section] !== after[section]);
 }
 
-function ensureNoDependencyChanges(args, changedSections) {
+function ensureCurrentDependencies(args, changedSections) {
   if (!args.check || args.dryRun || !changedSections.length) return;
 
-  throw new Error(
-    [
-      `Package dependency definitions changed during this upgrade: ${changedSections.join(", ")}.`,
-      "Product files have already been synced, but validation was skipped because installed dependencies may be stale.",
-      "Run npm install, then run npm run check.",
-      "Review with git status --short, then commit and push the upgrade changes."
-    ].join("\n")
-  );
+  console.log(`[deps] Package dependency definitions changed during this upgrade: ${changedSections.join(", ")}.`);
+  npmInstall(args, "package dependency definitions changed during upgrade");
 }
 
 function resolveRemote(args) {
@@ -426,7 +429,7 @@ async function main() {
     if (result.missing.length) console.log(`[sync] Missing upstream paths: ${formatSyncList(result.missing)}`);
   }
 
-  ensureNoDependencyChanges(args, changedDependencySections(dependenciesBefore, dependencySnapshot()));
+  ensureCurrentDependencies(args, changedDependencySections(dependenciesBefore, dependencySnapshot()));
   ensureDependencies(args, "after-sync");
   runCheck(args);
   runDoctor(args);

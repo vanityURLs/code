@@ -5,6 +5,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { copyDirectory, hasCopyableFiles, mergeSiteConfig, supportedLanguages } from "./lib/build-assets.mjs";
 
 const ROOT = process.cwd();
 const WRANGLER_PATH = path.join(ROOT, "wrangler.toml");
@@ -786,27 +787,6 @@ function customizePublicPages(args) {
   formatFiles(CUSTOM_PUBLIC_DIR, [".html"]);
 }
 
-function copyDirectory(source, target) {
-  fs.cpSync(source, target, {
-    recursive: true,
-    filter: (sourcePath) => path.basename(sourcePath) !== ".gitkeep"
-  });
-}
-
-function hasCopyableFiles(directory) {
-  if (!fs.existsSync(directory)) return false;
-
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === ".gitkeep") continue;
-
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isFile()) return true;
-    if (entry.isDirectory() && hasCopyableFiles(entryPath)) return true;
-  }
-
-  return false;
-}
-
 function pruneUnsupportedLanguageDirs(publicDir, languages) {
   const supported = new Set(languages);
   for (const language of DEFAULT_LANGUAGES) {
@@ -1054,47 +1034,6 @@ function loadSiteConfig() {
   const defaultConfig = readJson(DEFAULT_SITE_CONFIG_PATH);
   const customConfig = readJson(CUSTOM_SITE_CONFIG_PATH);
   return mergeSiteConfig(defaultConfig, customConfig);
-}
-
-function mergeSiteConfig(base, custom) {
-  const baseBranding = base.branding || {};
-  const customBranding = custom.branding || {};
-  const branding = {
-    ...baseBranding,
-    ...customBranding
-  };
-  if (baseBranding.wordmark || customBranding.wordmark) {
-    branding.wordmark = {
-      ...(baseBranding.wordmark || {}),
-      ...(customBranding.wordmark || {})
-    };
-  }
-
-  return {
-    ...base,
-    ...custom,
-    i18n: {
-      ...(base.i18n || {}),
-      ...(custom.i18n || {})
-    },
-    operator: {
-      ...(base.operator || {}),
-      ...(custom.operator || {})
-    },
-    links: {
-      ...(base.links || {}),
-      ...(custom.links || {}),
-      tag_random_slug_lengths: {
-        ...(base.links?.tag_random_slug_lengths || {}),
-        ...(custom.links?.tag_random_slug_lengths || {})
-      }
-    },
-    branding
-  };
-}
-
-function supportedLanguages(siteConfig) {
-  return normalizeLanguages(siteConfig?.i18n?.supported_languages?.join(","));
 }
 
 function removeUndefined(value) {

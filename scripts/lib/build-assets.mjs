@@ -50,6 +50,14 @@ export function mergeSiteConfig(base, custom) {
       ...(base.operator || {}),
       ...(custom.operator || {})
     },
+    links: {
+      ...(base.links || {}),
+      ...(custom.links || {}),
+      tag_random_slug_lengths: {
+        ...(base.links?.tag_random_slug_lengths || {}),
+        ...(custom.links?.tag_random_slug_lengths || {})
+      }
+    },
     branding: {
       ...(base.branding || {}),
       ...(custom.branding || {}),

@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { mergeSiteConfig } from "./lib/build-assets.mjs";
 import { RUNTIME_REGISTRY_SCHEMA_VERSION } from "./lib/constants.mjs";
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "v8s-registry-"));
@@ -84,5 +85,36 @@ assert.deepEqual(registry.tree.children.office.link.schedule.rules, [
     target: "https://example.com/open"
   }
 ]);
+
+assert.deepEqual(
+  mergeSiteConfig(
+    {
+      links: {
+        random_slug_length: 3,
+        random_slug_alphabet: "abc",
+        tag_random_slug_lengths: {
+          training: 4,
+          debug: 2
+        }
+      }
+    },
+    {
+      links: {
+        random_slug_alphabet: "xyz",
+        tag_random_slug_lengths: {
+          debug: 5
+        }
+      }
+    }
+  ).links,
+  {
+    random_slug_length: 3,
+    random_slug_alphabet: "xyz",
+    tag_random_slug_lengths: {
+      training: 4,
+      debug: 5
+    }
+  }
+);
 
 console.log("registry tests ok");
