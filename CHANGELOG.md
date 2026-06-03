@@ -1,5 +1,37 @@
 # Changelog
 
+## [3.1.0](https://github.com/vanityURLs/code/compare/v3.0.0...v3.1.0) (2026-06-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* /expand, localized expand slugs, /_analytics/expand, and expand_result are replaced by /lookup, localized lookup slugs, /_analytics/lookup, and lookup_result with no legacy path support.
+
+### ✨ Features
+
+* rename expand previews to lookup ([0dc7ad2](https://github.com/vanityURLs/code/commit/0dc7ad2f790b1e38027cbebc416c2a64bf58df90))
+* rename expand previews to lookup ([3a800a9](https://github.com/vanityURLs/code/commit/3a800a9e9f04e0cca2472f6d451c3fd95efa7fc9))
+
+
+### 🐛 Bug Fixes
+
+* **doctor:** compare formatted product pages ([050b209](https://github.com/vanityURLs/code/commit/050b2090f9c6f0d0ba2cc4e713a5ee137155d90d))
+* shorten jurisdiction setup prompt ([cc6b9d8](https://github.com/vanityURLs/code/commit/cc6b9d8d1dd5839f5964b734f6c6bd492a1f7cd2))
+* **test:** allow consolidated doctor fixes ([9b5de8c](https://github.com/vanityURLs/code/commit/9b5de8c837b2ea8c47824dadec5ce6ce5aeb8f14))
+* **test:** compare product pages semantically ([b7fb59d](https://github.com/vanityURLs/code/commit/b7fb59d4ef89a1f6b838055da5d4fc86f0e6a24c))
+* **test:** tolerate formatted slogan markup ([bc2695b](https://github.com/vanityURLs/code/commit/bc2695ba0c8ae15d67adbbfd81b313118f171653))
+* **test:** verify product page repair semantically ([3f55650](https://github.com/vanityURLs/code/commit/3f55650405d99e87aa7623ba97b3c76fb96e86e4))
+
+
+### 💚 Continuous Integration
+
+* updated release-please workflow ([3d0c73d](https://github.com/vanityURLs/code/commit/3d0c73d87962473a32435370af8c7c1860126c8e))
+
+
+### 🧹 Chores
+
+* release as 3.1.0 ([d233649](https://github.com/vanityURLs/code/commit/d233649c08a5a0aaffdb72c16ef87f664a98eca1))
+
 ## [3.0.0](https://github.com/vanityURLs/code/compare/v2.9.0...v3.0.0) (2026-06-01)
 
 ### Features
