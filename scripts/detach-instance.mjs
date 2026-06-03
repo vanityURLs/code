@@ -12,6 +12,7 @@ const DETACH_PATHS = [
   ".all-contributorsrc",
   ".release-please-manifest.json",
   "CHANGELOG.txt",
+  "CHANGELOG.md",
   "package-lock.json",
   "release-please-config.json",
   "docs"
