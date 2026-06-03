@@ -213,7 +213,7 @@ function diagnoseProductPages(context) {
   return listProductDefaultPages(context)
     .filter((defaultPath) => {
       const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
-      return fs.existsSync(customPath) && !sameFile(defaultPath, customPath);
+      return fs.existsSync(customPath) && !sameProductPage(context, defaultPath, customPath);
     })
     .map((defaultPath) => {
       const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
@@ -225,6 +225,14 @@ function diagnoseProductPages(context) {
         message: "Product-managed dashboard or QA page differs from defaults."
       };
     });
+}
+
+function sameProductPage(context, defaultPath, customPath) {
+  if (!fs.existsSync(defaultPath) || !fs.existsSync(customPath)) return false;
+  return (
+    formatHtmlText(context, fs.readFileSync(defaultPath, "utf8")) ===
+    formatHtmlText(context, fs.readFileSync(customPath, "utf8"))
+  );
 }
 
 function diagnoseBranding(context) {
