@@ -20,6 +20,7 @@ const DEFAULT_PATHS = [
 const PROTECTED_PATHS = ["custom", "wrangler.toml", ".dev.vars", "README.md"];
 const GENERATED_PATHS = ["build", "functions", "src"];
 const REQUIRED_CHECK_BINS = ["prettier"];
+const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
 
 function parseArgs(argv) {
   const args = {
@@ -190,6 +191,46 @@ function ensureDependencies(args, phase) {
     [
       `Upgrade verification needs installed npm dependencies, but ${issue}.`,
       "Product files have already been synced.",
+      "Run npm install, then run npm run check.",
+      "Review with git status --short, then commit and push the upgrade changes."
+    ].join("\n")
+  );
+}
+
+function readJson(relativePath) {
+  const filePath = path.join(ROOT, relativePath);
+  if (!fs.existsSync(filePath)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function dependencySnapshot() {
+  const packageJson = readJson("package.json");
+  return Object.fromEntries(DEPENDENCY_SECTIONS.map((section) => [section, stableJson(packageJson[section] || {})]));
+}
+
+function stableJson(value) {
+  const sorted = {};
+  for (const key of Object.keys(value).sort()) {
+    sorted[key] = value[key];
+  }
+  return JSON.stringify(sorted);
+}
+
+function changedDependencySections(before, after) {
+  return DEPENDENCY_SECTIONS.filter((section) => before[section] !== after[section]);
+}
+
+function ensureNoDependencyChanges(args, changedSections) {
+  if (!args.check || args.dryRun || !changedSections.length) return;
+
+  throw new Error(
+    [
+      `Package dependency definitions changed during this upgrade: ${changedSections.join(", ")}.`,
+      "Product files have already been synced, but validation was skipped because installed dependencies may be stale.",
       "Run npm install, then run npm run check.",
       "Review with git status --short, then commit and push the upgrade changes."
     ].join("\n")
@@ -374,6 +415,7 @@ async function main() {
 
   ensureCleanWorktree(args);
   ensureDependencies(args, "before-sync");
+  const dependenciesBefore = dependencySnapshot();
   clean(args);
   ensureCleanWorktree(args);
 
@@ -384,6 +426,7 @@ async function main() {
     if (result.missing.length) console.log(`[sync] Missing upstream paths: ${formatSyncList(result.missing)}`);
   }
 
+  ensureNoDependencyChanges(args, changedDependencySections(dependenciesBefore, dependencySnapshot()));
   ensureDependencies(args, "after-sync");
   runCheck(args);
   runDoctor(args);
