@@ -19,6 +19,7 @@ const DEFAULT_PATHS = [
 ];
 const PROTECTED_PATHS = ["custom", "wrangler.toml", ".dev.vars", "README.md"];
 const GENERATED_PATHS = ["build", "functions", "src"];
+const REQUIRED_CHECK_BINS = ["prettier"];
 
 function parseArgs(argv) {
   const args = {
@@ -151,6 +152,46 @@ function ensureCleanWorktree(args) {
       "Worktree is not clean. Commit or stash local changes before upgrading.",
       "Use --allow-dirty only when you are intentionally testing the upgrade script.",
       status
+    ].join("\n")
+  );
+}
+
+function dependencyIssue() {
+  if (!fs.existsSync(path.join(ROOT, "node_modules"))) {
+    return "node_modules/ is missing";
+  }
+
+  for (const binary of REQUIRED_CHECK_BINS) {
+    const binaryName = process.platform === "win32" ? `${binary}.cmd` : binary;
+    if (!fs.existsSync(path.join(ROOT, "node_modules", ".bin", binaryName))) {
+      return `node_modules/.bin/${binaryName} is missing`;
+    }
+  }
+
+  return "";
+}
+
+function ensureDependencies(args, phase) {
+  if (!args.check || args.dryRun) return;
+
+  const issue = dependencyIssue();
+  if (!issue) return;
+
+  if (phase === "before-sync") {
+    throw new Error(
+      [
+        `Upgrade verification needs installed npm dependencies, but ${issue}.`,
+        "Run npm install, then run npm run update again."
+      ].join("\n")
+    );
+  }
+
+  throw new Error(
+    [
+      `Upgrade verification needs installed npm dependencies, but ${issue}.`,
+      "Product files have already been synced.",
+      "Run npm install, then run npm run check.",
+      "Review with git status --short, then commit and push the upgrade changes."
     ].join("\n")
   );
 }
@@ -332,6 +373,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   ensureCleanWorktree(args);
+  ensureDependencies(args, "before-sync");
   clean(args);
   ensureCleanWorktree(args);
 
@@ -342,6 +384,7 @@ async function main() {
     if (result.missing.length) console.log(`[sync] Missing upstream paths: ${formatSyncList(result.missing)}`);
   }
 
+  ensureDependencies(args, "after-sync");
   runCheck(args);
   runDoctor(args);
   printPostRunNote(args);
