@@ -206,6 +206,78 @@
       "added_at": "2026-05-04"
     },
     {
+      "domain": "bit.ly",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
+      "domain": "tinyurl.com",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
+      "domain": "t.co",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
+      "domain": "goo.gl",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
+      "domain": "ow.ly",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
+      "domain": "is.gd",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
+      "domain": "buff.ly",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
+      "domain": "rebrand.ly",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
+      "domain": "lnkd.in",
+      "category": "shortener-loop",
+      "severity": "medium",
+      "reason": "Public URL shortener that can obscure the final destination",
+      "source": "local-policy",
+      "added_at": "2026-06-04"
+    },
+    {
       "domain": "anonfiles.com",
       "category": "temporary-file-host",
       "severity": "medium",

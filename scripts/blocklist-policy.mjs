@@ -40,8 +40,9 @@ export function checkTargetUrl(target, policy = loadBlocklistPolicy()) {
   }
 
   const protocol = url.protocol.toLowerCase();
-  const hostname = normalizeHostname(url.hostname);
+  const hostname = canonicalizeHostname(url.hostname);
   const path = decodeURIComponentSafe(url.pathname).toLowerCase();
+  const extensionPath = path.replace(/\/+$/, "");
 
   if (!policy.allowedProtocols.has(protocol)) {
     violations.push(`protocol '${protocol}' is not allowed`);
@@ -75,7 +76,7 @@ export function checkTargetUrl(target, policy = loadBlocklistPolicy()) {
     violations.push(`target contains blocked keyword '${blockedKeyword.keyword}' (${blockedKeyword.category})`);
   }
 
-  const extension = policy.blockedFileExtensions.find((suffix) => path.endsWith(suffix));
+  const extension = policy.blockedFileExtensions.find((suffix) => extensionPath.endsWith(suffix));
   if (extension) {
     violations.push(`target path ends with blocked file extension '${extension}'`);
   }
@@ -238,6 +239,11 @@ function normalizeHostname(value) {
     .replace(/\.+$/, "");
 }
 
+function canonicalizeHostname(value) {
+  const hostname = normalizeHostname(value);
+  return normalizeIpv4MappedIpv6(hostname) || hostname;
+}
+
 function isAllowedDomain(hostname, policy) {
   return policy.allowDomains.some((entry) => domainMatches(hostname, entry.domain));
 }
@@ -277,9 +283,10 @@ function isLocalhost(hostname) {
 }
 
 function isPrivateOrReservedHost(hostname) {
-  const ipVersion = net.isIP(hostname);
-  if (ipVersion === 4) return isPrivateOrReservedIpv4(hostname);
-  if (ipVersion === 6) return isPrivateOrReservedIpv6(hostname);
+  const canonicalHostname = canonicalizeHostname(hostname);
+  const ipVersion = net.isIP(canonicalHostname);
+  if (ipVersion === 4) return isPrivateOrReservedIpv4(canonicalHostname);
+  if (ipVersion === 6) return isPrivateOrReservedIpv6(canonicalHostname);
 
   return false;
 }
@@ -315,6 +322,32 @@ function isPrivateOrReservedIpv6(hostname) {
     value.startsWith("ff") ||
     value.startsWith("2001:db8")
   );
+}
+
+function normalizeIpv4MappedIpv6(hostname) {
+  const value = normalizeHostname(hostname);
+  const mappedPrefix = "::ffff:";
+  const fullMappedPrefix = "0:0:0:0:0:ffff:";
+  let suffix = "";
+
+  if (value.startsWith(mappedPrefix)) {
+    suffix = value.slice(mappedPrefix.length);
+  } else if (value.startsWith(fullMappedPrefix)) {
+    suffix = value.slice(fullMappedPrefix.length);
+  } else {
+    return "";
+  }
+
+  if (net.isIP(suffix) === 4) return suffix;
+
+  const groups = suffix.split(":");
+  if (groups.length !== 2) return "";
+
+  const words = groups.map((group) => Number.parseInt(group, 16));
+  if (words.some((word) => Number.isNaN(word) || word < 0 || word > 0xffff)) return "";
+
+  const [high, low] = words;
+  return [high >> 8, high & 0xff, low >> 8, low & 0xff].join(".");
 }
 
 function decodeURIComponentSafe(value) {

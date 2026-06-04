@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { checkTargetUrl } from "./blocklist-policy.mjs";
 import { mergeSiteConfig } from "./lib/build-assets.mjs";
 import { RUNTIME_REGISTRY_SCHEMA_VERSION } from "./lib/constants.mjs";
 
@@ -115,6 +116,27 @@ assert.deepEqual(
       debug: 5
     }
   }
+);
+
+assert(
+  checkTargetUrl("https://bit.ly/example").some((violation) => violation.includes("shortener-loop")),
+  "default policy should block baseline public shorteners"
+);
+assert(
+  checkTargetUrl("http://2130706433/").some((violation) => violation.includes("private or reserved")),
+  "numeric IPv4 host forms should be blocked after URL canonicalization"
+);
+assert(
+  checkTargetUrl("http://0x7f000001/").some((violation) => violation.includes("private or reserved")),
+  "hex IPv4 host forms should be blocked after URL canonicalization"
+);
+assert(
+  checkTargetUrl("http://[::ffff:127.0.0.1]/").some((violation) => violation.includes("private or reserved")),
+  "IPv4-mapped IPv6 localhost should be blocked"
+);
+assert(
+  checkTargetUrl("https://example.com/download.exe/").some((violation) => violation.includes("blocked file extension")),
+  "blocked file extensions should not be bypassed with a trailing slash"
 );
 
 console.log("registry tests ok");
