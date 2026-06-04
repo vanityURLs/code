@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.2.1](https://github.com/vanityURLs/code/compare/v3.2.0...v3.2.1) (2026-06-04)
+
+
+### 🧹 Chores
+
+* **deps:** bump actions/checkout from 5 to 6 ([7c1a2eb](https://github.com/vanityURLs/code/commit/7c1a2ebaa53916e17e8893ad6b796b296f045071))
+* **deps:** bump actions/checkout from 5 to 6 ([19f4f77](https://github.com/vanityURLs/code/commit/19f4f77567058768af929916c115348a89e12ff8))
+* **deps:** bump actions/dependency-review-action from 4 to 5 ([bfa723f](https://github.com/vanityURLs/code/commit/bfa723f5f66e250d9557fdba081031d1784eac41))
+* **deps:** bump actions/setup-node from 5 to 6 ([50931f7](https://github.com/vanityURLs/code/commit/50931f78a9436cf298e533de4315a38e8186f460))
+* **deps:** bump actions/setup-node from 5 to 6 ([f2ea477](https://github.com/vanityURLs/code/commit/f2ea4778ccdc05774bf008bec5b402a6899518d4))
+
 ## [3.2.0](https://github.com/vanityURLs/code/compare/v3.1.6...v3.2.0) (2026-06-04)
 
 
