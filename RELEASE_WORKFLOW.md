@@ -1,7 +1,7 @@
 # Release workflow
 
 This is the canonical release workflow for the vanityURLs code repository. Blog posts can explain the rationale, but
-this file is the operational source of truth maintainers must follow before release tag rules are enforced.
+this file is the operational source of truth maintainers must follow.
 
 ## Trust Model
 
@@ -17,17 +17,46 @@ safe; maintainers still review changes, run checks, and protect GitHub accounts.
 
 Do not work directly on `main`.
 
-1. Pull the latest `main`.
-2. Create a branch.
+1. Pull the latest `main`: `git switch main` then `git pull --rebase`.
+2. Create a branch: `git switch -c work/descriptive-name`.
 3. Make the change.
-4. Commit with a Conventional Commits message.
-5. Push the branch.
-6. Open a pull request.
-7. Require review and `ci:check` before merge.
-8. Merge using the repository's documented merge strategy.
+4. Run the relevant check: `npm run check` for broad changes, or a focused script when the change is narrow.
+5. Commit with a Conventional Commits message: `git commit -m "type: summary"`.
+6. Push the branch: `git push origin HEAD`.
+7. Open a pull request.
+8. Require review and `ci:check` before merge.
+9. Merge using the repository's documented merge strategy.
 
 Use squash merge when the pull request is the release unit. In that case, the pull request title must be a valid
 Conventional Commit because it becomes the commit that release-please reads on `main`.
+
+<details>
+<summary>Branch update commands</summary>
+
+Use rebase for a branch only you are working on:
+
+```sh
+git fetch origin main
+git rebase origin/main
+git push --force-with-lease
+```
+
+Use merge if other people are also basing work on your branch:
+
+```sh
+git fetch origin main
+git merge origin/main
+git push
+```
+
+Preview overlap before updating:
+
+```sh
+git fetch origin main
+git diff --name-status HEAD...origin/main
+```
+
+</details>
 
 ## Release-Please
 
@@ -43,6 +72,28 @@ When release-please opens or updates the release pull request:
 3. Confirm `.release-please-manifest.json`, `package.json`, and `package-lock.json` are consistent.
 4. Confirm no user-visible change was hidden behind an inappropriate commit type.
 5. Merge the release pull request only when the release should be published.
+
+<details>
+<summary>Release preparation checklist</summary>
+
+- Confirm the worktree only contains intended release changes: `git status --short`.
+- Confirm the release signer is listed in `.github/release-signers.json`.
+- Confirm Git tag signing uses Sigstore/gitsign:
+  - `git config --get gpg.format` returns `x509`.
+  - `git config --get gpg.x509.program` returns `gitsign`.
+  - `git config --get tag.gpgsign` returns `true`.
+- Review runtime registry schema changes with `docs/adr/`.
+- Run `npm run clean`.
+- Run `npm run check`.
+- Run `npm run validate:targets` when release confidence should include outbound target reachability.
+- Confirm `build/v8s-release-manifest.json` was generated.
+- Review `build/v8s-release-manifest.json` schema versions, Git commit, compatibility date, and SHA-256 hashes.
+- Review generated `build/v8s.json`, `build/v8s-blocklist.json`, and `build/v8s-site-config.json`.
+- Confirm `build/v8s.json` uses the expected runtime registry schema.
+- Confirm `build/v8s.json` includes both `tree` and `links[]`.
+- Confirm `src/worker.mjs` is generated from `scripts/workers/`.
+
+</details>
 
 ## Signed Release Tag
 
@@ -73,6 +124,21 @@ gitsign verify --certificate-identity felix@felixleger.com --certificate-oidc-is
 
 Do not push an unsigned release tag. Do not move or recreate a release tag.
 
+<details>
+<summary>Release tag checklist</summary>
+
+- Merge the release-please release pull request.
+- Pull the clean release commit locally: `git switch main` then `git pull --rebase`.
+- Run the release confidence check: `npm run check`.
+- Create the signed release tag: `git tag -s vX.Y.Z -m "vX.Y.Z"`.
+- Verify the tag with the signing identity:
+  `gitsign verify --certificate-identity code@Dicaire.com --certificate-oidc-issuer https://github.com/login/oauth vX.Y.Z`.
+- Push the tag only after verification: `git push origin vX.Y.Z`.
+- Confirm GitHub release tag rules protect `refs/tags/v*` from deletion, updates, and force-pushes, including
+  administrator bypass.
+
+</details>
+
 ## Tag Protection
 
 Before enforcing this workflow, configure GitHub tag rules for `refs/tags/v*`:
@@ -84,6 +150,21 @@ Before enforcing this workflow, configure GitHub tag rules for `refs/tags/v*`:
 - include administrators in the rules where GitHub exposes that control
 
 After tag protection is active, a pushed release tag is treated as immutable release provenance.
+
+<details>
+<summary>Runtime smoke checks</summary>
+
+- Start local Worker runtime with `npm run dev`.
+- Confirm a known active short link redirects to the expected target.
+- Confirm an unknown slug returns 404.
+- Confirm disabled, expired, and maintenance states render the expected pages.
+- Confirm a splat route preserves and encodes the remaining path.
+- Confirm `/lookup` loads and can resolve a known link.
+- Confirm direct access to `/v8s.json`, `/v8s-blocklist.json`, and `/v8s-site-config.json` returns 404.
+- Confirm `/_stats` and `/_tests` require Cloudflare Access when access variables are configured.
+- Confirm runtime smoke behavior with `npm run smoke` when analytics are configured.
+
+</details>
 
 ## Upgrade Trust
 
@@ -102,9 +183,30 @@ npm run check
 
 Use `npm run validate:targets` when release confidence should include outbound target reachability.
 
+<details>
+<summary>Deployment and rollback checklist</summary>
+
+Deployment:
+
+- Deploy from a clean, reviewed worktree.
+- Keep deployment credentials in GitHub or Cloudflare secrets, not in the repository.
+- Watch Cloudflare deployment logs until the Worker is active.
+- Confirm the custom domain points at the intended Worker.
+- Confirm `workers.dev` and preview URLs are disabled unless intentionally exposed.
+- Check Workers Logs for the first production requests.
+
+Rollback:
+
+- Identify the last known-good Git commit or Cloudflare deployment.
+- Roll back the Cloudflare deployment or revert the Git commit.
+- Re-run the runtime smoke checks.
+- Confirm the Worker can read the previous `links[]` registry shape.
+- Record the rollback reason in the release notes or incident log.
+
+</details>
+
 ## Related Documents
 
-- `RELEASE_CHECKLIST.md`
 - `docs/adr/0001-use-release-please-and-semantic-versioning.md`
 - `docs/adr/0015-require-signed-release-tags.md`
 - `.github/release-signers.json`
