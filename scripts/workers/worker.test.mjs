@@ -1074,4 +1074,191 @@ await run("passes static file extensions to assets", async () => {
   assert(response.headers.get("content-type") === "text/css", "content type");
 });
 
+async function generateAccessKey(kid) {
+  const keyPair = await crypto.subtle.generateKey(
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256"
+    },
+    true,
+    ["sign", "verify"]
+  );
+  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+
+  return {
+    kid,
+    privateKey: keyPair.privateKey,
+    jwk: {
+      ...publicJwk,
+      kid,
+      alg: "RS256",
+      use: "sig"
+    }
+  };
+}
+
+async function signAccessJwtWithKey(key, { teamDomain, aud, kid }) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = {
+    alg: "RS256",
+    kid: kid || key.kid,
+    typ: "JWT"
+  };
+  const payload = {
+    aud: [aud],
+    email: "ops@example.com",
+    exp: now + 300,
+    iat: now,
+    iss: `https://${teamDomain}`,
+    sub: "user-id"
+  };
+  const input = `${base64UrlJson(header)}.${base64UrlJson(payload)}`;
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key.privateKey, new TextEncoder().encode(input));
+
+  return `${input}.${base64UrlBytes(new Uint8Array(signature))}`;
+}
+
+function jwksResponse(keys) {
+  return Response.json({ keys: keys.map((key) => key.jwk) });
+}
+
+function accessFetchEnv(teamDomain, aud, overrides = {}) {
+  return env({
+    CF_ACCESS_TEAM_DOMAIN: teamDomain,
+    CF_ACCESS_AUD: aud,
+    ...overrides
+  });
+}
+
+function statsApiRequest(token) {
+  return request("/en/_stats/api/v8s.json", {
+    headers: {
+      "cf-access-jwt-assertion": token
+    }
+  });
+}
+
+async function withCertsFetch(teamDomain, handler, fn) {
+  const previousFetch = globalThis.fetch;
+  const certsUrl = `https://${teamDomain}/cdn-cgi/access/certs`;
+  const state = { certCalls: 0 };
+
+  globalThis.fetch = async (url, init) => {
+    const target = typeof url === "string" ? url : url.url;
+    if (target === certsUrl) {
+      state.certCalls += 1;
+      return handler(state.certCalls);
+    }
+    return previousFetch(url, init);
+  };
+
+  try {
+    return await fn(state);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+}
+
+await run("fetches Access keyset once and serves later requests from cache", async () => {
+  const teamDomain = "cache-hit.cloudflareaccess.test";
+  const aud = "cache-hit-aud";
+  const signingKey = await generateAccessKey("kid-cache");
+
+  await withCertsFetch(
+    teamDomain,
+    () => jwksResponse([signingKey]),
+    async (state) => {
+      const accessEnv = accessFetchEnv(teamDomain, aud);
+      const token = await signAccessJwtWithKey(signingKey, { teamDomain, aud });
+
+      const first = await worker.fetch(statsApiRequest(token), accessEnv, mockCtx());
+      const second = await worker.fetch(statsApiRequest(token), accessEnv, mockCtx());
+
+      assert(first.status === 200, "first request authorized");
+      assert(second.status === 200, "second request authorized");
+      assert(state.certCalls === 1, "certs endpoint fetched exactly once");
+    }
+  );
+});
+
+await run("does not cache a failed keyset fetch and recovers on retry", async () => {
+  const teamDomain = "transient.cloudflareaccess.test";
+  const aud = "transient-aud";
+  const signingKey = await generateAccessKey("kid-transient");
+
+  await withCertsFetch(
+    teamDomain,
+    (callNumber) => {
+      if (callNumber === 1) throw new Error("simulated transient certs failure");
+      return jwksResponse([signingKey]);
+    },
+    async (state) => {
+      const accessEnv = accessFetchEnv(teamDomain, aud);
+      const token = await signAccessJwtWithKey(signingKey, { teamDomain, aud });
+
+      const failed = await worker.fetch(statsApiRequest(token), accessEnv, mockCtx());
+      const recovered = await worker.fetch(statsApiRequest(token), accessEnv, mockCtx());
+
+      assert(failed.status === 403, "first request fails closed when certs are unavailable");
+      assert(recovered.status === 200, "retry succeeds because the failure was not cached");
+      assert(state.certCalls === 2, "certs endpoint retried rather than caching the rejection");
+    }
+  );
+});
+
+await run("refreshes the keyset once when a token kid is unknown", async () => {
+  const teamDomain = "rotation.cloudflareaccess.test";
+  const aud = "rotation-aud";
+  const oldKey = await generateAccessKey("kid-old");
+  const newKey = await generateAccessKey("kid-new");
+
+  await withCertsFetch(
+    teamDomain,
+    (callNumber) => (callNumber === 1 ? jwksResponse([oldKey]) : jwksResponse([oldKey, newKey])),
+    async (state) => {
+      const accessEnv = accessFetchEnv(teamDomain, aud, {
+        V8S_JWKS_MIN_REFRESH_MS: "0"
+      });
+      const oldToken = await signAccessJwtWithKey(oldKey, { teamDomain, aud });
+      const primed = await worker.fetch(statsApiRequest(oldToken), accessEnv, mockCtx());
+      assert(primed.status === 200, "token signed by the original key is authorized");
+      assert(state.certCalls === 1, "keyset fetched once to prime the cache");
+
+      const newToken = await signAccessJwtWithKey(newKey, { teamDomain, aud });
+      const rotated = await worker.fetch(statsApiRequest(newToken), accessEnv, mockCtx());
+
+      assert(rotated.status === 200, "token signed by the rotated key is authorized after refresh");
+      assert(state.certCalls === 2, "unknown kid triggered exactly one refresh");
+    }
+  );
+});
+
+await run("throttles repeated unknown-kid refresh attempts", async () => {
+  const teamDomain = "throttle.cloudflareaccess.test";
+  const aud = "throttle-aud";
+  const signingKey = await generateAccessKey("kid-known");
+
+  await withCertsFetch(
+    teamDomain,
+    () => jwksResponse([signingKey]),
+    async (state) => {
+      const accessEnv = accessFetchEnv(teamDomain, aud);
+      const validToken = await signAccessJwtWithKey(signingKey, { teamDomain, aud });
+      const primed = await worker.fetch(statsApiRequest(validToken), accessEnv, mockCtx());
+      assert(primed.status === 200, "valid token primes the cache");
+      assert(state.certCalls === 1, "keyset fetched once to prime the cache");
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const ghostToken = await signAccessJwtWithKey(signingKey, { teamDomain, aud, kid: "ghost" });
+        const rejected = await worker.fetch(statsApiRequest(ghostToken), accessEnv, mockCtx());
+        assert(rejected.status === 403, "unknown kid is rejected");
+      }
+
+      assert(state.certCalls === 1, "throttle suppressed repeated unknown-kid refetches");
+    }
+  );
+});
+
 globalThis.fetch = originalFetch;

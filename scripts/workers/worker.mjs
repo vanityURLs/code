@@ -21,7 +21,13 @@ const WEEKDAY_ALIASES = {
 
 // Cached per Worker isolate; reset on failed reads so a later request can recover after a fixed deployment.
 let runtimeBlocklistPromise;
-const accessJwksPromises = new Map();
+// JWKS is cached per isolate with a TTL so Access signing-key rotation is picked
+// up without waiting for isolate recycling. Successful fetches are cached;
+// failures are not, so transient cert endpoint errors can recover on retry.
+const ACCESS_JWKS_TTL_MS = 3_600_000;
+const ACCESS_JWKS_MIN_REFRESH_MS = 60_000;
+const accessJwksCache = new Map();
+const accessJwksInflight = new Map();
 
 // Build rewrites this generated constant after copying scripts/workers/ into src/.
 const LOCALIZED_HTML_LANGUAGES = ["fr", "es", "it", "de"]; // build replaces this list from v8s-site-config.json
@@ -1040,8 +1046,14 @@ async function verifyCloudflareAccessToken(token, teamDomain, expectedAud, env) 
   if (!audienceIncludes(payload.aud, expectedAud)) return false;
   if (!isJwtTimeValid(payload)) return false;
 
-  const jwks = await loadAccessJwks(teamDomain, env);
-  const jwk = (jwks.keys || []).find((key) => key.kid === header.kid);
+  let jwks = await loadAccessJwks(teamDomain, env);
+  let jwk = (jwks.keys || []).find((key) => key.kid === header.kid);
+
+  if (!jwk) {
+    jwks = await loadAccessJwks(teamDomain, env, { forceRefresh: true });
+    jwk = (jwks.keys || []).find((key) => key.kid === header.kid);
+  }
+
   if (!jwk) return false;
 
   const key = await crypto.subtle.importKey(
@@ -1063,20 +1075,66 @@ async function verifyCloudflareAccessToken(token, teamDomain, expectedAud, env) 
   );
 }
 
-async function loadAccessJwks(teamDomain, env) {
+async function loadAccessJwks(teamDomain, env, { forceRefresh = false } = {}) {
   if (env.CF_ACCESS_JWKS_JSON) return JSON.parse(env.CF_ACCESS_JWKS_JSON);
 
-  if (!accessJwksPromises.has(teamDomain)) {
-    accessJwksPromises.set(
-      teamDomain,
-      fetch(`https://${teamDomain}/cdn-cgi/access/certs`).then(async (response) => {
-        if (!response.ok) throw new Error(`Unable to load Cloudflare Access certs: ${response.status}`);
-        return response.json();
-      })
-    );
+  const cached = accessJwksCache.get(teamDomain);
+  const age = cached ? Date.now() - cached.fetchedAt : Infinity;
+
+  if (cached) {
+    const withinTtl = age < jwksTtlMs(env);
+    const refreshThrottled = forceRefresh && age < jwksMinRefreshMs(env);
+    if ((withinTtl && !forceRefresh) || refreshThrottled) {
+      return cached;
+    }
   }
 
-  return accessJwksPromises.get(teamDomain);
+  if (!accessJwksInflight.has(teamDomain)) {
+    const inflight = fetchAccessJwks(teamDomain)
+      .then((jwks) => {
+        const entry = {
+          keys: jwks.keys,
+          fetchedAt: Date.now()
+        };
+        accessJwksCache.set(teamDomain, entry);
+        return entry;
+      })
+      .finally(() => accessJwksInflight.delete(teamDomain));
+    accessJwksInflight.set(teamDomain, inflight);
+  }
+
+  try {
+    return await accessJwksInflight.get(teamDomain);
+  } catch (error) {
+    if (cached) return cached;
+    throw error;
+  }
+}
+
+async function fetchAccessJwks(teamDomain) {
+  const response = await fetch(`https://${teamDomain}/cdn-cgi/access/certs`);
+  if (!response.ok) throw new Error(`Unable to load Cloudflare Access certs: ${response.status}`);
+
+  const jwks = await response.json();
+  if (!jwks || !Array.isArray(jwks.keys)) {
+    throw new Error("Cloudflare Access certs response is missing keys[]");
+  }
+
+  return jwks;
+}
+
+function jwksTtlMs(env) {
+  return durationMs(env?.V8S_JWKS_TTL_MS, ACCESS_JWKS_TTL_MS);
+}
+
+function jwksMinRefreshMs(env) {
+  return durationMs(env?.V8S_JWKS_MIN_REFRESH_MS, ACCESS_JWKS_MIN_REFRESH_MS);
+}
+
+function durationMs(value, fallback) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
 function parseJwtPart(part) {
