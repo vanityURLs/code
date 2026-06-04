@@ -104,6 +104,12 @@ const assets = {
   "/style.css": new Response("body{}", {
     headers: { "content-type": "text/css" }
   }),
+  "/custom-header.html": new Response("<main>custom header</main>", {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "content-security-policy": "default-src 'none'"
+    }
+  }),
   "/v8s.json": Response.json(registry),
   "/v8s-blocklist.json": Response.json({
     blocked_keywords: [
@@ -250,10 +256,12 @@ async function createAccessFixture() {
 
 async function signAccessJwt(fixture, overrides = {}) {
   const now = Math.floor(Date.now() / 1000);
+  const { header: headerOverrides = {}, ...payloadOverrides } = overrides;
   const header = {
     alg: "RS256",
     kid: fixture.kid,
-    typ: "JWT"
+    typ: "JWT",
+    ...headerOverrides
   };
   const payload = {
     aud: [fixture.aud],
@@ -262,7 +270,7 @@ async function signAccessJwt(fixture, overrides = {}) {
     iat: now,
     iss: `https://${fixture.teamDomain}`,
     sub: "user-id",
-    ...overrides
+    ...payloadOverrides
   };
   const input = `${base64UrlJson(header)}.${base64UrlJson(payload)}`;
   const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", fixture.privateKey, new TextEncoder().encode(input));
@@ -342,6 +350,34 @@ function assertSecurityHeaders(response) {
   assert(response.headers.get("x-content-type-options") === "nosniff", "content type options");
   assert(response.headers.get("x-frame-options") === "DENY", "frame options");
 }
+
+await run("recovers runtime blocklist loading after a transient asset failure", async () => {
+  let blocklistCalls = 0;
+  const recoveryEnv = env({
+    ASSETS: {
+      fetch: async (assetRequest) => {
+        const path = new URL(assetRequest.url).pathname;
+        if (path === "/v8s-blocklist.json") {
+          blocklistCalls += 1;
+          if (blocklistCalls === 1) {
+            throw new Error("simulated blocklist asset failure");
+          }
+          return cloneResponse(assets["/v8s-blocklist.json"]);
+        }
+        return mockAssets().fetch(assetRequest);
+      }
+    }
+  });
+
+  const first = await worker.fetch(request("/.env"), recoveryEnv, mockCtx());
+  assert(first.status === 404, "first request still fails closed as a regular miss");
+  assert(first.headers.get("x-deny-category") === null, "first request has no deny category");
+
+  const second = await worker.fetch(request("/.env"), recoveryEnv, mockCtx());
+  assert(second.status === 404, "second request status");
+  assert(second.headers.get("x-deny-category") === "scanner-probe", "second request uses recovered blocklist");
+  assert(blocklistCalls === 2, "blocklist fetch retried");
+});
 
 await run("serves homepage from static assets", async () => {
   const ctx = mockCtx();
@@ -439,6 +475,23 @@ await run("serves extensionless policy page aliases", async () => {
   );
 });
 
+await run("applies security headers across response classes and preserves explicit headers", async () => {
+  for (const [name, response] of [
+    ["html asset", await worker.fetch(request("/privacy"), env(), mockCtx())],
+    ["json api", await worker.fetch(request("/_lookup?slug=test"), env(), mockCtx())],
+    ["not found", await worker.fetch(request("/missing"), env(), mockCtx())],
+    ["protected", await worker.fetch(request("/_tests"), env(), mockCtx())],
+    ["static asset", await worker.fetch(request("/style.css"), env(), mockCtx())]
+  ]) {
+    assertSecurityHeaders(response);
+    assert(response.headers.get("content-security-policy"), `${name} csp`);
+  }
+
+  const custom = await worker.fetch(request("/custom-header.html"), env(), mockCtx());
+  assert(custom.headers.get("content-security-policy") === "default-src 'none'", "explicit csp preserved");
+  assert(custom.headers.get("x-frame-options") === "DENY", "other security headers still added");
+});
+
 await run("blocks raw registry asset", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/v8s.json"), env(), ctx);
@@ -468,6 +521,7 @@ await run("resolves public lookup API for exact and nested slugs", async () => {
   ]) {
     const response = await worker.fetch(request(`/_lookup?slug=${encodeURIComponent(slug)}`), env(), mockCtx());
     assert(response.status === 200, `${slug} status`);
+    assertSecurityHeaders(response);
     assert(response.headers.get("x-robots-tag") === "noindex, nofollow", `${slug} robots header`);
     const body = await response.json();
     assert(body.result === "resolved", `${slug} result`);
@@ -486,6 +540,25 @@ await run("returns public lookup API miss and non-redirecting results", async ()
   const body = await disabled.json();
   assert(body.result === "not-redirecting", "disabled result");
   assert(body.state === "disabled", "disabled state");
+  assert(!("target" in body), "disabled result does not leak target");
+});
+
+await run("keeps public lookup API private to clients and robots", async () => {
+  const empty = await worker.fetch(request("/_lookup"), env(), mockCtx());
+  assert(empty.status === 200, "empty status");
+  assert(empty.headers.get("cache-control") === "no-store", "cache control");
+  assert(empty.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
+  assert((await empty.json()).slug === "", "empty slug");
+
+  const post = await worker.fetch(request("/_lookup", { method: "POST" }), env(), mockCtx());
+  assert(post.status === 405, "post status");
+
+  const longSlug = "a".repeat(512);
+  const long = await worker.fetch(request(`/_lookup?slug=${longSlug}`), env(), mockCtx());
+  const body = await long.json();
+  assert(long.status === 200, "long slug status");
+  assert(body.result === "miss", "long slug miss");
+  assert(body.slug === longSlug.slice(0, 99), "long slug is capped before echoing");
 });
 
 await run("redirects legacy security.txt to well-known security.txt", async () => {
@@ -514,6 +587,7 @@ await run("requires Cloudflare Access config for protected paths", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/_tests"), env(), ctx);
   assert(response.status === 503, "status");
+  assertSecurityHeaders(response);
   await ctx.flush();
   assert(analyticsCalls.length === 0, "no analytics");
 });
@@ -615,6 +689,71 @@ await run("rejects Cloudflare Access tokens with the wrong audience", async () =
     ctx
   );
   assert(response.status === 403, "status");
+});
+
+await run("rejects malformed Cloudflare Access JWTs", async () => {
+  for (const token of ["not-a-jwt", "a.b.c", `${base64UrlJson({ alg: "RS256" })}.payload.signature`]) {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      request("/_tests", {
+        headers: {
+          "cf-access-jwt-assertion": token
+        }
+      }),
+      await accessEnv(),
+      ctx
+    );
+    assert(response.status === 403, "status");
+  }
+});
+
+await run("rejects Cloudflare Access tokens with invalid JWT claims", async () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  for (const [name, overrides] of [
+    ["expired", { exp: now - 120 }],
+    ["future nbf", { nbf: now + 120 }],
+    ["future iat", { iat: now + 120 }],
+    ["wrong issuer", { iss: "https://other.cloudflareaccess.com" }]
+  ]) {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      request("/_tests", {
+        headers: {
+          ...(await accessHeaders(overrides))
+        }
+      }),
+      await accessEnv(),
+      ctx
+    );
+    assert(response.status === 403, `${name} status`);
+  }
+});
+
+await run("rejects Cloudflare Access tokens with invalid JWT headers or signatures", async () => {
+  const fixture = await accessFixture();
+  const missingKid = await signAccessJwt(fixture, { header: { kid: "" } });
+  const wrongAlgorithm = await signAccessJwt(fixture, { header: { alg: "HS256" } });
+  const valid = await signAccessJwt(fixture);
+  const invalidSignature = `${valid.slice(0, -1)}${valid.endsWith("A") ? "B" : "A"}`;
+
+  for (const [name, token] of [
+    ["missing kid", missingKid],
+    ["wrong algorithm", wrongAlgorithm],
+    ["invalid signature", invalidSignature]
+  ]) {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      request("/_tests", {
+        headers: {
+          "cf-access-jwt-assertion": token
+        }
+      }),
+      await accessEnv(),
+      ctx
+    );
+    assert(response.status === 403, `${name} status`);
+  }
 });
 
 await run("rejects unsupported methods on public paths", async () => {
@@ -769,6 +908,120 @@ await run("uses default target outside scheduled time window", async () => {
   assert(analyticsCalls[0].body.payload.data.target_host === "discord.gg", "target host");
 });
 
+await run("supports schedule windows that cross midnight", async () => {
+  const originalRegistryResponse = assets["/v8s.json"];
+  assets["/v8s.json"] = Response.json({
+    ...registry,
+    links: [
+      {
+        slug: "overnight",
+        target: "https://example.com/day",
+        state: "permanent",
+        schedule: {
+          rules: [
+            {
+              label: "night",
+              timezone: "UTC",
+              days: ["mon"],
+              from: "22:00",
+              to: "02:00",
+              target: "https://example.com/night"
+            }
+          ]
+        }
+      }
+    ]
+  });
+
+  try {
+    const active = await worker.fetch(request("/overnight"), env({ V8S_NOW: "2026-06-02T01:00:00Z" }), mockCtx());
+    assert(active.headers.get("location") === "https://example.com/night", "after midnight active");
+
+    const inactive = await worker.fetch(request("/overnight"), env({ V8S_NOW: "2026-06-02T03:00:00Z" }), mockCtx());
+    assert(inactive.headers.get("location") === "https://example.com/day", "after window inactive");
+  } finally {
+    assets["/v8s.json"] = originalRegistryResponse;
+  }
+});
+
+await run("falls back to default target for invalid schedule rules", async () => {
+  const originalRegistryResponse = assets["/v8s.json"];
+  assets["/v8s.json"] = Response.json({
+    ...registry,
+    links: [
+      {
+        slug: "bad-schedule",
+        target: "https://example.com/default",
+        state: "permanent",
+        schedule: {
+          rules: [
+            {
+              label: "bad timezone",
+              timezone: "Not/AZone",
+              days: ["mon"],
+              from: "09:00",
+              to: "17:00",
+              target: "https://example.com/scheduled"
+            }
+          ]
+        }
+      }
+    ]
+  });
+
+  try {
+    const response = await worker.fetch(request("/bad-schedule"), env({ V8S_NOW: "2026-06-01T14:00:00Z" }), mockCtx());
+    assert(response.status === 302, "status");
+    assert(response.headers.get("location") === "https://example.com/default", "default target");
+  } finally {
+    assets["/v8s.json"] = originalRegistryResponse;
+  }
+});
+
+await run("uses the first matching schedule rule", async () => {
+  const originalRegistryResponse = assets["/v8s.json"];
+  assets["/v8s.json"] = Response.json({
+    ...registry,
+    links: [
+      {
+        slug: "priority",
+        target: "https://example.com/default",
+        state: "permanent",
+        schedule: {
+          rules: [
+            {
+              label: "first",
+              timezone: "UTC",
+              days: ["mon"],
+              from: "09:00",
+              to: "17:00",
+              target: "https://example.com/first"
+            },
+            {
+              label: "second",
+              timezone: "UTC",
+              days: ["mon"],
+              from: "09:00",
+              to: "17:00",
+              target: "https://example.com/second"
+            }
+          ]
+        }
+      }
+    ]
+  });
+
+  try {
+    const ctx = mockCtx();
+    const response = await worker.fetch(request("/priority"), env({ V8S_NOW: "2026-06-01T14:00:00Z" }), ctx);
+    await ctx.flush();
+    assert(response.headers.get("location") === "https://example.com/first", "first target");
+    assert(analyticsCalls[0].body.payload.data.schedule_label === "first", "first label");
+  } finally {
+    assets["/v8s.json"] = originalRegistryResponse;
+  }
+});
+
 await run("refuses unsafe registry redirect targets at runtime", async () => {
   const originalRegistryResponse = assets["/v8s.json"];
   assets["/v8s.json"] = Response.json({
@@ -894,6 +1147,24 @@ await run("skips analytics when Umami website id is absent", async () => {
   await worker.fetch(request("/test"), env({ UMAMI_WEBSITE_ID: "" }), ctx);
   await ctx.flush();
   assert(analyticsCalls.length === 0, "analytics skipped");
+});
+
+await run("keeps redirects available when analytics delivery fails", async () => {
+  const previousFetch = globalThis.fetch;
+  const ctx = mockCtx();
+
+  globalThis.fetch = async () => {
+    throw new Error("simulated analytics outage");
+  };
+
+  try {
+    const response = await worker.fetch(request("/test"), env(), ctx);
+    assert(response.status === 302, "redirect status");
+    assert(response.headers.get("location") === "https://example.com/test", "location");
+    await ctx.flush();
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
 });
 
 await run("tracks Fathom events when configured as provider", async () => {
@@ -1046,6 +1317,7 @@ await run("tracks direct state and not-found pages", async () => {
     const response = await worker.fetch(request(path), env(), ctx);
     await ctx.flush();
     assert(response.headers.get("content-type").startsWith("text/html"), `${path} html`);
+    assertSecurityHeaders(response);
   }
   assert(analyticsCalls.length === 4, "state pageview count");
   assert(
@@ -1060,11 +1332,20 @@ await run("renders custom 404 for missed short links and tracks miss", async () 
   await ctx.flush();
   const body = await response.text();
   assert(response.status === 404, "status");
+  assertSecurityHeaders(response);
   assert(body.includes("missing"), "slug message");
   assert(response.headers.get("x-correlation-id"), "correlation header");
   assert(analyticsCalls.length === 2, "analytics count");
   assert(analyticsCalls[0].body.payload.name === "short-link-miss", "event name");
   assert(!("name" in analyticsCalls[1].body.payload), "404 pageview");
+});
+
+await run("escapes custom 404 slug content", async () => {
+  const response = await worker.fetch(request("/%3Cscript%3Ealert(1)%3C%2Fscript%3E"), env(), mockCtx());
+  const body = await response.text();
+  assert(response.status === 404, "status");
+  assert(!body.includes("<script>alert(1)</script>"), "raw script tag is not rendered");
+  assert(body.includes("&lt;script&gt;alert(1)&lt;/script&gt;"), "escaped script tag is rendered");
 });
 
 await run("passes static file extensions to assets", async () => {
