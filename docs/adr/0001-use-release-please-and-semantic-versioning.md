@@ -24,6 +24,9 @@ Release tags are created separately by a trusted maintainer using Sigstore/gitsi
 [0015. Require signed release tags for trusted upgrades](0015-require-signed-release-tags.md). Release-please is not the
 final release signer.
 
+The maintainer workflow for release pull requests and signed tags is documented in
+[RELEASE_WORKFLOW.md](../../RELEASE_WORKFLOW.md).
+
 Use semantic versioning for code releases:
 
 - `fix:` produces patch releases

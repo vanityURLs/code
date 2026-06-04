@@ -3,6 +3,8 @@
 Use this checklist for product releases and instance upgrades. The website blog explains the rationale; this file keeps
 the code-repository activities close to the scripts and generated artifacts they verify.
 
+Follow [RELEASE_WORKFLOW.md](RELEASE_WORKFLOW.md) for the full release process and trust model.
+
 ## Before release
 
 - Confirm the worktree only contains intended release changes: `git status --short`

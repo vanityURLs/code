@@ -46,6 +46,8 @@ Future upgrade hardening should make `npm run upgrade` default to the latest ver
 support explicit `--ref vX.Y.Z` pinning, warn on mutable branch refs, verify the selected release tag before extracting
 or executing product files, and document `--no-check` as the high-assurance "sync, review, then run checks" path.
 
+The operational workflow maintainers must follow is documented in [RELEASE_WORKFLOW.md](../../RELEASE_WORKFLOW.md).
+
 ## Release Tag Procedure
 
 Configure gitsign for tag signing:
