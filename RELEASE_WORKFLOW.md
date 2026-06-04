@@ -151,6 +151,8 @@ Before enforcing this workflow, configure GitHub tag rules for `refs/tags/v*`:
 
 After tag protection is active, a pushed release tag is treated as immutable release provenance.
 
+The intended GitHub repository rules are documented in `.github/repository-rules.md`.
+
 <details>
 <summary>Runtime smoke checks</summary>
 
@@ -211,3 +213,4 @@ Rollback:
 - `docs/adr/0015-require-signed-release-tags.md`
 - `.github/release-signers.json`
 - `.github/MAINTAINERS.md`
+- `.github/repository-rules.md`
