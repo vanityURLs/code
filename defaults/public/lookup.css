@@ -1,0 +1,47 @@
+.lookup-result {
+  display: none;
+  width: min(100%, 620px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.lookup-result.is-visible {
+  display: block;
+}
+
+.lookup-label {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.lookup-target {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.lookup-target a {
+  color: var(--brand);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.lookup-meta {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}

@@ -6,18 +6,6 @@
     <title>Enlaces cortos VanityURLs</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <script>
-      (function () {
-        var pathname = window.location.pathname || "/";
-        if (pathname === "/" || /\/index\.html$/i.test(pathname)) return;
-
-        try {
-          window.__initialInvalidRedirectKey = decodeURIComponent(pathname.replace(/^\//, ""));
-        } catch {
-          window.__initialInvalidRedirectKey = pathname.replace(/^\//, "");
-        }
-      })();
-    </script>
     <link rel="stylesheet" href="/style.css?v=20260601" />
   </head>
   <body>
@@ -27,7 +15,7 @@
           <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
         </a>
 
-        <form class="redirect-form" onsubmit="redirect(event)">
+        <form class="redirect-form">
           <label class="sr-only" for="redirectKey">Enlace corto</label>
           <div class="search-box">
             <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -44,18 +32,6 @@
               placeholder="Escribe un enlace corto, redirigido por el motor de VanityURLs"
               required
             />
-            <script>
-              (function () {
-                var initialInvalidKey = window.__initialInvalidRedirectKey;
-                if (!initialInvalidKey) return;
-
-                var input = document.getElementById("redirectKey");
-                var form = document.querySelector(".redirect-form");
-
-                if (input) input.value = initialInvalidKey;
-                if (form) form.classList.add("has-value");
-              })();
-            </script>
             <button type="submit" aria-label="Abrir enlace corto">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M5 12h12M13 6l6 6-6 6" />
@@ -87,6 +63,6 @@
       </p>
     </noscript>
 
-    <script src="/script.js"></script>
+    <script src="/script.js" defer></script>
   </body>
 </html>

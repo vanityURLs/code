@@ -329,7 +329,10 @@ function assert(condition, message) {
 }
 
 function assertSecurityHeaders(response) {
-  assert(response.headers.get("content-security-policy")?.includes("frame-ancestors 'none'"), "csp frame ancestors");
+  const csp = response.headers.get("content-security-policy") || "";
+  assert(csp.includes("frame-ancestors 'none'"), "csp frame ancestors");
+  assert(csp.includes("connect-src 'self' https://api.github.com"), "csp connect sources");
+  assert(!csp.includes("'unsafe-inline'"), "csp rejects inline code");
   assert(
     response.headers.get("permissions-policy") === "camera=(), microphone=(), geolocation=()",
     "permissions policy"

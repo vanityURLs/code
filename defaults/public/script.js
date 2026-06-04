@@ -241,6 +241,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  const form = input.closest("form");
+  if (form) {
+    form.addEventListener("submit", redirect);
+  }
+
   if (window.innerWidth > 768) {
     focusRedirectInput();
   }
