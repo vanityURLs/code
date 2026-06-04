@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/vanityURLs/code/compare/v3.1.6...v3.2.0) (2026-06-04)
+
+
+### ✨ Features
+
+* add upgrade nudge ([ad5e8d6](https://github.com/vanityURLs/code/commit/ad5e8d68b41ccf1aa20df80b276dc16e67e43ad6))
+
 ## [3.1.6](https://github.com/vanityURLs/code/compare/v3.1.5...v3.1.6) (2026-06-04)
 
 
