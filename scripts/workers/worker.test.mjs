@@ -292,6 +292,26 @@ function base64UrlBytes(bytes) {
   return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/g, "");
 }
 
+function corruptJwtSignature(token) {
+  const parts = token.split(".");
+  const signature = base64UrlToBytesForTest(parts[2]);
+  signature[0] = signature[0] ^ 0xff;
+  return `${parts[0]}.${parts[1]}.${base64UrlBytes(signature)}`;
+}
+
+function base64UrlToBytesForTest(value) {
+  const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
+  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+}
+
 function request(path, init = {}) {
   return new Request(new URL(path, "https://dicai.re"), {
     ...init,
@@ -735,7 +755,7 @@ await run("rejects Cloudflare Access tokens with invalid JWT headers or signatur
   const missingKid = await signAccessJwt(fixture, { header: { kid: "" } });
   const wrongAlgorithm = await signAccessJwt(fixture, { header: { alg: "HS256" } });
   const valid = await signAccessJwt(fixture);
-  const invalidSignature = `${valid.slice(0, -1)}${valid.endsWith("A") ? "B" : "A"}`;
+  const invalidSignature = corruptJwtSignature(valid);
 
   for (const [name, token] of [
     ["missing kid", missingKid],

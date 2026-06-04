@@ -17,7 +17,12 @@ build, lint, and tests.
 
 ## Decision
 
-Use release-please to automate release pull requests and tags from Conventional Commits.
+Use release-please to automate release pull requests, version bumps, changelog entries, and release notes from
+Conventional Commits.
+
+Release tags are created separately by a trusted maintainer using Sigstore/gitsign, as described in
+[0015. Require signed release tags for trusted upgrades](0015-require-signed-release-tags.md). Release-please is not the
+final release signer.
 
 Use semantic versioning for code releases:
 
@@ -33,7 +38,7 @@ repositories should not publish vanityURLs product releases.
 
 ## Consequences
 
-- Product releases are repeatable and tied to commit intent
+- Product releases are repeatable, tied to commit intent, and signed by a trusted release identity
 - Instance owners can refer to release notes before upgrading
 - Conventional Commits matter for release automation, not just readability
 - Formatting, lint, build, and test automation exist through npm scripts

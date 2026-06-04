@@ -18,6 +18,10 @@ instance.
 `npm run upgrade` refreshes product-owned paths from upstream while protecting instance-owned paths such as `custom/`,
 `wrangler.toml`, `.dev.vars`, and `README.md`.
 
+The upstream ref used for upgrade is a supply-chain trust boundary because upgrade verification can execute synced
+product scripts. Release trust is governed by
+[0015. Require signed release tags for trusted upgrades](0015-require-signed-release-tags.md).
+
 The default upgrade path includes product files such as `defaults/`, `scripts/`, `package.json`, `package-lock.json`,
 `LICENSE`, `.npmrc`, and `.prettierignore`. It does not refresh `README.md`, because `npm run detach` replaces the
 upstream README with the operator-focused instance README.
@@ -42,3 +46,5 @@ defaults can reach existing instances without asking operators to rerun setup or
   diff with the refreshed product files
 - Additive default config fields can ship in `defaults/` and be inherited by existing instances without stored-config
   migrations
+- Upgrade tooling should prefer verified signed release tags over mutable branch refs before executing synced product
+  code

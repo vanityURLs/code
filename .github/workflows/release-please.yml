@@ -17,3 +17,5 @@ jobs:
         with:
           # Standard GITHUB_TOKEN works perfectly for basic setups
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Release tags are created separately by trusted maintainers with Sigstore/gitsign.
+          skip-github-release: true

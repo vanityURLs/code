@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "sigstore": {
+    "certificate_oidc_issuer": "https://github.com/login/oauth",
+    "trusted_certificate_identities": ["code@Dicaire.com", "felix@felixleger.com"]
+  }
+}

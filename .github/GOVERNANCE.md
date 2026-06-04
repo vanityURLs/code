@@ -13,6 +13,10 @@ things simple, transparent, and welcoming.
 Currently, this project is maintained by:
 
 - [Benoît H. Dicaire](https://github.com/bhdicaire)
+- [Felix Leger](https://github.com/felleg)
+
+Trusted release signers are listed in [MAINTAINERS.md](MAINTAINERS.md). Release signers create Sigstore/gitsign tags for
+published `vX.Y.Z` releases.
 
 ## Decision-Making
 
@@ -25,6 +29,9 @@ Currently, this project is maintained by:
 
 This project is currently maintained by a single individual. If the project grows and consistent contributors emerge,
 they may be invited to join as co-maintainers.
+
+Becoming a release signer is a separate trust decision. Release signers must use phishing-resistant account protection
+and must be added to `.github/release-signers.json` before their release tags are trusted by upgrade tooling.
 
 ## Conflict Resolution
 

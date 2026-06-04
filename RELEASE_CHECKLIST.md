@@ -6,6 +6,11 @@ the code-repository activities close to the scripts and generated artifacts they
 ## Before release
 
 - Confirm the worktree only contains intended release changes: `git status --short`
+- Confirm the release signer is listed in `.github/release-signers.json`
+- Confirm Git tag signing uses Sigstore/gitsign:
+  - `git config --get gpg.format` returns `x509`
+  - `git config --get gpg.x509.program` returns `gitsign`
+  - `git config --get tag.gpgsign` returns `true`
 - Review runtime registry schema changes with `docs/adr/`
 - Run `npm run clean`
 - Run `npm run check`
@@ -16,6 +21,17 @@ the code-repository activities close to the scripts and generated artifacts they
 - Confirm `build/v8s.json` uses the expected runtime registry schema
 - Confirm `build/v8s.json` includes both `tree` and `links[]`
 - Confirm `src/worker.mjs` is generated from `scripts/workers/`
+
+## Release tag
+
+- Merge the release-please release pull request
+- Pull the clean release commit locally: `git pull`
+- Create the signed release tag: `git tag -s vX.Y.Z -m "vX.Y.Z"`
+- Verify the tag with the signing identity:
+  `gitsign verify --certificate-identity code@Dicaire.com --certificate-oidc-issuer https://github.com/login/oauth vX.Y.Z`
+- Push the tag only after verification: `git push origin vX.Y.Z`
+- Confirm GitHub release tag rules protect `refs/tags/v*` from deletion, updates, and force-pushes, including
+  administrator bypass
 
 ## Runtime smoke checks
 

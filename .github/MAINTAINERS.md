@@ -6,6 +6,15 @@ contributions, managing releases, and guiding the overall direction of the proje
 ## Current Maintainer(s)
 
 - [Benoît H. Dicaire](https://github.com/bhdicaire)
+- [Felix Leger](https://github.com/felleg)
+
+## Trusted Release Signer(s)
+
+Release signers are maintainers trusted to create Sigstore/gitsign release tags for `vX.Y.Z` releases. The pinned
+machine-readable signer list lives in [release-signers.json](release-signers.json).
+
+- Benoît H. Dicaire — `code@Dicaire.com`
+- [Felix Leger](https://github.com/felleg) — `felix@felixleger.com`
 
 ## Contact
 
