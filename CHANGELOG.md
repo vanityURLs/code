@@ -1,5 +1,34 @@
 # Changelog
 
+## [3.1.6](https://github.com/vanityURLs/code/compare/v3.1.5...v3.1.6) (2026-06-04)
+
+
+### 🐛 Bug Fixes
+
+* add redirector security headers ([0a6d2aa](https://github.com/vanityURLs/code/commit/0a6d2aaa0b606b7492a13758bd7a1934bd661f8a))
+* harden dev command spawning ([932e762](https://github.com/vanityURLs/code/commit/932e7623e7d3cf95c5e106cdadbef53d6f57428d))
+* harden target blocklist validation ([1dc34d4](https://github.com/vanityURLs/code/commit/1dc34d4dd897f39f9571514070a4413098731eaf))
+* refresh access jwks cache ([0c63775](https://github.com/vanityURLs/code/commit/0c63775760b9d52b78863f48d912eb27629c8424))
+* remove inline default page code ([ed8513c](https://github.com/vanityURLs/code/commit/ed8513c4d824fdf896ee0abea4a45d0a068d9afe))
+
+
+### 📚 Documentation
+
+* add release workflow ([194ecde](https://github.com/vanityURLs/code/commit/194ecde295da765dd5a5fb6c60f238052c5ed1d8))
+* consolidate release workflow ([92e7917](https://github.com/vanityURLs/code/commit/92e7917a94d23133176f634c454c288bf367d6a7))
+
+
+### 🧪 Tests
+
+* expand worker security coverage ([4f0c047](https://github.com/vanityURLs/code/commit/4f0c04736847348904b7630ab85e3e762e13e17d))
+
+
+### 💚 Continuous Integration
+
+* document repository rules ([aecec0e](https://github.com/vanityURLs/code/commit/aecec0e8330f0007a54427863ca7a8e2ac4510ba))
+* require signed release tag flow ([ea46ff2](https://github.com/vanityURLs/code/commit/ea46ff2146d1a091ba3c087f8440598d7ffdba0d))
+* upgrade release-please action ([166acae](https://github.com/vanityURLs/code/commit/166acaeed2ec6ecd91802da1ad815b4b573aa2e0))
+
 ## [3.1.5](https://github.com/vanityURLs/code/compare/v3.1.4...v3.1.5) (2026-06-03)
 
 
