@@ -1,0 +1,85 @@
+name: vanityURLs upgrade nudge
+
+on:
+  schedule:
+    - cron: "17 13 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-upstream-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - id: release
+        run: |
+          node scripts/check-upstream-release.mjs --json > release-status.json
+          {
+            echo "status<<EOF"
+            cat release-status.json
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/github-script@v8
+        env:
+          RELEASE_STATUS: ${{ steps.release.outputs.status }}
+        with:
+          script: |
+            const status = JSON.parse(process.env.RELEASE_STATUS);
+            if (!status.ok || !status.behind) {
+              core.info(`No upgrade issue needed: ${status.status}`);
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const marker = "<!-- vanityurls-upgrade-nudge -->";
+            const title = status.security
+              ? `Security update available: vanityURLs ${status.latestVersion}`
+              : `vanityURLs ${status.latestVersion} is available`;
+            const body = [
+              marker,
+              "",
+              status.security ? "## Security update available" : "## Update available",
+              "",
+              `This instance appears to be running vanityURLs ${status.currentVersion}.`,
+              `The latest upstream release is ${status.latestVersion}.`,
+              "",
+              `- Upstream release: ${status.latestUrl}`,
+              `- Releases behind: ${status.behindCount}`,
+              `- Security-related releases in the gap: ${status.securityCount}`,
+              "",
+              "This is a pull-based, privacy-preserving nudge from this repository's own scheduled workflow.",
+              "Review the release, run the upgrade workflow documented for this instance, and close this issue when done."
+            ].join("\n");
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: "open",
+              per_page: 100
+            });
+            const existing = issues.find((issue) => !issue.pull_request && issue.body && issue.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                title,
+                body
+              });
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body
+            });
