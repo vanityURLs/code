@@ -328,10 +328,23 @@ function assert(condition, message) {
   }
 }
 
+function assertSecurityHeaders(response) {
+  assert(response.headers.get("content-security-policy")?.includes("frame-ancestors 'none'"), "csp frame ancestors");
+  assert(
+    response.headers.get("permissions-policy") === "camera=(), microphone=(), geolocation=()",
+    "permissions policy"
+  );
+  assert(response.headers.get("referrer-policy") === "strict-origin-when-cross-origin", "referrer policy");
+  assert(response.headers.get("strict-transport-security") === "max-age=31536000", "hsts");
+  assert(response.headers.get("x-content-type-options") === "nosniff", "content type options");
+  assert(response.headers.get("x-frame-options") === "DENY", "frame options");
+}
+
 await run("serves homepage from static assets", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/"), env(), ctx);
   assert(response.status === 200, "status");
+  assertSecurityHeaders(response);
   assert((await response.text()).includes("accueil fr"), "localized home body");
   assert(response.headers.get("content-language") === "fr", "content language");
   await ctx.flush();
@@ -708,6 +721,7 @@ await run("redirects exact short link and tracks event", async () => {
   const response = await worker.fetch(request("/test"), env(), ctx);
   await ctx.flush();
   assert(response.status === 302, "status");
+  assertSecurityHeaders(response);
   assert(response.headers.get("location") === "https://example.com/test", "location");
   assert(analyticsCalls.length === 1, "analytics count");
   assert(analyticsCalls[0].body.payload.name === "redirect", "event name");

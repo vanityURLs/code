@@ -26,11 +26,36 @@ const accessJwksPromises = new Map();
 // Build rewrites this generated constant after copying scripts/workers/ into src/.
 const LOCALIZED_HTML_LANGUAGES = ["fr", "es", "it", "de"]; // build replaces this list from v8s-site-config.json
 
+const SECURITY_HEADERS = {
+  "content-security-policy":
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
+    "font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+  "permissions-policy": "camera=(), microphone=(), geolocation=()",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "strict-transport-security": "max-age=31536000",
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY"
+};
+
 export default {
   async fetch(request, env, ctx) {
-    return handleRequest({ request, env, ctx });
+    return withSecurityHeaders(await handleRequest({ request, env, ctx }));
   }
 };
+
+function withSecurityHeaders(response) {
+  const headers = new Headers(response.headers);
+
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    if (!headers.has(name)) headers.set(name, value);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
 
 async function handleRequest(context) {
   const { request, env, ctx } = context;
