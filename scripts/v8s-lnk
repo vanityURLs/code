@@ -4,10 +4,10 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { mergeSiteConfig } from "./lib/build-assets.mjs";
+import { commandLine, runCommand } from "./lib/run-command.mjs";
 
 const ROOT = resolveRoot();
 process.chdir(ROOT);
@@ -137,11 +137,9 @@ function resolveLinksFile() {
 
 function run(command, args, options = {}) {
   const capture = options.capture === true;
-  const result = spawnSync(command, args, {
+  const result = runCommand(command, args, {
     cwd: process.cwd(),
-    encoding: capture ? "utf8" : undefined,
-    stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
-    shell: process.platform === "win32"
+    capture
   });
 
   if (result.error) {
@@ -163,10 +161,6 @@ function runCaptured(command, args, label) {
     capture: true,
     label
   });
-}
-
-function commandLine(command, args) {
-  return [command, ...args].join(" ");
 }
 
 function printCommandFailure(command, args, result, label) {

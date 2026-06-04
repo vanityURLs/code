@@ -2,7 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { runCommand } from "./lib/run-command.mjs";
 
 const ROOT = process.env.V8S_REPO || process.cwd();
 process.chdir(ROOT);
@@ -66,10 +66,9 @@ function writeJson(path, value) {
 }
 
 function run(command, args) {
-  const result = spawnSync(command, args, {
+  const result = runCommand(command, args, {
     cwd: ROOT,
-    stdio: "inherit",
-    shell: process.platform === "win32"
+    capture: false
   });
 
   if (result.error) throw result.error;

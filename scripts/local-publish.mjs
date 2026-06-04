@@ -2,7 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { runCommand } from "./lib/run-command.mjs";
 
 const ROOT = process.cwd();
 const DEFAULT_CONFIG_PATH = path.join(ROOT, "defaults", "v8s-local-config.json");
@@ -80,11 +80,9 @@ function loadConfig() {
 }
 
 function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
+  const result = runCommand(command, args, {
     cwd: ROOT,
-    encoding: options.capture ? "utf8" : undefined,
-    stdio: options.capture ? "pipe" : "inherit",
-    shell: process.platform === "win32"
+    capture: options.capture
   });
 
   if (result.error) throw result.error;
