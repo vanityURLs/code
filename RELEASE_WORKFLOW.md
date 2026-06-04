@@ -95,6 +95,27 @@ When release-please opens or updates the release pull request:
 
 </details>
 
+## Security Releases
+
+Security fixes must be published as normal GitHub releases, with the release title or notes clearly including
+`Security`, a `CVE-*`, or a `GHSA-*` identifier when one applies. The optional operator upgrade nudge uses those markers
+to make behind-version notices louder when the release gap includes a security fix.
+
+When a vulnerability affects released vanityURLs code, also publish a GitHub Security Advisory so operators using
+GitHub's `Watch -> Releases` and security notification workflows receive the strongest available platform signal.
+
+<details>
+<summary>Security release checklist</summary>
+
+- Confirm the fix is merged through the normal reviewed release flow.
+- Confirm the release notes identify the security impact without exposing unnecessary exploit detail before operators
+  can patch.
+- Include `Security`, `CVE-*`, or `GHSA-*` in the GitHub release title or body.
+- Publish or update the matching GitHub Security Advisory when appropriate.
+- Push only the signed release tag after local verification.
+
+</details>
+
 ## Signed Release Tag
 
 Configure gitsign before creating release tags:

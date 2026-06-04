@@ -50,12 +50,34 @@ npm run test
 npm run validate
 npm run smoke
 npm run local-install
+node scripts/check-upstream-release.mjs
 ./scripts/v8s-lnk --help
 ./scripts/v8s-lnk list
 ```
 
 Grouped commands run the whole group by default. Use focused variants such as `npm run test:worker`,
 `npm run check:links`, `npm run validate:targets`, or `npm run smoke:analytics` when you only need one layer.
+
+## Optional upgrade nudge
+
+vanityURLs does not phone home. To get a pull-based monthly reminder when this instance falls behind upstream releases,
+copy the workflow template into this repository:
+
+```bash
+mkdir -p .github/workflows
+cp defaults/github/workflows/vanityurls-upgrade-nudge.yml .github/workflows/
+```
+
+The workflow checks the public GitHub releases API monthly and opens or updates one issue in this repository when a
+newer vanityURLs release is available. It does not send this instance's links or configuration upstream.
+
+For an opt-in local check, run:
+
+```bash
+npm run doctor -- --check-upstream
+```
+
+Offline or unavailable network checks are non-fatal.
 
 ## Documentation
 

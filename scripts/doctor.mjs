@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 
 import { diagnoseCustomPublic, loadMaintenanceContext } from "./lib/custom-public-maintenance.mjs";
+import { checkUpstreamRelease, formatUpstreamReleaseNotice } from "./lib/upstream-release.mjs";
 
 function parseArgs(argv) {
-  const args = { json: false };
+  const args = { checkUpstream: process.env.V8S_CHECK_UPSTREAM_RELEASE === "1", json: false };
   for (const arg of argv) {
     if (arg === "--json") {
       args.json = true;
+    } else if (arg === "--check-upstream") {
+      args.checkUpstream = true;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -14,27 +17,34 @@ function parseArgs(argv) {
   return args;
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv.slice(2));
   const context = loadMaintenanceContext();
   const issues = diagnoseCustomPublic(context);
+  const upstreamRelease = args.checkUpstream ? await checkUpstreamRelease() : null;
 
   if (args.json) {
-    console.log(JSON.stringify({ issues }, null, 2));
+    const payload = { issues };
+    if (args.checkUpstream) payload.upstream_release = upstreamRelease;
+    console.log(JSON.stringify(payload, null, 2));
     return;
   }
 
   if (!issues.length) {
     console.log("[doctor] No custom public drift detected.");
-    return;
+  } else {
+    console.log(`[doctor] Found ${issues.length} custom public issue${issues.length === 1 ? "" : "s"}:`);
+    for (const issue of issues) {
+      console.log(`- [${issue.severity}] ${issue.path}: ${issue.message}`);
+    }
+
+    printRecommendedFixes(issues);
   }
 
-  console.log(`[doctor] Found ${issues.length} custom public issue${issues.length === 1 ? "" : "s"}:`);
-  for (const issue of issues) {
-    console.log(`- [${issue.severity}] ${issue.path}: ${issue.message}`);
+  if (upstreamRelease) {
+    console.log("");
+    console.log(formatUpstreamReleaseNotice(upstreamRelease));
   }
-
-  printRecommendedFixes(issues);
 }
 
 function printRecommendedFixes(issues) {
@@ -61,7 +71,7 @@ function compareFixes(left, right) {
 }
 
 try {
-  main();
+  await main();
 } catch (error) {
   console.error(`[doctor] ${error.message}`);
   process.exitCode = 1;

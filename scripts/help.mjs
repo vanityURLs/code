@@ -54,6 +54,8 @@ const sections = [
       ["npm run setup", "Configure or refresh instance-owned settings."],
       ["npm run detach", "Detach a clone from the upstream product repository."],
       ["npm run upgrade", "Refresh product-owned files while preserving custom/."],
+      ["npm run doctor -- --check-upstream", "Opt into a non-fatal upstream release check."],
+      ["node scripts/check-upstream-release.mjs", "Check the latest upstream release manually."],
       ["npm run local-install", "Install workstation helper commands."],
       ["npm run local-publish", "Run local checks, select commits, and push local changes."],
       ["npm run generate:blocklist", "Generate blocklist feed data."]
