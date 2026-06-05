@@ -13,6 +13,44 @@ identities are pinned in `.github/release-signers.json` and documented in `.gith
 This proves release provenance before `npm run upgrade` consumes upstream product code. It does not prove the code is
 safe; maintainers still review changes, run checks, and protect GitHub accounts.
 
+## Signing Standard
+
+Use SSH signing backed by 1Password for day-to-day commits. Use Sigstore/gitsign for release tags and other
+provenance-sensitive actions.
+
+This keeps normal development fast while making published release boundaries auditable through an OIDC identity and the
+Sigstore transparency log.
+
+<details>
+<summary>Daily commit signing</summary>
+
+Day-to-day commits should use SSH signing through 1Password:
+
+```sh
+git config --global gpg.format ssh
+git config --global gpg.ssh.program "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+git config --global commit.gpgsign true
+```
+
+Use the SSH signing key registered with GitHub for the maintainer's `code@Dicaire.com` or maintainer-approved identity.
+
+</details>
+
+<details>
+<summary>Release tag signing</summary>
+
+Release tags must use Sigstore/gitsign:
+
+```sh
+git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z -m "vX.Y.Z"
+gitsign verify --certificate-identity code@Dicaire.com --certificate-oidc-issuer https://github.com/login/oauth vX.Y.Z
+```
+
+Prefer per-command `-c gpg.format=x509 -c gpg.x509.program=gitsign` for release tag creation. This avoids changing the
+global commit-signing configuration used for SSH/1Password daily commits.
+
+</details>
+
 ## Daily Development
 
 Do not work directly on `main`.
@@ -21,7 +59,7 @@ Do not work directly on `main`.
 2. Create a branch: `git switch -c work/descriptive-name`.
 3. Make the change.
 4. Run the relevant check: `npm run check` for broad changes, or a focused script when the change is narrow.
-5. Commit with a Conventional Commits message: `git commit -m "type: summary"`.
+5. Commit with a Conventional Commits message and SSH/1Password signing enabled: `git commit -m "type: summary"`.
 6. Push the branch: `git push origin HEAD`.
 7. Open a pull request.
 8. Require review and `ci:check` before merge.
@@ -78,10 +116,7 @@ When release-please opens or updates the release pull request:
 
 - Confirm the worktree only contains intended release changes: `git status --short`.
 - Confirm the release signer is listed in `.github/release-signers.json`.
-- Confirm Git tag signing uses Sigstore/gitsign:
-  - `git config --get gpg.format` returns `x509`.
-  - `git config --get gpg.x509.program` returns `gitsign`.
-  - `git config --get tag.gpgsign` returns `true`.
+- Confirm the release tag will be created with Sigstore/gitsign, not the daily SSH/1Password commit signer.
 - Review runtime registry schema changes with `docs/adr/`.
 - Run `npm run clean`.
 - Run `npm run check`.
@@ -118,12 +153,11 @@ GitHub's `Watch -> Releases` and security notification workflows receive the str
 
 ## Signed Release Tag
 
-Configure gitsign before creating release tags:
+Release tags use gitsign even when daily commits use SSH/1Password signing. Create the tag with per-command gitsign
+configuration so global commit signing remains unchanged:
 
 ```sh
-git config --global gpg.format x509
-git config --global gpg.x509.program gitsign
-git config --global tag.gpgsign true
+git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z -m "vX.Y.Z"
 ```
 
 After the release pull request has merged:
@@ -132,7 +166,7 @@ After the release pull request has merged:
 git switch main
 git pull --rebase
 npm run check
-git tag -s vX.Y.Z -m "vX.Y.Z"
+git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z -m "vX.Y.Z"
 gitsign verify --certificate-identity code@Dicaire.com --certificate-oidc-issuer https://github.com/login/oauth vX.Y.Z
 git push origin vX.Y.Z
 ```
@@ -151,7 +185,8 @@ Do not push an unsigned release tag. Do not move or recreate a release tag.
 - Merge the release-please release pull request.
 - Pull the clean release commit locally: `git switch main` then `git pull --rebase`.
 - Run the release confidence check: `npm run check`.
-- Create the signed release tag: `git tag -s vX.Y.Z -m "vX.Y.Z"`.
+- Create the signed release tag with gitsign:
+  `git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z -m "vX.Y.Z"`.
 - Verify the tag with the signing identity:
   `gitsign verify --certificate-identity code@Dicaire.com --certificate-oidc-issuer https://github.com/login/oauth vX.Y.Z`.
 - Push the tag only after verification: `git push origin vX.Y.Z`.
