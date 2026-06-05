@@ -1,6 +1,7 @@
 ![logo](.github/banner.png)
 
 [![License](https://img.shields.io/github/license/vanityURLs/code?style=flat-square&labelColor=111827&color=0F766E)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/vanityURLs/code?style=flat-square&labelColor=111827&color=0F766E)](https://github.com/vanityURLs/code/releases/latest)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-0F766E?style=flat-square&labelColor=111827)](.github/CODE_OF_CONDUCT.md)
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-0F766E?style=flat-square&labelColor=111827)](#contributors)
 
@@ -8,60 +9,15 @@ vanityURLs is a Cloudflare Workers redirector for running a branded short-link d
 destination policies, localized instance pages, and operator configuration live in Git; the build produces the Worker
 assets that Cloudflare deploys.
 
-## Documentation
-
-The website is the source of truth for setup and operations:
-
-- [Getting started](https://www.VanityURLs.link/en/docs/getting-started/)
-- [Customize your instance](https://www.VanityURLs.link/en/docs/customize-overview/)
-- [Local CLI](https://www.VanityURLs.link/en/docs/cli/)
-- [Full documentation](https://www.VanityURLs.link/en/docs/)
+The [documentation](https://vanityurls.link/en/docs/setup/) on the website is the source of truth for setup and
+operations.
 
 ## Quickstart
 
 Before starting, you need a registered short domain, GitHub and Cloudflare accounts, Git, Node.js 20 or newer, npm, and
 a text editor. The short domain must use Cloudflare as its authoritative DNS provider before the Worker can serve it.
 
-Clone the vanityURLs code, detach the clone from the upstream project, then install dependencies:
-
-```bash
-git clone https://github.com/vanityurls/code.git redirector
-cd redirector
-npm run detach
-npm install
-```
-
-Run the installer, install local helpers, then validate the plain instance:
-
-```bash
-npm run setup
-npm run local-install
-npm run check
-```
-
-Review `wrangler.toml` and set the Worker name plus the route or custom domain for your short domain. Keep
-instance-specific files in `custom/`; do not edit `defaults/` unless you are contributing upstream changes to vanityURLs
-itself.
-
-Initialize Git, push the repository to GitHub, and connect it to Cloudflare Workers & Pages. You can also deploy
-manually:
-
-```bash
-npx wrangler deploy --config wrangler.toml
-```
-
-After the first redirect works, use the documentation to customize branding, legal pages, analytics, protected
-dashboards, and local workstation helpers.
-
-## Local Workflow
-
-Run `npm run setup` first to configure the instance, then `npm run local-install` to install workstation helpers. Run
-`npm run local-publish` after local edits when you want checks, commit selection, and push handled in one step. Run
-`./scripts/v8s-lnk --help` for the local link-management quick reference. `./scripts/lnk` remains a compatibility alias.
-
-Command prefixes are grouped: `npm run test`, `npm run validate`, and `npm run smoke` run their whole group, while
-focused variants such as `test:worker`, `validate:targets`, and `smoke:analytics` run one layer. Run `npm run help` for
-the full command list and rationale.
+Follow the [documentation](https://vanityurls.link/en/docs/quickstart) to spin your vanityURLs' instance.
 
 ## Contributions
 
