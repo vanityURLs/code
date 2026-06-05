@@ -13,6 +13,44 @@ identities are pinned in `.github/release-signers.json` and documented in `.gith
 This proves release provenance before `npm run upgrade` consumes upstream product code. It does not prove the code is
 safe; maintainers still review changes, run checks, and protect GitHub accounts.
 
+## Signing Standard
+
+Use SSH signing backed by 1Password for day-to-day commits. Use Sigstore/gitsign for release tags and other
+provenance-sensitive actions.
+
+This keeps normal development fast while making published release boundaries auditable through an OIDC identity and the
+Sigstore transparency log.
+
+<details>
+<summary>Daily commit signing</summary>
+
+Day-to-day commits should use SSH signing through 1Password:
+
+```sh
+git config --global gpg.format ssh
+git config --global gpg.ssh.program "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+git config --global commit.gpgsign true
+```
+
+Use the SSH signing key registered with GitHub for the maintainer's `code@Dicaire.com` or maintainer-approved identity.
+
+</details>
+
+<details>
+<summary>Release tag signing</summary>
+
+Release tags must use Sigstore/gitsign:
+
+```sh
+git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z -m "vX.Y.Z"
+git -c gpg.format=x509 -c gpg.x509.program=gitsign verify-tag -v vX.Y.Z
+```
+
+Prefer per-command `-c gpg.format=x509 -c gpg.x509.program=gitsign` for release tag creation. This avoids changing the
+global commit-signing configuration used for SSH/1Password daily commits.
+
+</details>
+
 ## Daily Development
 
 Do not work directly on `main`.
@@ -21,11 +59,12 @@ Do not work directly on `main`.
 2. Create a branch: `git switch -c work/descriptive-name`.
 3. Make the change.
 4. Run the relevant check: `npm run check` for broad changes, or a focused script when the change is narrow.
-5. Commit with a Conventional Commits message: `git commit -m "type: summary"`.
-6. Push the branch: `git push origin HEAD`.
-7. Open a pull request.
-8. Require review and `ci:check` before merge.
-9. Merge using the repository's documented merge strategy.
+5. Stage the intended changes: `git add .`.
+6. Commit with a Conventional Commits message and SSH/1Password signing enabled: `git commit -m "type: summary"`.
+7. Push the branch: `git push origin HEAD`.
+8. Open a pull request: `gh pr create --fill`.
+9. Require review and `ci:check` before merge.
+10. Merge using the repository's documented merge strategy.
 
 Use squash merge when the pull request is the release unit. In that case, the pull request title must be a valid
 Conventional Commit because it becomes the commit that release-please reads on `main`.
@@ -58,6 +97,79 @@ git diff --name-status HEAD...origin/main
 
 </details>
 
+<details>
+<summary>Pull request CLI commands</summary>
+
+Open a pull request from the current branch:
+
+```sh
+gh pr create --fill
+```
+
+Watch pull request checks:
+
+```sh
+gh pr checks --watch
+```
+
+Approve a pull request authored by someone else or a bot:
+
+```sh
+gh pr review PR_NUMBER --approve
+```
+
+Merge after checks and required review pass:
+
+```sh
+gh pr merge PR_NUMBER --merge --delete-branch
+```
+
+For maintainer-authored pull requests during stabilization, bypass only when checks have passed and the change does not
+require second human review:
+
+```sh
+gh pr merge PR_NUMBER --merge --admin --delete-branch
+```
+
+</details>
+
+<details>
+<summary>Choosing the relevant check</summary>
+
+- For broad product, Worker, policy, or generated-output changes: `npm run check`.
+- For maintenance script changes, such as `scripts/doctor.mjs`, `scripts/install.mjs`, `scripts/upgrade.mjs`, or shared
+  script libraries: run the focused test that covers the changed path, then `npm run check` before merge.
+- For doctor output changes: `npm run doctor -- --json`.
+- For opt-in upstream nudge changes: `npm run doctor -- --json --check-upstream`.
+- For manual upstream release checks:
+  `node scripts/check-upstream-release.mjs --json --current-version 0.0.0 --repo vanityURLs/code`.
+
+Network-backed upstream checks must stay non-fatal.
+
+</details>
+
+## Dependabot Maintenance
+
+Dependabot pull requests are authored by `dependabot[bot]`, so maintainers may approve them. Review that the diff only
+updates the expected dependency or GitHub Action, wait for checks, then merge.
+
+When several Dependabot pull requests touch workflow files, merge them as a maintenance batch. If a Dependabot branch
+conflicts after `main` moves, ask Dependabot to rebase instead of resolving the bot branch manually:
+
+```sh
+gh pr comment PR_NUMBER --body "@dependabot rebase"
+```
+
+If Dependabot reports missing labels, create the labels instead of editing every pull request:
+
+```sh
+gh label create dependencies --repo vanityURLs/code --color 0366d6 --description "Dependency updates"
+gh label create github-actions --repo vanityURLs/code --color 5319e7 --description "GitHub Actions dependency updates"
+```
+
+Because `chore` is mapped to patch releases, merged Dependabot chores will usually produce a release-please patch pull
+request.
+
 ## Release-Please
 
 Release-please runs after commits land on `main`.
@@ -71,17 +183,27 @@ When release-please opens or updates the release pull request:
 2. Review `CHANGELOG.md` for operator-facing clarity.
 3. Confirm `.release-please-manifest.json`, `package.json`, and `package-lock.json` are consistent.
 4. Confirm no user-visible change was hidden behind an inappropriate commit type.
-5. Merge the release pull request only when the release should be published.
+5. Approve and merge the release pull request only when the release should be published.
+
+The release pull request is authored by `github-actions[bot]`, so a maintainer may approve it even when that maintainer
+authored the underlying feature or fix commits. GitHub does not allow an author to satisfy review requirements on their
+own pull request, but the release-please pull request has the bot as author.
+
+CLI flow:
+
+```sh
+gh pr view RELEASE_PR_NUMBER --repo vanityURLs/code --web
+gh pr checks RELEASE_PR_NUMBER --repo vanityURLs/code --watch
+gh pr review RELEASE_PR_NUMBER --repo vanityURLs/code --approve
+gh pr merge RELEASE_PR_NUMBER --repo vanityURLs/code --merge --delete-branch
+```
 
 <details>
 <summary>Release preparation checklist</summary>
 
 - Confirm the worktree only contains intended release changes: `git status --short`.
 - Confirm the release signer is listed in `.github/release-signers.json`.
-- Confirm Git tag signing uses Sigstore/gitsign:
-  - `git config --get gpg.format` returns `x509`.
-  - `git config --get gpg.x509.program` returns `gitsign`.
-  - `git config --get tag.gpgsign` returns `true`.
+- Confirm the release tag will be created with Sigstore/gitsign, not the daily SSH/1Password commit signer.
 - Review runtime registry schema changes with `docs/adr/`.
 - Run `npm run clean`.
 - Run `npm run check`.
@@ -118,12 +240,11 @@ GitHub's `Watch -> Releases` and security notification workflows receive the str
 
 ## Signed Release Tag
 
-Configure gitsign before creating release tags:
+Release tags use gitsign even when daily commits use SSH/1Password signing. Create the tag with per-command gitsign
+configuration so global commit signing remains unchanged:
 
 ```sh
-git config --global gpg.format x509
-git config --global gpg.x509.program gitsign
-git config --global tag.gpgsign true
+git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z -m "vX.Y.Z"
 ```
 
 After the release pull request has merged:
@@ -132,18 +253,33 @@ After the release pull request has merged:
 git switch main
 git pull --rebase
 npm run check
-git tag -s vX.Y.Z -m "vX.Y.Z"
-gitsign verify --certificate-identity code@Dicaire.com --certificate-oidc-issuer https://github.com/login/oauth vX.Y.Z
+git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z -m "vX.Y.Z"
+git -c gpg.format=x509 -c gpg.x509.program=gitsign verify-tag -v vX.Y.Z
 git push origin vX.Y.Z
+awk '/^## /{if(seen) exit; seen=1} seen {print}' CHANGELOG.md > /tmp/vanityurls-vX.Y.Z-release-notes.md
+gh release create vX.Y.Z --repo vanityURLs/code --title "vX.Y.Z" --notes-file /tmp/vanityurls-vX.Y.Z-release-notes.md --latest
+gh pr edit RELEASE_PR_NUMBER --repo vanityURLs/code --remove-label "autorelease: pending" --add-label "autorelease: tagged"
+gh release list --repo vanityURLs/code --limit 5
 ```
 
-Use the signer identity that matches the maintainer creating the tag. For Felix:
+`gitsign verify` verifies commits, not annotated release tags. For release tags, use `git verify-tag -v` with the same
+per-command gitsign configuration used to create the tag.
 
-```sh
-gitsign verify --certificate-identity felix@felixleger.com --certificate-oidc-issuer https://github.com/login/oauth vX.Y.Z
-```
+Confirm the verification output shows the expected signer identity and issuer, such as:
 
-Do not push an unsigned release tag. Do not move or recreate a release tag.
+- `Good signature from [code@Dicaire.com](https://github.com/login/oauth)`
+- `Validated Git signature: true`
+- `Validated Rekor entry: true`
+
+Use the signer identity that matches the maintainer creating the tag. For Felix, the expected identity is
+`felix@felixleger.com` with issuer `https://github.com/login/oauth`.
+
+If a release tag was accidentally created with SSH signing and already pushed, do not move or recreate the tag without a
+deliberate maintainer decision. Publish that release as transitional, then use gitsign for the next release tag.
+
+Do not push an unsigned release tag. Do not move or recreate a release tag. Publish the GitHub Release after the tag is
+pushed so operators using `Watch -> Releases` are notified. Mark the release-please pull request as
+`autorelease: tagged` after publishing because this repository uses `skip-github-release: true`.
 
 <details>
 <summary>Release tag checklist</summary>
@@ -151,12 +287,46 @@ Do not push an unsigned release tag. Do not move or recreate a release tag.
 - Merge the release-please release pull request.
 - Pull the clean release commit locally: `git switch main` then `git pull --rebase`.
 - Run the release confidence check: `npm run check`.
-- Create the signed release tag: `git tag -s vX.Y.Z -m "vX.Y.Z"`.
-- Verify the tag with the signing identity:
-  `gitsign verify --certificate-identity code@Dicaire.com --certificate-oidc-issuer https://github.com/login/oauth vX.Y.Z`.
+- Create the signed release tag with gitsign:
+  `git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z -m "vX.Y.Z"`.
+- Verify the tag: `git -c gpg.format=x509 -c gpg.x509.program=gitsign verify-tag -v vX.Y.Z`.
+- Confirm the verification output shows the expected signer identity and `https://github.com/login/oauth` issuer.
 - Push the tag only after verification: `git push origin vX.Y.Z`.
+- Prepare release notes from the latest changelog section:
+  `awk '/^## /{if(seen) exit; seen=1} seen {print}' CHANGELOG.md > /tmp/vanityurls-vX.Y.Z-release-notes.md`.
+- Publish the GitHub Release from the pushed tag:
+  `gh release create vX.Y.Z --repo vanityURLs/code --title "vX.Y.Z" --notes-file /tmp/vanityurls-vX.Y.Z-release-notes.md --latest`.
+- Mark the release-please pull request as tagged:
+  `gh pr edit RELEASE_PR_NUMBER --repo vanityURLs/code --remove-label "autorelease: pending" --add-label "autorelease: tagged"`.
+- Confirm GitHub shows the latest release: `gh release list --repo vanityURLs/code --limit 5`.
 - Confirm GitHub release tag rules protect `refs/tags/v*` from deletion, updates, and force-pushes, including
   administrator bypass.
+
+</details>
+
+<details>
+<summary>Repairing a missing release tag</summary>
+
+If release-please reports `There are untagged, merged release PRs outstanding`, the manifest may point to a version
+whose tag was never pushed. Create the missing signed tag on the release PR merge commit, not on the current `HEAD`:
+
+```sh
+git switch main
+git pull --rebase
+git -c gpg.format=x509 -c gpg.x509.program=gitsign tag -s vX.Y.Z RELEASE_MERGE_COMMIT -m "vX.Y.Z"
+git -c gpg.format=x509 -c gpg.x509.program=gitsign verify-tag -v vX.Y.Z
+git push origin vX.Y.Z
+awk '/^## /{if(seen) exit; seen=1} seen {print}' CHANGELOG.md > /tmp/vanityurls-vX.Y.Z-release-notes.md
+gh release create vX.Y.Z --repo vanityURLs/code --title "vX.Y.Z" --notes-file /tmp/vanityurls-vX.Y.Z-release-notes.md
+gh pr edit RELEASE_PR_NUMBER --repo vanityURLs/code --remove-label "autorelease: pending" --add-label "autorelease: tagged"
+```
+
+Rerun release-please after the repair. It should find the tag and stop scanning back into older repository history.
+
+```sh
+gh run list --repo vanityURLs/code --workflow release-please.yml --limit 5
+gh run rerun RUN_ID --repo vanityURLs/code
+```
 
 </details>
 
