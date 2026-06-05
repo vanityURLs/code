@@ -9,6 +9,12 @@
   text-align: left;
 }
 
+.lookup-turnstile {
+  display: flex;
+  justify-content: center;
+  min-height: 65px;
+}
+
 .lookup-result.is-visible {
   display: block;
 }

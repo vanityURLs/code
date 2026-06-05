@@ -18,6 +18,11 @@ const WEEKDAY_ALIASES = {
   fri: "fri",
   sat: "sat"
 };
+const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const LOOKUP_TURNSTILE_ACTION = "lookup";
+const LOOKUP_JSON_BODY_LIMIT_BYTES = 4096;
+const LOOKUP_ANALYTICS_BODY_LIMIT_BYTES = 2048;
+const TURNSTILE_TOKEN_LIMIT_CHARS = 2048;
 
 // Cached per Worker isolate; reset on failed reads so a later request can recover after a fixed deployment.
 let runtimeBlocklistPromise;
@@ -34,8 +39,9 @@ const LOCALIZED_HTML_LANGUAGES = ["fr", "es", "it", "de"]; // build replaces thi
 
 const SECURITY_HEADERS = {
   "content-security-policy":
-    "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; " +
-    "connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+    "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; font-src 'self'; " +
+    "img-src 'self' data:; connect-src 'self' https://api.github.com https://challenges.cloudflare.com; " +
+    "frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
   "permissions-policy": "camera=(), microphone=(), geolocation=()",
   "referrer-policy": "strict-origin-when-cross-origin",
   "strict-transport-security": "max-age=31536000",
@@ -100,6 +106,10 @@ async function handleRequest(context) {
 
   if (slug === "lookup/resolve") {
     return renderLookupResponse(request, env);
+  }
+
+  if (slug === "lookup/turnstile-config") {
+    return renderTurnstileConfig(request, env);
   }
 
   if (request.method !== "GET" && request.method !== "HEAD") {
@@ -388,7 +398,13 @@ async function renderLookupResponse(request, env) {
     });
   }
 
-  const body = await readJsonBody(request);
+  const parsedBody = await readJsonBody(request);
+  if (parsedBody.response) return parsedBody.response;
+
+  const body = parsedBody.body;
+  const turnstileResponse = await requireTurnstile(request, env, body);
+  if (turnstileResponse) return turnstileResponse;
+
   const slug = normalizeSlug(`/${String(body.slug || "")}`).slice(0, 99);
 
   if (!slug) {
@@ -412,12 +428,154 @@ async function renderLookupResponse(request, env) {
   return Response.json({ result: "resolved", slug, state, target }, { headers });
 }
 
-async function readJsonBody(request) {
-  try {
-    return await request.json();
-  } catch {
-    return {};
+function renderTurnstileConfig(request, env) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return methodNotAllowedResponse();
   }
+
+  return Response.json(
+    {
+      siteKey: turnstileSiteKey(env),
+      required: true,
+      configured: Boolean(turnstileSecretKey(env) && turnstileSiteKey(env))
+    },
+    {
+      headers: {
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow"
+      }
+    }
+  );
+}
+
+async function requireTurnstile(request, env, body) {
+  const secret = turnstileSecretKey(env);
+  if (!secret) return turnstileFailureResponse("not-configured", 503);
+
+  const token = String(body.turnstileToken || body["cf-turnstile-response"] || "").trim();
+  if (!token) return turnstileFailureResponse("missing");
+  if (token.length > TURNSTILE_TOKEN_LIMIT_CHARS) return turnstileFailureResponse("invalid");
+
+  const form = new FormData();
+  form.set("secret", secret);
+  form.set("response", token);
+
+  const visitorIp = request.headers.get("cf-connecting-ip");
+  if (visitorIp) form.set("remoteip", visitorIp);
+
+  try {
+    const response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: "POST",
+      body: form
+    });
+    const result = await response.json();
+    return isExpectedTurnstileResult(request, result) ? null : turnstileFailureResponse("invalid");
+  } catch {
+    return turnstileFailureResponse("unavailable", 503);
+  }
+}
+
+function isExpectedTurnstileResult(request, result) {
+  if (!result?.success) return false;
+
+  const hostname = String(result.hostname || "").toLowerCase();
+  if (!hostname) return false;
+
+  const expectedHostname = new URL(request.url).hostname.toLowerCase();
+  if (hostname !== expectedHostname) return false;
+
+  const action = String(result.action || "");
+  return action === LOOKUP_TURNSTILE_ACTION;
+}
+
+function turnstileFailureResponse(reason, status = 403) {
+  return Response.json(
+    {
+      result: "turnstile-required",
+      reason
+    },
+    {
+      status,
+      headers: {
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow"
+      }
+    }
+  );
+}
+
+function turnstileSecretKey(env) {
+  return String(env?.V8S_TURNSTILE_SECRET_KEY || env?.TURNSTILE_SECRET_KEY || env?.TURNSTILE_SECRET || "").trim();
+}
+
+function turnstileSiteKey(env) {
+  return String(env?.V8S_TURNSTILE_SITE_KEY || env?.TURNSTILE_SITE_KEY || env?.TURNSTILE_SITE || "").trim();
+}
+
+async function readJsonBody(request) {
+  const contentLength = Number(request.headers.get("content-length") || "0");
+  if (contentLength > LOOKUP_JSON_BODY_LIMIT_BYTES) {
+    return { response: lookupFailureResponse("request-too-large", 413) };
+  }
+
+  try {
+    const text = await readBoundedRequestText(request, LOOKUP_JSON_BODY_LIMIT_BYTES);
+    if (!text.trim()) return { body: {} };
+
+    const body = JSON.parse(text);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return { response: lookupFailureResponse("invalid-json-shape", 400) };
+    }
+
+    return { body };
+  } catch (error) {
+    if (error?.name === "RequestBodyTooLargeError") {
+      return { response: lookupFailureResponse("request-too-large", 413) };
+    }
+    return { response: lookupFailureResponse("invalid-json", 400) };
+  }
+}
+
+async function readBoundedRequestText(request, limitBytes) {
+  const reader = request.body?.getReader?.();
+  if (!reader) return "";
+
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    bytes += value.byteLength;
+    if (bytes > limitBytes) {
+      await reader.cancel();
+      const error = new Error("Request body too large");
+      error.name = "RequestBodyTooLargeError";
+      throw error;
+    }
+
+    text += decoder.decode(value, { stream: true });
+  }
+
+  return text + decoder.decode();
+}
+
+function lookupFailureResponse(reason, status) {
+  return Response.json(
+    {
+      result: "lookup-error",
+      reason
+    },
+    {
+      status,
+      headers: {
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow"
+      }
+    }
+  );
 }
 
 async function findScannerProbe(request, env) {
@@ -731,6 +889,7 @@ function isSafeRouteTarget(value) {
 
 function sanitizeRedirectTarget(value, request) {
   if (!value || hasControlChars(value)) return "";
+  if (value.startsWith("//") || value.startsWith("/\\")) return "";
 
   let target;
 
@@ -1312,13 +1471,10 @@ async function handleLookupAnalytics(request, env, ctx, correlationId) {
     });
   }
 
-  let body = {};
+  const parsedBody = await readAnalyticsJsonBody(request);
+  if (parsedBody.response) return parsedBody.response;
 
-  try {
-    body = await request.json();
-  } catch {
-    body = {};
-  }
+  const body = parsedBody.body;
 
   const slug = normalizeSlug(`/${String(body.slug || "")}`).slice(0, 99);
   const state = String(body.state || "").slice(0, 40);
@@ -1343,6 +1499,46 @@ async function handleLookupAnalytics(request, env, ctx, correlationId) {
       "x-robots-tag": "noindex, nofollow"
     }
   });
+}
+
+async function readAnalyticsJsonBody(request) {
+  const contentLength = Number(request.headers.get("content-length") || "0");
+  if (contentLength > LOOKUP_ANALYTICS_BODY_LIMIT_BYTES) {
+    return { response: lookupAnalyticsFailureResponse("request-too-large", 413) };
+  }
+
+  try {
+    const text = await readBoundedRequestText(request, LOOKUP_ANALYTICS_BODY_LIMIT_BYTES);
+    if (!text.trim()) return { body: {} };
+
+    const body = JSON.parse(text);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return { response: lookupAnalyticsFailureResponse("invalid-json-shape", 400) };
+    }
+
+    return { body };
+  } catch (error) {
+    if (error?.name === "RequestBodyTooLargeError") {
+      return { response: lookupAnalyticsFailureResponse("request-too-large", 413) };
+    }
+    return { response: lookupAnalyticsFailureResponse("invalid-json", 400) };
+  }
+}
+
+function lookupAnalyticsFailureResponse(reason, status) {
+  return Response.json(
+    {
+      result: "lookup-analytics-error",
+      reason
+    },
+    {
+      status,
+      headers: {
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow"
+      }
+    }
+  );
 }
 
 async function logAnalyticsEvent(env, request, data) {

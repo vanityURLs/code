@@ -5,6 +5,8 @@
       miss: "No matching short link was found",
       notRedirecting: "This short link is not currently redirecting",
       error: "Unable to load short link data",
+      challenge: "Complete the verification before previewing this link",
+      notConfigured: "Lookup verification is not configured",
       preview: "Preview",
       destination: "Link destination"
     },
@@ -13,6 +15,8 @@
       miss: "Aucun lien court correspondant n'a été trouvé",
       notRedirecting: "Ce lien court ne redirige pas actuellement",
       error: "Impossible de charger les données des liens courts",
+      challenge: "Terminez la vérification avant de prévisualiser ce lien",
+      notConfigured: "La vérification lookup n'est pas configurée",
       preview: "Aperçu",
       destination: "Destination du lien"
     },
@@ -21,6 +25,8 @@
       miss: "No se encontró ningún enlace corto coincidente",
       notRedirecting: "Este enlace corto no está redirigiendo actualmente",
       error: "No se pudieron cargar los datos de enlaces cortos",
+      challenge: "Completa la verificación antes de previsualizar este enlace",
+      notConfigured: "La verificación de consulta no está configurada",
       preview: "Vista previa",
       destination: "Destino del enlace"
     },
@@ -29,6 +35,8 @@
       miss: "Nessun link breve corrispondente trovato",
       notRedirecting: "Questo link breve al momento non reindirizza",
       error: "Impossibile caricare i dati dei link brevi",
+      challenge: "Completa la verifica prima di visualizzare questo link",
+      notConfigured: "La verifica lookup non è configurata",
       preview: "Anteprima",
       destination: "Destinazione del link"
     },
@@ -37,6 +45,8 @@
       miss: "Kein passender Kurzlink gefunden",
       notRedirecting: "Dieser Kurzlink leitet derzeit nicht weiter",
       error: "Kurzlinkdaten konnten nicht geladen werden",
+      challenge: "Schließen Sie die Verifizierung ab, bevor Sie diesen Link anzeigen",
+      notConfigured: "Lookup-Verifizierung ist nicht konfiguriert",
       preview: "Vorschau",
       destination: "Linkziel"
     }
@@ -46,6 +56,12 @@
     .toLowerCase()
     .split("-")[0];
   const labels = LOOKUP_LABELS[lookupLanguage] || LOOKUP_LABELS.en;
+  const turnstileState = {
+    enabled: false,
+    ready: null,
+    token: "",
+    widgetId: null
+  };
 
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("lookupForm");
@@ -53,6 +69,8 @@
     const result = document.getElementById("lookupResult");
 
     if (!form || !input || !result) return;
+
+    turnstileState.ready = prepareTurnstile(form);
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -67,7 +85,9 @@
       }
 
       try {
-        const lookup = await lookupSlug(slug);
+        const turnstileToken = await currentTurnstileToken(result);
+        const lookup = await lookupSlug(slug, turnstileToken);
+        resetTurnstile();
 
         if (lookup.result === "miss") {
           renderMessage(result, labels.miss);
@@ -84,8 +104,10 @@
 
         renderTarget(result, slug, lookup.target, state);
         trackLookup(slug, state, lookup.target, "resolved");
-      } catch {
-        renderMessage(result, labels.error);
+      } catch (error) {
+        resetTurnstile();
+        if (error?.name === "TurnstileRequiredError") return;
+        renderMessage(result, turnstileState.configurationError || labels.error);
         trackLookup(slug, "", "", "error");
       }
     });
@@ -120,15 +142,98 @@
       .slice(0, 99);
   }
 
-  async function lookupSlug(slug) {
+  async function lookupSlug(slug, turnstileToken) {
     const response = await fetch("/lookup/resolve", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ slug }),
+      body: JSON.stringify({ slug, turnstileToken }),
       cache: "no-store"
     });
     if (!response.ok) throw new Error("Unable to load lookup data");
     return response.json();
+  }
+
+  async function prepareTurnstile(form) {
+    let config = {};
+
+    try {
+      const response = await fetch("/lookup/turnstile-config", { cache: "no-store" });
+      if (response.ok) config = await response.json();
+    } catch {
+      config = {};
+    }
+
+    if (!config.configured || !config.siteKey) {
+      turnstileState.configurationError = labels.notConfigured;
+      return;
+    }
+
+    turnstileState.enabled = true;
+    const container = document.createElement("div");
+    container.className = "lookup-turnstile";
+    container.setAttribute("aria-hidden", "false");
+    form.insertAdjacentElement("afterend", container);
+
+    await loadTurnstileScript();
+
+    turnstileState.widgetId = window.turnstile.render(container, {
+      sitekey: config.siteKey,
+      action: "lookup",
+      callback: (token) => {
+        turnstileState.token = token;
+      },
+      "expired-callback": () => {
+        turnstileState.token = "";
+      },
+      "error-callback": () => {
+        turnstileState.token = "";
+      }
+    });
+  }
+
+  function loadTurnstileScript() {
+    if (window.turnstile) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-v8s-turnstile="true"]');
+      if (existing) {
+        existing.addEventListener("load", resolve, { once: true });
+        existing.addEventListener("error", reject, { once: true });
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      script.dataset.v8sTurnstile = "true";
+      script.addEventListener("load", resolve, { once: true });
+      script.addEventListener("error", reject, { once: true });
+      document.head.append(script);
+    });
+  }
+
+  async function currentTurnstileToken(result) {
+    if (turnstileState.ready) await turnstileState.ready;
+    if (turnstileState.configurationError) {
+      renderMessage(result, turnstileState.configurationError);
+      const error = new Error("Turnstile configuration is required");
+      error.name = "TurnstileRequiredError";
+      throw error;
+    }
+    if (!turnstileState.enabled) return "";
+    if (turnstileState.token) return turnstileState.token;
+
+    renderMessage(result, labels.challenge);
+    const error = new Error("Turnstile token is required");
+    error.name = "TurnstileRequiredError";
+    throw error;
+  }
+
+  function resetTurnstile() {
+    if (!turnstileState.enabled || turnstileState.widgetId === null || !window.turnstile) return;
+    turnstileState.token = "";
+    window.turnstile.reset(turnstileState.widgetId);
   }
 
   function renderMessage(result, message) {

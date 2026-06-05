@@ -12,6 +12,20 @@ assets that Cloudflare deploys.
 The [documentation](https://vanityurls.link/en/docs/setup/) on the website is the source of truth for setup and
 operations.
 
+## Lookup Turnstile
+
+Redirect paths such as `/{slug}` stay free of Turnstile so published short links, QR codes, and automation-safe
+redirects keep working without an interactive challenge. The protected surface is the public lookup flow: the browser
+opens `/lookup`, receives a Turnstile token for the `lookup` action, and submits that token with `POST /lookup/resolve`.
+
+Lookup fails closed when Turnstile is not configured. Set `V8S_TURNSTILE_SITE_KEY` as a Worker variable and
+`V8S_TURNSTILE_SECRET_KEY` as a Worker secret before enabling lookup for visitors. The shorter dashboard names
+`TURNSTILE_SITE` and `TURNSTILE_SECRET` are also accepted. The Worker validates the token with Cloudflare `siteverify`
+and rejects successful responses whose returned hostname does not match the request host or whose action is not
+`lookup`. If the secret is missing, lookup resolution returns `503`; missing or invalid visitor tokens return `403`.
+Keep Cloudflare WAF and rate limiting in front of lookup because valid-token abuse can still repeat expensive exact-slug
+checks.
+
 ## Quickstart
 
 Before starting, you need a registered short domain, GitHub and Cloudflare accounts, Git, Node.js 20 or newer, npm, and

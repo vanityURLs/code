@@ -1,13 +1,45 @@
 import worker from "./worker.mjs";
 
 let analyticsCalls = [];
+let turnstileCalls = [];
 const originalFetch = globalThis.fetch;
 const originalWarn = console.warn;
 
 console.warn = () => {};
 
-globalThis.fetch = async (url, init) => {
-  analyticsCalls.push({ url, init, body: init.body ? JSON.parse(init.body) : null });
+globalThis.fetch = async (url, init = {}) => {
+  const href = typeof url === "string" ? url : url?.url || "";
+
+  if (href === "https://challenges.cloudflare.com/turnstile/v0/siteverify") {
+    const token = String(init.body?.get?.("response") || "");
+    const secret = String(init.body?.get?.("secret") || "");
+    const remoteip = String(init.body?.get?.("remoteip") || "");
+    turnstileCalls.push({ url, init, token, secret, remoteip });
+
+    if (token === "throw-token") throw new Error("simulated Turnstile network failure");
+    if (token === "html-token") return new Response("<html>oops</html>", { status: 200 });
+    if (token === "server-error-token") return Response.json({ success: false }, { status: 500 });
+
+    return Response.json({
+      success:
+        [
+          "valid-token",
+          "wrong-host-token",
+          "missing-host-token",
+          "wrong-action-token",
+          "missing-action-token"
+        ].includes(token) && secret === "turnstile-secret",
+      hostname: token === "wrong-host-token" ? "attacker.example" : token === "missing-host-token" ? "" : "dicai.re",
+      action: token === "wrong-action-token" ? "admin" : token === "missing-action-token" ? "" : "lookup",
+      "error-codes": token === "valid-token" ? [] : ["invalid-input-response"]
+    });
+  }
+
+  analyticsCalls.push({
+    url,
+    init,
+    body: typeof init.body === "string" && init.body ? JSON.parse(init.body) : null
+  });
   return new Response("ok", { status: 200 });
 };
 
@@ -198,6 +230,14 @@ function env(overrides = {}) {
   };
 }
 
+function turnstileEnv(overrides = {}) {
+  return env({
+    V8S_TURNSTILE_SITE_KEY: "turnstile-site",
+    V8S_TURNSTILE_SECRET_KEY: "turnstile-secret",
+    ...overrides
+  });
+}
+
 let accessFixturePromise;
 
 function accessEnv(overrides = {}) {
@@ -335,8 +375,20 @@ function jsonRequest(path, body, init = {}) {
   });
 }
 
+function lookupRequest(body = {}, init = {}) {
+  return jsonRequest(
+    "/lookup/resolve",
+    {
+      turnstileToken: "valid-token",
+      ...body
+    },
+    init
+  );
+}
+
 async function run(name, fn) {
   analyticsCalls = [];
+  turnstileCalls = [];
 
   try {
     await fn();
@@ -360,6 +412,7 @@ function assertSecurityHeaders(response) {
   const csp = response.headers.get("content-security-policy") || "";
   assert(csp.includes("frame-ancestors 'none'"), "csp frame ancestors");
   assert(csp.includes("connect-src 'self' https://api.github.com"), "csp connect sources");
+  assert(csp.includes("https://challenges.cloudflare.com"), "csp permits Turnstile");
   assert(!csp.includes("'unsafe-inline'"), "csp rejects inline code");
   assert(
     response.headers.get("permissions-policy") === "camera=(), microphone=(), geolocation=()",
@@ -498,7 +551,7 @@ await run("serves extensionless policy page aliases", async () => {
 await run("applies security headers across response classes and preserves explicit headers", async () => {
   for (const [name, response] of [
     ["html asset", await worker.fetch(request("/privacy"), env(), mockCtx())],
-    ["json api", await worker.fetch(jsonRequest("/lookup/resolve", { slug: "test" }), env(), mockCtx())],
+    ["json api", await worker.fetch(lookupRequest({ slug: "test" }), turnstileEnv(), mockCtx())],
     ["not found", await worker.fetch(request("/missing"), env(), mockCtx())],
     ["protected", await worker.fetch(request("/_tests"), env(), mockCtx())],
     ["static asset", await worker.fetch(request("/style.css"), env(), mockCtx())]
@@ -512,11 +565,130 @@ await run("applies security headers across response classes and preserves explic
   assert(custom.headers.get("x-frame-options") === "DENY", "other security headers still added");
 });
 
+await run("exposes fail-closed lookup Turnstile configuration", async () => {
+  const configured = await worker.fetch(request("/lookup/turnstile-config"), turnstileEnv(), mockCtx());
+  assert(configured.status === 200, "configured status");
+  assert(configured.headers.get("cache-control") === "no-store", "configured cache control");
+  assert(configured.headers.get("x-robots-tag") === "noindex, nofollow", "configured robots");
+  assertSecurityHeaders(configured);
+  const configuredBody = await configured.json();
+  assert(configuredBody.required === true, "configured required");
+  assert(configuredBody.configured === true, "configured flag");
+  assert(configuredBody.siteKey === "turnstile-site", "site key exposed");
+
+  const missing = await worker.fetch(request("/lookup/turnstile-config"), env(), mockCtx());
+  const missingBody = await missing.json();
+  assert(missing.status === 200, "missing config status");
+  assert(missingBody.required === true, "missing config required");
+  assert(missingBody.configured === false, "missing config flag");
+  assert(missingBody.siteKey === "", "missing config hides site key");
+
+  const post = await worker.fetch(request("/lookup/turnstile-config", { method: "POST" }), turnstileEnv(), mockCtx());
+  assert(post.status === 405, "config post status");
+  assert(post.headers.get("allow") === "GET, HEAD, OPTIONS", "config post allow");
+});
+
+await run("fails lookup closed without Turnstile configuration", async () => {
+  const response = await worker.fetch(lookupRequest({ slug: "test" }), env(), mockCtx());
+  assert(response.status === 503, "status");
+  assertSecurityHeaders(response);
+  assert(turnstileCalls.length === 0, "no external verification without secret");
+  const body = await response.json();
+  assert(body.result === "turnstile-required", "result");
+  assert(body.reason === "not-configured", "reason");
+});
+
+await run("requires a Turnstile token before lookup resolution", async () => {
+  for (const [name, body] of [
+    ["missing token", { slug: "test" }],
+    ["blank token", { slug: "test", turnstileToken: "   " }]
+  ]) {
+    const response = await worker.fetch(jsonRequest("/lookup/resolve", body), turnstileEnv(), mockCtx());
+    assert(response.status === 403, `${name} status`);
+    assert((await response.json()).reason === "missing", `${name} reason`);
+  }
+  assert(turnstileCalls.length === 0, "missing tokens are rejected locally");
+});
+
+await run("rejects invalid or unavailable Turnstile verification", async () => {
+  for (const [token, status, reason] of [
+    ["bad-token", 403, "invalid"],
+    ["wrong-host-token", 403, "invalid"],
+    ["missing-host-token", 403, "invalid"],
+    ["wrong-action-token", 403, "invalid"],
+    ["missing-action-token", 403, "invalid"],
+    ["server-error-token", 403, "invalid"],
+    ["throw-token", 503, "unavailable"],
+    ["html-token", 503, "unavailable"]
+  ]) {
+    const response = await worker.fetch(
+      jsonRequest("/lookup/resolve", { slug: "test", turnstileToken: token }),
+      turnstileEnv(),
+      mockCtx()
+    );
+    assert(response.status === status, `${token} status`);
+    assert((await response.json()).reason === reason, `${token} reason`);
+  }
+  assert(turnstileCalls.length === 8, "all verification attempts captured");
+});
+
+await run("rejects malformed lookup bodies before Turnstile verification", async () => {
+  for (const [name, body, status, reason] of [
+    ["malformed json", "{", 400, "invalid-json"],
+    ["wrong json shape", JSON.stringify(["test"]), 400, "invalid-json-shape"],
+    ["oversized body", JSON.stringify({ slug: "test", padding: "x".repeat(4096) }), 413, "request-too-large"]
+  ]) {
+    const response = await worker.fetch(
+      request("/lookup/resolve", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body
+      }),
+      turnstileEnv(),
+      mockCtx()
+    );
+    assert(response.status === status, `${name} status`);
+    const json = await response.json();
+    assert(json.result === "lookup-error", `${name} result`);
+    assert(json.reason === reason, `${name} reason`);
+  }
+  assert(turnstileCalls.length === 0, "bad bodies are rejected before Turnstile");
+});
+
+await run("rejects oversized Turnstile tokens locally", async () => {
+  const response = await worker.fetch(
+    jsonRequest("/lookup/resolve", {
+      slug: "test",
+      turnstileToken: "x".repeat(2049)
+    }),
+    turnstileEnv(),
+    mockCtx()
+  );
+  assert(response.status === 403, "status");
+  assert((await response.json()).reason === "invalid", "reason");
+  assert(turnstileCalls.length === 0, "oversized token not sent to siteverify");
+});
+
 await run("blocks raw registry asset", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/v8s.json"), env(), ctx);
   assert(response.status === 404, "status");
   assert(response.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
+});
+
+await run("blocks raw registry asset path variants", async () => {
+  for (const [name, path, init = {}] of [
+    ["head", "/v8s.json", { method: "HEAD" }],
+    ["encoded", "/%76%38%73.json"],
+    ["double slash", "https://dicai.re//v8s.json"],
+    ["site config encoded", "/%76%38%73-site-config.json"],
+    ["blocklist encoded", "/%76%38%73-blocklist.json"]
+  ]) {
+    const ctx = mockCtx();
+    const response = await worker.fetch(request(path, init), env(), ctx);
+    assert(response.status === 404, `${name} status`);
+    assert(response.headers.get("x-robots-tag") === "noindex, nofollow", `${name} robots header`);
+  }
 });
 
 await run("blocks raw runtime blocklist asset", async () => {
@@ -539,7 +711,7 @@ await run("resolves public lookup API for exact and nested slugs", async () => {
     ["d/gv", "https://example.com/d/gv"],
     ["docs/page-1", "https://example.com/docs/page-1"]
   ]) {
-    const response = await worker.fetch(jsonRequest("/lookup/resolve", { slug }), env(), mockCtx());
+    const response = await worker.fetch(lookupRequest({ slug }), turnstileEnv(), mockCtx());
     assert(response.status === 200, `${slug} status`);
     assertSecurityHeaders(response);
     assert(response.headers.get("x-robots-tag") === "noindex, nofollow", `${slug} robots header`);
@@ -548,14 +720,74 @@ await run("resolves public lookup API for exact and nested slugs", async () => {
     assert(body.slug === slug, `${slug} body slug`);
     assert(body.target === expectedTarget, `${slug} target`);
   }
+  assert(turnstileCalls.length === 3, "Turnstile verified for each lookup");
+  assert(
+    turnstileCalls.every((call) => call.remoteip === "203.0.113.42"),
+    "remote IP forwarded to siteverify"
+  );
+});
+
+await run("accepts Turnstile compatibility field names and env aliases", async () => {
+  const response = await worker.fetch(
+    jsonRequest(
+      "/lookup/resolve",
+      {
+        slug: "test",
+        "cf-turnstile-response": "valid-token"
+      },
+      {
+        headers: {
+          "cf-connecting-ip": ""
+        }
+      }
+    ),
+    env({
+      TURNSTILE_SITE_KEY: "turnstile-site",
+      TURNSTILE_SECRET_KEY: "turnstile-secret"
+    }),
+    mockCtx()
+  );
+  const body = await response.json();
+  assert(response.status === 200, "status");
+  assert(body.result === "resolved", "result");
+  assert(turnstileCalls.length === 1, "verification called");
+  assert(turnstileCalls[0].token === "valid-token", "compat token field");
+  assert(turnstileCalls[0].remoteip === "", "remote IP omitted when Cloudflare header is absent");
+});
+
+await run("accepts short Turnstile secret names used by Cloudflare dashboard", async () => {
+  const config = await worker.fetch(
+    request("/lookup/turnstile-config"),
+    env({
+      TURNSTILE_SITE: "turnstile-site",
+      TURNSTILE_SECRET: "turnstile-secret"
+    }),
+    mockCtx()
+  );
+  const configBody = await config.json();
+  assert(config.status === 200, "config status");
+  assert(configBody.configured === true, "config configured");
+  assert(configBody.siteKey === "turnstile-site", "short site key");
+
+  const response = await worker.fetch(
+    lookupRequest({ slug: "test" }),
+    env({
+      TURNSTILE_SITE: "turnstile-site",
+      TURNSTILE_SECRET: "turnstile-secret"
+    }),
+    mockCtx()
+  );
+  const body = await response.json();
+  assert(response.status === 200, "lookup status");
+  assert(body.result === "resolved", "lookup result");
 });
 
 await run("returns public lookup API miss and non-redirecting results", async () => {
-  const miss = await worker.fetch(jsonRequest("/lookup/resolve", { slug: "missing" }), env(), mockCtx());
+  const miss = await worker.fetch(lookupRequest({ slug: "missing" }), turnstileEnv(), mockCtx());
   assert(miss.status === 200, "miss status");
   assert((await miss.json()).result === "miss", "miss result");
 
-  const disabled = await worker.fetch(jsonRequest("/lookup/resolve", { slug: "off" }), env(), mockCtx());
+  const disabled = await worker.fetch(lookupRequest({ slug: "off" }), turnstileEnv(), mockCtx());
   assert(disabled.status === 200, "disabled status");
   const body = await disabled.json();
   assert(body.result === "not-redirecting", "disabled result");
@@ -564,18 +796,18 @@ await run("returns public lookup API miss and non-redirecting results", async ()
 });
 
 await run("keeps public lookup API private to clients and robots", async () => {
-  const empty = await worker.fetch(jsonRequest("/lookup/resolve", {}), env(), mockCtx());
+  const empty = await worker.fetch(lookupRequest({}), turnstileEnv(), mockCtx());
   assert(empty.status === 200, "empty status");
   assert(empty.headers.get("cache-control") === "no-store", "cache control");
   assert(empty.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
   assert((await empty.json()).slug === "", "empty slug");
 
-  const get = await worker.fetch(request("/lookup/resolve"), env(), mockCtx());
+  const get = await worker.fetch(request("/lookup/resolve"), turnstileEnv(), mockCtx());
   assert(get.status === 405, "get status");
   assert(get.headers.get("allow") === "POST", "get allow header");
 
   const longSlug = "a".repeat(512);
-  const long = await worker.fetch(jsonRequest("/lookup/resolve", { slug: longSlug }), env(), mockCtx());
+  const long = await worker.fetch(lookupRequest({ slug: longSlug }), turnstileEnv(), mockCtx());
   const body = await long.json();
   assert(long.status === 200, "long slug status");
   assert(body.result === "miss", "long slug miss");
@@ -884,6 +1116,31 @@ await run("rejects non-POST lookup analytics requests", async () => {
   assert(analyticsCalls.length === 0, "no analytics");
 });
 
+await run("rejects malformed and oversized lookup analytics bodies", async () => {
+  for (const [name, body, status, reason] of [
+    ["malformed json", "{", 400, "invalid-json"],
+    ["wrong json shape", JSON.stringify(["test"]), 400, "invalid-json-shape"],
+    ["oversized body", JSON.stringify({ slug: "test", padding: "x".repeat(2048) }), 413, "request-too-large"]
+  ]) {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      request("/_analytics/lookup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body
+      }),
+      env(),
+      ctx
+    );
+    assert(response.status === status, `${name} status`);
+    const json = await response.json();
+    assert(json.result === "lookup-analytics-error", `${name} result`);
+    assert(json.reason === reason, `${name} reason`);
+    await ctx.flush();
+    assert(analyticsCalls.length === 0, `${name} no analytics`);
+  }
+});
+
 await run("redirects exact short link and tracks event", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/test"), env(), ctx);
@@ -1049,29 +1306,35 @@ await run("uses the first matching schedule rule", async () => {
 });
 
 await run("refuses unsafe registry redirect targets at runtime", async () => {
-  const originalRegistryResponse = assets["/v8s.json"];
-  assets["/v8s.json"] = Response.json({
-    ...registry,
-    links: [
-      {
-        slug: "bad",
-        target: "javascript:alert(1)",
-        state: "permanent"
-      }
-    ]
-  });
+  for (const [name, target] of [
+    ["javascript protocol", "javascript:alert(1)"],
+    ["protocol-relative hostname", "//spam.example/path"]
+  ]) {
+    const originalRegistryResponse = assets["/v8s.json"];
+    assets["/v8s.json"] = Response.json({
+      ...registry,
+      links: [
+        {
+          slug: "bad",
+          target,
+          state: "permanent"
+        }
+      ]
+    });
 
-  try {
-    const ctx = mockCtx();
-    const response = await worker.fetch(request("/bad"), env(), ctx);
-    await ctx.flush();
-    assert(response.status === 404, "status");
-    assert(!response.headers.has("location"), "no redirect location");
-    assert(analyticsCalls.length === 2, "unsafe redirect analytics count");
-    assert(analyticsCalls[0].body.payload.name === "short-link-miss", "event name");
-    assert(analyticsCalls[0].body.payload.data.redirect_error === "unsafe-target", "redirect error");
-  } finally {
-    assets["/v8s.json"] = originalRegistryResponse;
+    try {
+      analyticsCalls = [];
+      const ctx = mockCtx();
+      const response = await worker.fetch(request("/bad"), env(), ctx);
+      await ctx.flush();
+      assert(response.status === 404, `${name} status`);
+      assert(!response.headers.has("location"), `${name} no redirect location`);
+      assert(analyticsCalls.length === 2, `${name} unsafe redirect analytics count`);
+      assert(analyticsCalls[0].body.payload.name === "short-link-miss", `${name} event name`);
+      assert(analyticsCalls[0].body.payload.data.redirect_error === "unsafe-target", `${name} redirect error`);
+    } finally {
+      assets["/v8s.json"] = originalRegistryResponse;
+    }
   }
 });
 
