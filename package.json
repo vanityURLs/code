@@ -18,7 +18,10 @@
     "generate:blocklist": "node scripts/generate-blocklist.mjs build/blocklist.generated.json",
     "generate:manifest": "node scripts/generate-release-manifest.mjs",
     "help": "node scripts/help.mjs",
-    "lint": "node scripts/lint.mjs",
+    "lint": "npm run lint:hygiene && npm run lint:complexity",
+    "lint:complexity": "node scripts/complexity-report.mjs",
+    "lint:complexity:raw": "eslint .",
+    "lint:hygiene": "node scripts/lint.mjs",
     "local-install": "node scripts/local-install.mjs",
     "local-publish": "node scripts/local-publish.mjs",
     "optimize:badges": "find defaults/public -name 'v8s-redirected*.svg' -print0 | xargs -0 svgo --config scripts/svgo.config.mjs",
@@ -26,10 +29,13 @@
     "smoke": "npm run smoke:analytics",
     "smoke:analytics": "npm run build && node scripts/smoke-analytics.mjs",
     "test": "npm run test:all",
-    "test:all": "npm run test:worker && npm run test:registry && npm run test:install && npm run test:maintenance",
+    "test:all": "npm run test:worker && npm run test:registry && npm run test:install && npm run test:maintenance && npm run test:upstream-release && npm run test:build-core && npm run test:build-html-core",
+    "test:build-core": "node scripts/build-site-core.test.mjs",
+    "test:build-html-core": "node scripts/build-html-core.test.mjs",
     "test:install": "node scripts/install.test.mjs",
     "test:maintenance": "node scripts/maintenance.test.mjs",
     "test:registry": "node scripts/registry.test.mjs",
+    "test:upstream-release": "node scripts/upstream-release.test.mjs",
     "test:worker": "node scripts/workers/worker.test.mjs",
     "upgrade": "node scripts/upgrade.mjs",
     "update": "node scripts/upgrade.mjs",
@@ -44,6 +50,8 @@
     "ci:check": "npm run check"
   },
   "devDependencies": {
+    "eslint": "^10.4.1",
+    "eslint-plugin-sonarjs": "^4.0.3",
     "prettier": "^3.8.3",
     "svgo": "^4.0.1"
   }

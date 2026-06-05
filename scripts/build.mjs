@@ -12,6 +12,25 @@ import {
   supportedLanguages,
   writeSiteConfig as writeRuntimeSiteConfig
 } from "./lib/build-assets.mjs";
+import {
+  encodePathSegment,
+  escapeHtml,
+  escapeHtmlAttribute,
+  hasConfiguredSlogan,
+  legalPageSlugs,
+  legalPagesEnabled,
+  localizedSlogan,
+  localizedSloganLinkText,
+  normalizeSecurityTxtValue,
+  renderBrandingSlogan,
+  renderConfiguredWordmark,
+  siteManifestShortName,
+  validateOperatorConfig,
+  validateSecurityConfig,
+  validateTrustConfig,
+  withTheme
+} from "./lib/build/site-core.mjs";
+import { normalizeHtmlHead } from "./lib/build/html-core.mjs";
 
 const ROOT = process.cwd();
 const BUILD_DIR = path.join(ROOT, "build");
@@ -27,7 +46,6 @@ const WORKER_SOURCE_DIR = path.join(ROOT, "scripts", "workers");
 const RUNTIME_SOURCE_DIR = path.join(ROOT, "src");
 const LANGUAGE_METADATA_PATH = path.join(DEFAULTS_DIR, "v8s-language-metadata.json");
 const LEGAL_CONTENT_PATH = path.join(DEFAULTS_DIR, "legal", "v8s-legal-content.json");
-const PUBLIC_ASSET_VERSION = "20260601";
 
 // Build order matters: product defaults are copied first, instance custom files overlay them,
 // then runtime JSON and generated Worker source are written for Wrangler.
@@ -40,14 +58,6 @@ function run(command) {
     cwd: ROOT,
     stdio: "inherit"
   });
-}
-
-function normalizeDomain(value) {
-  return String(value || "")
-    .trim()
-    .replace(/^https?:\/\//i, "")
-    .replace(/\/.*$/g, "")
-    .toLowerCase();
 }
 
 function loadSiteConfig() {
@@ -149,14 +159,6 @@ function renderSecurityTxt(siteConfig) {
   }
 }
 
-function legalPagesEnabled(siteConfig) {
-  return siteConfig?.operator?.legal_pages_enabled !== false;
-}
-
-function legalPageSlugs(siteConfig) {
-  return legalPagesEnabled(siteConfig) ? ["privacy", "terms", "abuse", "security"] : ["abuse"];
-}
-
 function removeDeferredLegalPages(siteConfig) {
   if (legalPagesEnabled(siteConfig)) return;
 
@@ -203,25 +205,6 @@ function renderSiteWebManifests(siteConfig) {
   }
 }
 
-function siteManifestShortName(siteConfig) {
-  const branding = siteConfig?.branding || {};
-  const wordmark = branding.wordmark || {};
-  const candidates = [
-    branding.domain,
-    siteConfig?.operator?.short_domain,
-    `${wordmark.black || ""}${wordmark.green || ""}`,
-    "VanityURLs"
-  ];
-
-  return candidates.map((value) => String(value || "").trim()).find(Boolean) || "VanityURLs";
-}
-
-function normalizeSecurityTxtValue(value) {
-  return String(value || "")
-    .trim()
-    .replace(/[\r\n]/g, "");
-}
-
 function legalPagePaths(language, slug) {
   return language === "en"
     ? [path.join(BUILD_DIR, `${slug}.html`), path.join(BUILD_DIR, "en", `${slug}.html`)]
@@ -255,67 +238,6 @@ function normalizeHtmlHeadAssets() {
   rewriteHtmlFiles(BUILD_DIR, (html) => normalizeHtmlHead(html));
 }
 
-function normalizeHtmlHead(html) {
-  let normalized = html;
-  normalized = normalizePublicAssetVersions(normalized);
-
-  if (!normalized.includes('rel="icon"')) {
-    normalized = insertBeforeHeadClose(normalized, '  <link rel="icon" type="image/svg+xml" href="/favicon.svg">\n');
-  }
-
-  if (!normalized.includes('rel="apple-touch-icon"')) {
-    normalized = insertBeforeHeadClose(normalized, '  <link rel="apple-touch-icon" href="/apple-touch-icon.png">\n');
-  }
-
-  if (!normalized.includes("data-v8s-theme-override")) {
-    normalized = insertBeforeFirstStylesheet(normalized, `${THEME_OVERRIDE_SCRIPT}\n`);
-  }
-
-  return normalized;
-}
-
-function normalizePublicAssetVersions(html) {
-  return html.replace(/(href=["']\/style\.css)(?:\?v=\d+)?(["'])/g, `$1?v=${PUBLIC_ASSET_VERSION}$2`);
-}
-
-function insertBeforeHeadClose(html, insertion) {
-  return html.replace(/<\/head>/i, `${insertion}</head>`);
-}
-
-function insertBeforeFirstStylesheet(html, insertion) {
-  if (/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/i.test(html)) {
-    return html.replace(/(<link\s+[^>]*rel=["']stylesheet["'][^>]*>)/i, `${insertion}$1`);
-  }
-
-  return insertBeforeHeadClose(html, insertion);
-}
-
-const THEME_OVERRIDE_SCRIPT = `  <script data-v8s-theme-override>
-    (() => {
-      const theme = new URLSearchParams(window.location.search).get("theme");
-      if (theme !== "light" && theme !== "dark") return;
-
-      document.documentElement.dataset.theme = theme;
-
-      const applyThemeImages = () => {
-        document.querySelectorAll('picture source[media*="prefers-color-scheme"][srcset]').forEach((source) => {
-          const image = source.parentElement?.querySelector("img");
-          const candidate =
-            theme === "dark"
-              ? source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0]
-              : image?.getAttribute("src");
-          if (image && candidate) image.src = candidate;
-        });
-      };
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", applyThemeImages, { once: true });
-      } else {
-        applyThemeImages();
-      }
-    })();
-  </script>`;
-
 function isDefaultLegalTemplate(filePath) {
   if (!fs.existsSync(filePath)) return false;
   const html = fs.readFileSync(filePath, "utf8");
@@ -324,68 +246,6 @@ function isDefaultLegalTemplate(filePath) {
     html.includes("Modèle par défaut à adapter par le propriétaire de l'instance.") ||
     html.includes('data-v8s-default-template="true"')
   );
-}
-
-function validateOperatorConfig(operator) {
-  const required = [
-    "legal_name",
-    "short_domain",
-    "jurisdiction",
-    "governing_law",
-    "contact_email",
-    "privacy_contact",
-    "abuse_contact",
-    "security_contact",
-    "last_updated",
-    "umami_geo_ip_mode",
-    "analytics_disclosure",
-    "abuse_response_window"
-  ];
-  const issues = required.filter((field) => isPlaceholderValue(operator[field]));
-
-  for (const field of ["contact_email", "privacy_contact", "abuse_contact", "security_contact"]) {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(operator[field]))) {
-      issues.push(field);
-    }
-  }
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated))) {
-    issues.push("last_updated");
-  }
-
-  return [...new Set(issues)];
-}
-
-function validateTrustConfig(operator) {
-  const required = ["short_domain", "abuse_contact", "security_contact", "last_updated", "abuse_response_window"];
-  const issues = required.filter((field) => isPlaceholderValue(operator[field]));
-
-  for (const field of ["abuse_contact", "security_contact"]) {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(operator[field]))) {
-      issues.push(field);
-    }
-  }
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated))) {
-    issues.push("last_updated");
-  }
-
-  return [...new Set(issues)];
-}
-
-function validateSecurityConfig(operator) {
-  const required = ["short_domain", "security_contact", "last_updated"];
-  const issues = required.filter((field) => isPlaceholderValue(operator[field]));
-
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(operator.security_contact))) {
-    issues.push("security_contact");
-  }
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(operator.last_updated))) {
-    issues.push("last_updated");
-  }
-
-  return [...new Set(issues)];
 }
 
 function effectiveOperator(operator) {
@@ -438,20 +298,6 @@ function gitLastUpdatedDate() {
   } catch {
     return "";
   }
-}
-
-function isPlaceholderValue(value) {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
-  return (
-    !normalized ||
-    ["todo", "tbd", "to be defined", "changeme", "change-me", "default", "owner", "example", "example.com"].includes(
-      normalized
-    ) ||
-    normalized.includes("example.") ||
-    normalized.includes("your-")
-  );
 }
 
 function replaceLegalContent(html, rendered, title = "") {
@@ -569,48 +415,6 @@ function isStatsDashboardFile(filePath) {
 function languageForBuildHtmlFile(filePath) {
   const [firstSegment] = path.relative(BUILD_DIR, filePath).split(path.sep);
   return LANGUAGE_METADATA[firstSegment] ? firstSegment : "en";
-}
-
-function hasConfiguredSlogan(slogan) {
-  if (slogan && typeof slogan === "object" && !Array.isArray(slogan)) {
-    return Object.values(slogan).some((value) => String(value || "").trim());
-  }
-  return Boolean(String(slogan || "").trim());
-}
-
-function renderBrandingSlogan(slogan, operator = {}, linkText = "") {
-  const rendered = escapeHtml(slogan || "");
-  const legalName = String(operator?.legal_name || "").trim();
-  const operatorDomain = normalizeDomain(operator?.operator_domain || "");
-  if (!rendered || !legalName || !operatorDomain) return rendered;
-
-  const linkCandidates = [String(linkText || "").trim(), legalName].filter(Boolean);
-
-  for (const candidate of linkCandidates) {
-    const escapedText = escapeHtml(candidate);
-    if (rendered.includes(escapedText)) {
-      return rendered.replace(
-        escapedText,
-        `<a href="https://${escapeHtmlAttribute(operatorDomain)}">${escapedText}</a>`
-      );
-    }
-  }
-
-  return rendered;
-}
-
-function localizedSlogan(slogans, language = "en") {
-  if (slogans && typeof slogans === "object" && !Array.isArray(slogans)) {
-    return slogans[language] || slogans.en || "";
-  }
-  return String(slogans || "");
-}
-
-function localizedSloganLinkText(linkTexts, language = "en") {
-  if (linkTexts && typeof linkTexts === "object" && !Array.isArray(linkTexts)) {
-    return linkTexts[language] || linkTexts.en || "";
-  }
-  return String(linkTexts || "");
 }
 
 function removeLegalRedirectedBadge(html) {
@@ -804,15 +608,6 @@ function buildLocalizedStatsPages(siteConfig) {
   fs.rmSync(path.join(BUILD_DIR, "_stats"), { recursive: true, force: true });
 }
 
-function renderConfiguredWordmark(siteConfig) {
-  const wordmark = siteConfig?.branding?.wordmark;
-  if (!wordmark?.black && !wordmark?.green) {
-    return "<span>Vanity</span><span>URLs</span>";
-  }
-
-  return `<span>${escapeHtml(wordmark.black || "")}</span><span>${escapeHtml(wordmark.green || "")}</span>`;
-}
-
 function renderTestsPanel(language, siteConfig) {
   const metadata = LANGUAGE_METADATA[language] || {
     name: language,
@@ -897,27 +692,6 @@ function renderMachineReadableTestsSection() {
 ${links}
           </ul>
         </section>`;
-}
-
-function withTheme(href, theme) {
-  const separator = href.includes("?") ? "&" : "?";
-  return `${href}${separator}theme=${theme}`;
-}
-
-function encodePathSegment(value) {
-  return encodeURIComponent(String(value || "").trim()).replace(/%2F/gi, "/");
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-function escapeHtmlAttribute(value) {
-  return escapeHtml(value).replaceAll("'", "&#39;");
 }
 
 function copyRuntimeBlocklist() {

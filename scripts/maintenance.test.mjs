@@ -5,41 +5,8 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { checkUpstreamRelease } from "./lib/upstream-release.mjs";
 
 const ROOT = process.cwd();
-
-{
-  const result = await checkUpstreamRelease({
-    currentVersion: "3.1.5",
-    fetchImpl: async () =>
-      Response.json([
-        {
-          tag_name: "v3.1.7",
-          name: "v3.1.7",
-          body: "Feature release",
-          draft: false,
-          prerelease: false,
-          html_url: "https://github.com/vanityURLs/code/releases/tag/v3.1.7"
-        },
-        {
-          tag_name: "v3.1.6",
-          name: "v3.1.6",
-          body: "Security fix for GHSA-abcd-1234-wxyz",
-          draft: false,
-          prerelease: false,
-          html_url: "https://github.com/vanityURLs/code/releases/tag/v3.1.6"
-        }
-      ])
-  });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.status, "behind-security");
-  assert.equal(result.latestVersion, "3.1.7");
-  assert.equal(result.behindCount, 2);
-  assert.equal(result.security, true);
-  assert.equal(result.securityCount, 1);
-}
 
 function makeFixture() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "v8s-maintenance-"));

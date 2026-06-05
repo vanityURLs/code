@@ -5,7 +5,7 @@ custom/v8s-local-config.json
 *.old
 *.swp
 .DS_Store
-build/
+/build/
 /functions/
 /src/
 build/blocklist.generated.json
