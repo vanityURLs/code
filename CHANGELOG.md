@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/vanityURLs/code/compare/v3.2.3...v3.3.0) (2026-06-05)
+
+
+### ✨ Features
+
+* move lookup resolver off underscore path ([afa97ef](https://github.com/vanityURLs/code/commit/afa97ef1f65ff2f8687de700086271c9184d255e))
+
 ## [3.2.3](https://github.com/vanityURLs/code/compare/v3.2.2...v3.2.3) (2026-06-05)
 
 
