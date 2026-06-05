@@ -395,7 +395,14 @@ function runDoctor(args) {
   if (output) console.log(output);
 }
 
+function packageVersion() {
+  return String(readJson("package.json").version || "").trim();
+}
+
 function printPostRunNote(args) {
+  const version = packageVersion();
+  if (version) console.log(`[version] vanityURLs ${version}`);
+
   if (!args.dryRun) {
     const status = worktreeStatus();
     if (status) console.log("Review with git status --short and git diff, then commit and push.");
