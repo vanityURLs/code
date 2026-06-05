@@ -48,7 +48,7 @@ function runCommand(cwd, args) {
 {
   const fixture = makeFixture();
   run(fixture, [
-    "scripts/install.mjs",
+    "scripts/setup.mjs",
     "--no-check",
     "--domain",
     "go.example",
@@ -102,7 +102,7 @@ function runCommand(cwd, args) {
 {
   const fixture = makeFixture();
   run(fixture, [
-    "scripts/install.mjs",
+    "scripts/setup.mjs",
     "--no-check",
     "--domain",
     "go.example",
@@ -149,7 +149,7 @@ function runCommand(cwd, args) {
 {
   const fixture = makeFixture();
   run(fixture, [
-    "scripts/install.mjs",
+    "scripts/setup.mjs",
     "--no-check",
     "--domain",
     "go.example",
@@ -195,7 +195,7 @@ function runCommand(cwd, args) {
 {
   const fixture = makeFixture();
   run(fixture, [
-    "scripts/install.mjs",
+    "scripts/setup.mjs",
     "--no-check",
     "--domain",
     "go.example",
