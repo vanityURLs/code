@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.2](https://github.com/vanityURLs/code/compare/v3.2.1...v3.2.2) (2026-06-05)
+
+
+### 🔧 Code Refactoring
+
+* **build:** add complexity budget foundation ([92d726b](https://github.com/vanityURLs/code/commit/92d726bdf2c3eea41e0a9e25cca8f42d0189cfc3))
+
 ## [3.2.1](https://github.com/vanityURLs/code/compare/v3.2.0...v3.2.1) (2026-06-04)
 
 
