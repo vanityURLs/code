@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.3.1](https://github.com/vanityURLs/code/compare/v3.3.0...v3.3.1) (2026-06-05)
+
+
+### 🔧 Code Refactoring
+
+* **install:** extract setup core helpers ([9499033](https://github.com/vanityURLs/code/commit/94990339fa5e98dd9d3dafde11855a2f8adc8d8d))
+* **install:** extract setup core helpers ([adc01d5](https://github.com/vanityURLs/code/commit/adc01d5d755b837c955c5ac63dd9c08a3e81fea2))
+* **setup:** rename installer script ([6928635](https://github.com/vanityURLs/code/commit/69286350a479c3aac9405818aa59d3352870bc25))
+
 ## [3.3.0](https://github.com/vanityURLs/code/compare/v3.2.3...v3.3.0) (2026-06-05)
 
 
