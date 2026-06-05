@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.2.3](https://github.com/vanityURLs/code/compare/v3.2.2...v3.2.3) (2026-06-05)
+
+
+### 📚 Documentation
+
+* **workflow:** clarify release finalization ([205cdb7](https://github.com/vanityURLs/code/commit/205cdb756a6f42cacb2049dae72ce8c3e928613f))
+* **workflow:** document signing and release finalization ([d10a76f](https://github.com/vanityURLs/code/commit/d10a76f82493c7c690bb377466a6c31db06f0e2c))
+* **workflow:** document signing standard ([4543dfc](https://github.com/vanityURLs/code/commit/4543dfc33252a5282527ff45bba1e4355ecb15da))
+
 ## [3.2.2](https://github.com/vanityURLs/code/compare/v3.2.1...v3.2.2) (2026-06-05)
 
 
