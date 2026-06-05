@@ -121,7 +121,12 @@
   }
 
   async function lookupSlug(slug) {
-    const response = await fetch("/_lookup?slug=" + encodeURIComponent(slug), { cache: "no-store" });
+    const response = await fetch("/lookup/resolve", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ slug }),
+      cache: "no-store"
+    });
     if (!response.ok) throw new Error("Unable to load lookup data");
     return response.json();
   }

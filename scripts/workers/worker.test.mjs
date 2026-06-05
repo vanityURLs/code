@@ -498,7 +498,7 @@ await run("serves extensionless policy page aliases", async () => {
 await run("applies security headers across response classes and preserves explicit headers", async () => {
   for (const [name, response] of [
     ["html asset", await worker.fetch(request("/privacy"), env(), mockCtx())],
-    ["json api", await worker.fetch(request("/_lookup?slug=test"), env(), mockCtx())],
+    ["json api", await worker.fetch(jsonRequest("/lookup/resolve", { slug: "test" }), env(), mockCtx())],
     ["not found", await worker.fetch(request("/missing"), env(), mockCtx())],
     ["protected", await worker.fetch(request("/_tests"), env(), mockCtx())],
     ["static asset", await worker.fetch(request("/style.css"), env(), mockCtx())]
@@ -539,7 +539,7 @@ await run("resolves public lookup API for exact and nested slugs", async () => {
     ["d/gv", "https://example.com/d/gv"],
     ["docs/page-1", "https://example.com/docs/page-1"]
   ]) {
-    const response = await worker.fetch(request(`/_lookup?slug=${encodeURIComponent(slug)}`), env(), mockCtx());
+    const response = await worker.fetch(jsonRequest("/lookup/resolve", { slug }), env(), mockCtx());
     assert(response.status === 200, `${slug} status`);
     assertSecurityHeaders(response);
     assert(response.headers.get("x-robots-tag") === "noindex, nofollow", `${slug} robots header`);
@@ -551,11 +551,11 @@ await run("resolves public lookup API for exact and nested slugs", async () => {
 });
 
 await run("returns public lookup API miss and non-redirecting results", async () => {
-  const miss = await worker.fetch(request("/_lookup?slug=missing"), env(), mockCtx());
+  const miss = await worker.fetch(jsonRequest("/lookup/resolve", { slug: "missing" }), env(), mockCtx());
   assert(miss.status === 200, "miss status");
   assert((await miss.json()).result === "miss", "miss result");
 
-  const disabled = await worker.fetch(request("/_lookup?slug=off"), env(), mockCtx());
+  const disabled = await worker.fetch(jsonRequest("/lookup/resolve", { slug: "off" }), env(), mockCtx());
   assert(disabled.status === 200, "disabled status");
   const body = await disabled.json();
   assert(body.result === "not-redirecting", "disabled result");
@@ -564,21 +564,27 @@ await run("returns public lookup API miss and non-redirecting results", async ()
 });
 
 await run("keeps public lookup API private to clients and robots", async () => {
-  const empty = await worker.fetch(request("/_lookup"), env(), mockCtx());
+  const empty = await worker.fetch(jsonRequest("/lookup/resolve", {}), env(), mockCtx());
   assert(empty.status === 200, "empty status");
   assert(empty.headers.get("cache-control") === "no-store", "cache control");
   assert(empty.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
   assert((await empty.json()).slug === "", "empty slug");
 
-  const post = await worker.fetch(request("/_lookup", { method: "POST" }), env(), mockCtx());
-  assert(post.status === 405, "post status");
+  const get = await worker.fetch(request("/lookup/resolve"), env(), mockCtx());
+  assert(get.status === 405, "get status");
+  assert(get.headers.get("allow") === "POST", "get allow header");
 
   const longSlug = "a".repeat(512);
-  const long = await worker.fetch(request(`/_lookup?slug=${longSlug}`), env(), mockCtx());
+  const long = await worker.fetch(jsonRequest("/lookup/resolve", { slug: longSlug }), env(), mockCtx());
   const body = await long.json();
   assert(long.status === 200, "long slug status");
   assert(body.result === "miss", "long slug miss");
   assert(body.slug === longSlug.slice(0, 99), "long slug is capped before echoing");
+});
+
+await run("removes legacy underscore lookup API", async () => {
+  const response = await worker.fetch(request("/_lookup?slug=test"), env(), mockCtx());
+  assert(response.status === 404, "legacy lookup status");
 });
 
 await run("redirects legacy security.txt to well-known security.txt", async () => {

@@ -98,12 +98,12 @@ async function handleRequest(context) {
     return optionsResponse();
   }
 
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return methodNotAllowedResponse();
+  if (slug === "lookup/resolve") {
+    return renderLookupResponse(request, env);
   }
 
-  if (slug === "_lookup") {
-    return renderLookupResponse(request, env);
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return methodNotAllowedResponse();
   }
 
   const statsApiEndpoint = localizedStatsApiEndpoint(slug);
@@ -370,14 +370,26 @@ async function loadRegistry(request, env) {
 }
 
 async function renderLookupResponse(request, env) {
-  const url = new URL(request.url);
-  const slug = normalizeSlug(`/${String(url.searchParams.get("slug") || "")}`).slice(0, 99);
-
   const headers = {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
     "x-robots-tag": "noindex, nofollow"
   };
+
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: {
+        allow: "POST",
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow"
+      }
+    });
+  }
+
+  const body = await readJsonBody(request);
+  const slug = normalizeSlug(`/${String(body.slug || "")}`).slice(0, 99);
 
   if (!slug) {
     return Response.json({ result: "miss", slug: "" }, { headers });
@@ -398,6 +410,14 @@ async function renderLookupResponse(request, env) {
   }
 
   return Response.json({ result: "resolved", slug, state, target }, { headers });
+}
+
+async function readJsonBody(request) {
+  try {
+    return await request.json();
+  } catch {
+    return {};
+  }
 }
 
 async function findScannerProbe(request, env) {
@@ -1257,15 +1277,7 @@ async function renderStatsRedirects(request, env) {
 
   const missingDescriptions = all.filter((redirect) => !redirect.description);
   const dynamicRoutes = all.filter((redirect) => redirect.type === "dynamic");
-  const reservedPrefixes = [
-    "/_lookup",
-    "/_stats",
-    "/api",
-    "/_worker",
-    "/v8s.json",
-    "/v8s-blocklist.json",
-    "/v8s-site-config.json"
-  ];
+  const reservedPrefixes = ["/_stats", "/api", "/_worker", "/v8s.json", "/v8s-blocklist.json", "/v8s-site-config.json"];
   const reservedViolations = all.filter((redirect) => {
     return reservedPrefixes.some((prefix) => redirect.source.startsWith(prefix)) || redirect.source.includes("/_stats");
   });
