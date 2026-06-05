@@ -137,7 +137,7 @@ gh pr merge PR_NUMBER --merge --admin --delete-branch
 <summary>Choosing the relevant check</summary>
 
 - For broad product, Worker, policy, or generated-output changes: `npm run check`.
-- For maintenance script changes, such as `scripts/doctor.mjs`, `scripts/install.mjs`, `scripts/upgrade.mjs`, or shared
+- For maintenance script changes, such as `scripts/doctor.mjs`, `scripts/setup.mjs`, `scripts/upgrade.mjs`, or shared
   script libraries: run the focused test that covers the changed path, then `npm run check` before merge.
 - For doctor output changes: `npm run doctor -- --json`.
 - For opt-in upstream nudge changes: `npm run doctor -- --json --check-upstream`.

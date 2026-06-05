@@ -29,7 +29,7 @@ function makeFixture() {
 }
 
 function runSetup(cwd, extraArgs) {
-  return execFileSync(process.execPath, ["scripts/install.mjs", "--no-check", ...extraArgs], {
+  return execFileSync(process.execPath, ["scripts/setup.mjs", "--no-check", ...extraArgs], {
     cwd,
     encoding: "utf8",
     env: { ...process.env, V8S_INTERNAL_SETUP: "1" },
