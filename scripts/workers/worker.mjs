@@ -352,7 +352,16 @@ function isProtectedPath(slug) {
 }
 
 function isTestsPath(slug) {
-  return slug === "_tests" || slug.startsWith("_tests/");
+  return Boolean(testsPageAssetPath(slug));
+}
+
+function testsPageAssetPath(slug) {
+  if (slug === "_tests" || slug === "_tests/index.html") return "/_tests/index.html";
+
+  const [language, tests, file = "", ...rest] = slug.split("/");
+  if (rest.length || tests !== "_tests" || !statsPageLanguages().includes(language)) return "";
+
+  return file === "" || file === "index.html" ? "/_tests/index.html" : "";
 }
 
 function isPrivateRuntimeAsset(slug) {
@@ -958,7 +967,8 @@ function statusLabel(request, key) {
 }
 
 async function renderTestsPage(request, env, ctx) {
-  return renderAsset(request, env, "/_tests/index.html", 200, ctx);
+  const assetPath = testsPageAssetPath(normalizeSlug(new URL(request.url).pathname));
+  return renderAsset(request, env, assetPath || "/_tests/index.html", 200, ctx);
 }
 
 async function requireCloudflareAccess(request, env) {

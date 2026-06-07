@@ -691,6 +691,23 @@ await run("serves tests page with valid Cloudflare Access token", async () => {
   assert((await response.text()).includes("tests"), "body");
 });
 
+await run("serves localized tests page aliases with valid Cloudflare Access token", async () => {
+  for (const path of ["/en/_tests/", "/fr/_tests/", "/fr/_tests/index.html"]) {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      request(path, {
+        headers: {
+          ...(await accessHeaders())
+        }
+      }),
+      await accessEnv(),
+      ctx
+    );
+    assert(response.status === 200, `${path} status`);
+    assert((await response.text()).includes("tests"), `${path} body`);
+  }
+});
+
 await run("serves localized stats page with valid Cloudflare Access token", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(
@@ -724,6 +741,12 @@ await run("serves English stats page with valid Cloudflare Access token", async 
 await run("protects direct tests asset path with Cloudflare Access", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(request("/_tests/index.html"), await accessEnv(), ctx);
+  assert(response.status === 403, "status");
+});
+
+await run("protects localized tests page aliases with Cloudflare Access", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(request("/en/_tests/"), await accessEnv(), ctx);
   assert(response.status === 403, "status");
 });
 
