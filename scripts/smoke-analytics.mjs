@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { flattenRuntimeRegistry } from "./lib/runtime-registry.mjs";
 import worker from "./workers/worker.mjs";
 
 const ROOT = new URL("..", import.meta.url);
@@ -32,7 +33,7 @@ if (providerEnabled(vars, "umami") && !vars.UMAMI_WEBSITE_ID) {
 
 const registry = await readJsonAsset("/v8s.json");
 const paths = process.argv.slice(2);
-const firstLink = registry.links?.find((link) => link.slug)?.slug || "gh";
+const firstLink = flattenRuntimeRegistry(registry).find((link) => link.slug)?.slug || "gh";
 const scenarios = paths.length
   ? paths.map((pathname) => ({ method: "GET", pathname }))
   : [

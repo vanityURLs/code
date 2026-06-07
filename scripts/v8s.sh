@@ -54,7 +54,7 @@ Usage:
   v8s --path          Print the registry path
 
 Notes:
-  - Slugs are exact matches from links[] in the generated registry.
+  - Slugs are exact matches from the generated runtime link registry tree.
   - Only permanent and ephemeral links are opened.
   - Only http:// and https:// targets are opened by default.
 EOF
@@ -79,7 +79,10 @@ _v8s_list() {
   registry="$1"
 
   jq -r '
-    .links[]
+    def flatten_tree($node):
+      ([($node.link? // empty), ($node.splat_link? // empty)]
+        + (($node.children // {}) | to_entries | map(flatten_tree(.value)) | add // []));
+    flatten_tree(.tree)[]
     | select((.state // "permanent") as $state | $state == "permanent" or $state == "ephemeral")
     | [.slug, .title, .target]
     | @tsv
@@ -106,8 +109,18 @@ _v8s_open_or_print() {
 
   _v8s_validate_slug "$slug" || return $?
 
-  target="$(jq -r --arg slug "$slug" 'first(.links[] | select(.slug == $slug)) | .target // ""' "$registry")"
-  state="$(jq -r --arg slug "$slug" 'first(.links[] | select(.slug == $slug)) | .state // "permanent"' "$registry")"
+  target="$(jq -r --arg slug "$slug" '
+    def flatten_tree($node):
+      ([($node.link? // empty), ($node.splat_link? // empty)]
+        + (($node.children // {}) | to_entries | map(flatten_tree(.value)) | add // []));
+    first(flatten_tree(.tree)[] | select(.slug == $slug and (.match // "exact") == "exact")) | .target // ""
+  ' "$registry")"
+  state="$(jq -r --arg slug "$slug" '
+    def flatten_tree($node):
+      ([($node.link? // empty), ($node.splat_link? // empty)]
+        + (($node.children // {}) | to_entries | map(flatten_tree(.value)) | add // []));
+    first(flatten_tree(.tree)[] | select(.slug == $slug and (.match // "exact") == "exact")) | .state // "permanent"
+  ' "$registry")"
 
   if [ -z "$target" ]; then
     printf '%s\n' "v8s: slug not found: $slug" >&2

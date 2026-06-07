@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import { checkTargetUrl, classifyTargetUrl, loadBlocklistPolicy } from "./blocklist-policy.mjs";
+import { flattenRuntimeRegistry } from "./lib/runtime-registry.mjs";
 
 const registryPath = process.argv[2] || "build/v8s.json";
 const timeoutMs = Number(process.env.V8S_TARGET_TIMEOUT_MS || 8000);
@@ -150,11 +151,7 @@ async function main() {
   }
 
   const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-  if (!Array.isArray(registry.links)) {
-    throw new Error("Runtime link registry must contain links[]");
-  }
-
-  const entries = uniqueTargets(registry.links);
+  const entries = uniqueTargets(flattenRuntimeRegistry(registry));
   const results = await runPool(entries);
   const broken = results.filter((result) => !result.ok).sort((a, b) => a.target.localeCompare(b.target));
   const suggestions = results

@@ -242,12 +242,6 @@ metricsEl.addEventListener("click", (event) => {
 });
 
 function flattenRegistry(registry) {
-  if (Array.isArray(registry.links)) {
-    return registry.links
-      .map((link) => ({ ...link, path: link.slug || "" }))
-      .sort((a, b) => a.path.localeCompare(b.path));
-  }
-
   const root = registry.routes && typeof registry.routes === "object" ? registry.routes : registry.tree;
   const result = [];
 
@@ -256,6 +250,10 @@ function flattenRegistry(registry) {
 
     if (node.link && typeof node.link === "object") {
       result.push({ ...node.link, path: node.link.slug || parts.join("/") });
+    }
+
+    if (node.splat_link && typeof node.splat_link === "object") {
+      result.push({ ...node.splat_link, path: node.splat_link.slug || parts.join("/") });
     }
 
     if (typeof node.target === "string") {
@@ -274,8 +272,8 @@ function flattenRegistry(registry) {
           "routing",
           "routes",
           "tree",
-          "links",
-          "link"
+          "link",
+          "splat_link"
         ].includes(key)
       )
         continue;

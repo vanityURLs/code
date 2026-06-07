@@ -92,7 +92,6 @@ function createRegistryTree(links) {
 
     if (link.match === "splat") {
       node.splat_link = link;
-      node.link ||= link;
     } else {
       node.link = link;
     }
@@ -465,8 +464,7 @@ function main() {
         status: 404
       }
     },
-    tree: createRegistryTree(links),
-    links
+    tree: createRegistryTree(links)
   };
 
   fs.writeFileSync(outputPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");

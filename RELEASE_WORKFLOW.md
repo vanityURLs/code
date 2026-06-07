@@ -212,7 +212,7 @@ gh pr merge RELEASE_PR_NUMBER --repo vanityURLs/code --merge --delete-branch
 - Review `build/v8s-release-manifest.json` schema versions, Git commit, compatibility date, and SHA-256 hashes.
 - Review generated `build/v8s.json`, `build/v8s-blocklist.json`, and `build/v8s-site-config.json`.
 - Confirm `build/v8s.json` uses the expected runtime registry schema.
-- Confirm `build/v8s.json` includes both `tree` and `links[]`.
+- Confirm `build/v8s.json` includes `tree` and does not include legacy `links[]`.
 - Confirm `src/worker.mjs` is generated from `scripts/workers/`.
 
 </details>
@@ -393,7 +393,7 @@ Rollback:
 - Identify the last known-good Git commit or Cloudflare deployment.
 - Roll back the Cloudflare deployment or revert the Git commit.
 - Re-run the runtime smoke checks.
-- Confirm the Worker can read the previous `links[]` registry shape.
+- Confirm the Worker can read the deployed runtime link registry shape.
 - Record the rollback reason in the release notes or incident log.
 
 </details>

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { mergeSiteConfig } from "./lib/build-assets.mjs";
+import { flattenRuntimeRegistry } from "./lib/runtime-registry.mjs";
 import { commandLine, runCommand } from "./lib/run-command.mjs";
 
 const ROOT = resolveRoot();
@@ -491,13 +492,13 @@ function ensureRegistry() {
     run("npm", ["run", "build"]);
   }
 
-  return readJson(registryPath, { links: [] });
+  return readJson(registryPath, { tree: { children: {} } });
 }
 
 function listLinks(requestedSlug, options) {
   const registry = ensureRegistry();
   const slug = requestedSlug ? normalizeSlug(requestedSlug) : "";
-  const links = (registry.links || [])
+  const links = flattenRuntimeRegistry(registry)
     .filter((link) => !slug || link.slug === slug)
     .sort((a, b) => a.slug.localeCompare(b.slug));
 

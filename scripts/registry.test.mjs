@@ -8,6 +8,7 @@ import path from "node:path";
 import { checkTargetUrl, classifyTargetUrl } from "./blocklist-policy.mjs";
 import { mergeSiteConfig } from "./lib/build-assets.mjs";
 import { RUNTIME_REGISTRY_SCHEMA_VERSION } from "./lib/constants.mjs";
+import { flattenRuntimeRegistry } from "./lib/runtime-registry.mjs";
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "v8s-registry-"));
 const linksPath = path.join(tmpDir, "v8s-links.txt");
@@ -73,11 +74,12 @@ assert.match(registry.generated_git.commit, /^$|^[0-9a-f]{40}$/);
 if (registry.generated_git.commit_url) {
   assert(registry.generated_git.commit_url.includes(registry.generated_git.commit));
 }
-assert.ok(Array.isArray(registry.links), "links compatibility array");
-assert.equal(registry.links.length, 5);
+assert.equal("links" in registry, false, "runtime link registry should be tree-only");
+assert.equal(flattenRuntimeRegistry(registry).length, 5);
 assert.equal(registry.tree.children.docs.link.slug, "docs");
-assert.equal(registry.tree.children.docs.children.api.link.slug, "docs/api");
-assert.equal(registry.tree.children.docs.children.api.link.match, "splat");
+assert.equal(registry.tree.children.docs.children.api.link, undefined);
+assert.equal(registry.tree.children.docs.children.api.splat_link.slug, "docs/api");
+assert.equal(registry.tree.children.docs.children.api.splat_link.match, "splat");
 assert.equal(registry.tree.children.files.link.slug, "files");
 assert.equal(registry.tree.children.files.link.match, "exact");
 assert.equal(registry.tree.children.files.splat_link.slug, "files");

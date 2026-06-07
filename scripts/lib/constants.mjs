@@ -1,4 +1,4 @@
-export const RUNTIME_REGISTRY_SCHEMA_VERSION = "3.0";
+export const RUNTIME_REGISTRY_SCHEMA_VERSION = "3.1";
 export const SITE_CONFIG_SCHEMA_VERSION = "1.0";
 export const POLICY_SCHEMA_VERSION = "1.0";
 

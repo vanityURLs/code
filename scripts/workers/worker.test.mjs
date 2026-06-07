@@ -11,6 +11,80 @@ globalThis.fetch = async (url, init) => {
   return new Response("ok", { status: 200 });
 };
 
+function createRegistryTree(links) {
+  const root = { children: {} };
+
+  for (const link of links) {
+    const segments = link.slug.split("/").filter(Boolean);
+    let node = root;
+
+    for (const segment of segments) {
+      node.children[segment] ||= { children: {} };
+      node = node.children[segment];
+    }
+
+    if (link.match === "splat") {
+      node.splat_link = link;
+    } else {
+      node.link = link;
+    }
+  }
+
+  return root;
+}
+
+const registryLinks = [
+  {
+    slug: "test",
+    target: "https://example.com/test",
+    state: "permanent",
+    description: "Test redirect"
+  },
+  {
+    slug: "docs",
+    match: "splat",
+    target: "https://example.com/docs/:splat",
+    state: "temporary",
+    description: "Docs redirect"
+  },
+  {
+    slug: "sab",
+    target: "https://example.com/sab",
+    state: "permanent",
+    description: "Simple lookup redirect"
+  },
+  {
+    slug: "d/gv",
+    target: "https://example.com/d/gv",
+    state: "permanent",
+    description: "Nested lookup redirect"
+  },
+  {
+    slug: "off",
+    target: "https://example.com/off",
+    state: "disabled",
+    description: "Disabled redirect"
+  },
+  {
+    slug: "hangout",
+    target: "https://discord.gg/personal",
+    state: "permanent",
+    description: "Scheduled hangout redirect",
+    schedule: {
+      rules: [
+        {
+          label: "9to5",
+          timezone: "America/Toronto",
+          days: ["mon", "tue", "wed", "thu", "fri"],
+          from: "09:00",
+          to: "17:00",
+          target: "https://zoom.us/j/work"
+        }
+      ]
+    }
+  }
+];
+
 const registry = {
   schema_version: "3.0",
   default_state: "permanent",
@@ -21,57 +95,7 @@ const registry = {
     expired: { type: "error", status: 410 },
     deactivated: { type: "error", status: 404 }
   },
-  links: [
-    {
-      slug: "test",
-      target: "https://example.com/test",
-      state: "permanent",
-      description: "Test redirect"
-    },
-    {
-      slug: "docs",
-      match: "splat",
-      target: "https://example.com/docs/:splat",
-      state: "temporary",
-      description: "Docs redirect"
-    },
-    {
-      slug: "sab",
-      target: "https://example.com/sab",
-      state: "permanent",
-      description: "Simple lookup redirect"
-    },
-    {
-      slug: "d/gv",
-      target: "https://example.com/d/gv",
-      state: "permanent",
-      description: "Nested lookup redirect"
-    },
-    {
-      slug: "off",
-      target: "https://example.com/off",
-      state: "disabled",
-      description: "Disabled redirect"
-    },
-    {
-      slug: "hangout",
-      target: "https://discord.gg/personal",
-      state: "permanent",
-      description: "Scheduled hangout redirect",
-      schedule: {
-        rules: [
-          {
-            label: "9to5",
-            timezone: "America/Toronto",
-            days: ["mon", "tue", "wed", "thu", "fri"],
-            from: "09:00",
-            to: "17:00",
-            target: "https://zoom.us/j/work"
-          }
-        ]
-      }
-    }
-  ]
+  tree: createRegistryTree(registryLinks)
 };
 
 const assets = {
@@ -833,7 +857,9 @@ await run("exposes registry through stats API", async () => {
   );
   assert(response.status === 200, "status");
   assert(response.headers.get("content-disposition") === 'attachment; filename="v8s.json"', "download header");
-  assert((await response.json()).links.length === 6, "registry body");
+  const body = await response.json();
+  assert(body.tree.children.test.link.slug === "test", "runtime link registry tree body");
+  assert(!("links" in body), "runtime link registry omits links[]");
 });
 
 await run("summarizes redirects through stats API", async () => {
@@ -938,7 +964,7 @@ await run("supports schedule windows that cross midnight", async () => {
   const originalRegistryResponse = assets["/v8s.json"];
   assets["/v8s.json"] = Response.json({
     ...registry,
-    links: [
+    tree: createRegistryTree([
       {
         slug: "overnight",
         target: "https://example.com/day",
@@ -956,7 +982,7 @@ await run("supports schedule windows that cross midnight", async () => {
           ]
         }
       }
-    ]
+    ])
   });
 
   try {
@@ -974,7 +1000,7 @@ await run("falls back to default target for invalid schedule rules", async () =>
   const originalRegistryResponse = assets["/v8s.json"];
   assets["/v8s.json"] = Response.json({
     ...registry,
-    links: [
+    tree: createRegistryTree([
       {
         slug: "bad-schedule",
         target: "https://example.com/default",
@@ -992,7 +1018,7 @@ await run("falls back to default target for invalid schedule rules", async () =>
           ]
         }
       }
-    ]
+    ])
   });
 
   try {
@@ -1008,7 +1034,7 @@ await run("uses the first matching schedule rule", async () => {
   const originalRegistryResponse = assets["/v8s.json"];
   assets["/v8s.json"] = Response.json({
     ...registry,
-    links: [
+    tree: createRegistryTree([
       {
         slug: "priority",
         target: "https://example.com/default",
@@ -1034,7 +1060,7 @@ await run("uses the first matching schedule rule", async () => {
           ]
         }
       }
-    ]
+    ])
   });
 
   try {
@@ -1052,13 +1078,13 @@ await run("refuses unsafe registry redirect targets at runtime", async () => {
   const originalRegistryResponse = assets["/v8s.json"];
   assets["/v8s.json"] = Response.json({
     ...registry,
-    links: [
+    tree: createRegistryTree([
       {
         slug: "bad",
         target: "javascript:alert(1)",
         state: "permanent"
       }
-    ]
+    ])
   });
 
   try {
@@ -1278,15 +1304,7 @@ await run("prefers registry tree when present", async () => {
           }
         }
       }
-    },
-    links: [
-      {
-        slug: "test",
-        match: "exact",
-        target: "https://links.example/test",
-        state: "permanent"
-      }
-    ]
+    }
   });
 
   try {
@@ -1295,24 +1313,6 @@ await run("prefers registry tree when present", async () => {
     await ctx.flush();
     assert(response.status === 302, "status");
     assert(response.headers.get("location") === "https://tree.example/test", "tree location");
-  } finally {
-    assets["/v8s.json"] = originalRegistryResponse;
-  }
-});
-
-await run("falls back to links array when registry tree is absent", async () => {
-  const originalRegistryResponse = assets["/v8s.json"];
-  assets["/v8s.json"] = Response.json({
-    ...registry,
-    tree: undefined
-  });
-
-  try {
-    const ctx = mockCtx();
-    const response = await worker.fetch(request("/test"), env(), ctx);
-    await ctx.flush();
-    assert(response.status === 302, "status");
-    assert(response.headers.get("location") === "https://example.com/test", "links fallback location");
   } finally {
     assets["/v8s.json"] = originalRegistryResponse;
   }

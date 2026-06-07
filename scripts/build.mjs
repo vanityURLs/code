@@ -12,6 +12,7 @@ import {
   supportedLanguages,
   writeSiteConfig as writeRuntimeSiteConfig
 } from "./lib/build-assets.mjs";
+import { flattenRuntimeRegistry } from "./lib/runtime-registry.mjs";
 import {
   encodePathSegment,
   escapeHtml,
@@ -770,11 +771,8 @@ function assertNestedSlugSupport() {
   const registryPath = path.join(BUILD_DIR, "v8s.json");
   const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
 
-  if (!Array.isArray(registry.links)) {
-    throw new Error("Runtime link registry must contain links[]");
-  }
-
-  const hasNested = registry.links.some((link) => {
+  const links = flattenRuntimeRegistry(registry);
+  const hasNested = links.some((link) => {
     return typeof link.slug === "string" && link.slug.includes("/");
   });
 

@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import { checkTargetUrl, loadBlocklistPolicy } from "./blocklist-policy.mjs";
+import { flattenRuntimeRegistry } from "./lib/runtime-registry.mjs";
 import {
   DEFAULT_STATE,
   LINK_STATES,
@@ -198,14 +199,18 @@ function validateSchedule(link, match, effectiveState, prefix, blocklistPolicy, 
   }
 }
 
-function validateTree(node, path, blocklistPolicy, errors) {
+function validateTree(node, path, errors) {
   if (!isObject(node)) {
     error(errors, `${path || "tree"}: node must be an object`);
     return;
   }
 
-  if (node.link) {
-    validateLink(node.link, path ? `tree.${path}.link` : "tree.link", blocklistPolicy, errors);
+  if (node.link && node.link.match && node.link.match !== "exact") {
+    error(errors, `${path || "tree"}.link must be an exact link`);
+  }
+
+  if (node.splat_link && node.splat_link.match !== "splat") {
+    error(errors, `${path || "tree"}.splat_link must be a splat link`);
   }
 
   const children = node.children || {};
@@ -218,7 +223,7 @@ function validateTree(node, path, blocklistPolicy, errors) {
     if (segment.includes("/")) {
       error(errors, `${path}/${segment}: segment must not contain slash`);
     }
-    validateTree(child, path ? `${path}/${segment}` : segment, blocklistPolicy, errors);
+    validateTree(child, path ? `${path}/${segment}` : segment, errors);
   }
 }
 
@@ -250,10 +255,6 @@ function main() {
     error(errors, "routing must be an object");
   }
 
-  if (!Array.isArray(registry.links)) {
-    error(errors, "links must be an array");
-  }
-
   for (const state of REQUIRED_ROUTES) {
     if (!registry.routing?.[state]) {
       error(errors, `routing.${state} is required`);
@@ -267,13 +268,14 @@ function main() {
   if (!isObject(registry.tree)) {
     error(errors, "tree must be an object");
   } else {
-    validateTree(registry.tree, "", blocklistPolicy, errors);
+    validateTree(registry.tree, "", errors);
   }
 
   const seen = new Set();
+  const links = flattenRuntimeRegistry(registry);
 
-  for (const [index, link] of (registry.links || []).entries()) {
-    const prefix = `links[${index}]`;
+  for (const [index, link] of links.entries()) {
+    const prefix = `tree link ${index}`;
     validateLink(link, prefix, blocklistPolicy, errors, seen);
   }
 
@@ -286,7 +288,7 @@ function main() {
   }
 
   console.log(`Valid runtime link registry: ${filePath}`);
-  console.log(`Links checked: ${(registry.links || []).length}`);
+  console.log(`Links checked: ${links.length}`);
 }
 
 main();

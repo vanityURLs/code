@@ -507,38 +507,8 @@ function normalizeKeyword(value) {
     .toLowerCase();
 }
 
-function resolveLink(links, slug) {
-  const exact = links.find((link) => {
-    return (link.match || "exact") === "exact" && link.slug === slug;
-  });
-
-  if (exact) {
-    return {
-      link: exact,
-      splat: ""
-    };
-  }
-
-  const splats = links.filter((link) => link.match === "splat").sort((a, b) => b.slug.length - a.slug.length);
-
-  for (const link of splats) {
-    if (slug.startsWith(`${link.slug}/`)) {
-      return {
-        link,
-        splat: slug.slice(link.slug.length + 1)
-      };
-    }
-  }
-
-  return null;
-}
-
 function resolveRegistryLink(registry, slug) {
-  if (registry?.tree) {
-    return resolveTreeLink(registry.tree, slug);
-  }
-
-  return resolveLink(registry.links || [], slug);
+  return resolveTreeLink(registry?.tree, slug);
 }
 
 function resolveTreeLink(tree, slug) {
@@ -549,10 +519,9 @@ function resolveTreeLink(tree, slug) {
   let splatCandidate = null;
 
   for (let index = 0; index < segments.length; index += 1) {
-    const splatLink = node?.splat_link || (node?.link?.match === "splat" ? node.link : null);
-    if (splatLink) {
+    if (node?.splat_link) {
       splatCandidate = {
-        link: splatLink,
+        link: node.splat_link,
         splat: segments.slice(index).join("/")
       };
     }
@@ -562,16 +531,10 @@ function resolveTreeLink(tree, slug) {
   }
 
   if (node?.link) {
-    if ((node.link.match || "exact") === "exact") {
-      return {
-        link: node.link,
-        splat: ""
-      };
-    }
-
-    if (segments.length > 0) {
-      return splatCandidate;
-    }
+    return {
+      link: node.link,
+      splat: ""
+    };
   }
 
   return splatCandidate;
@@ -1254,7 +1217,7 @@ async function renderStatsRedirects(request, env) {
     description: value.description || ""
   }));
 
-  const linkEntries = (data.links || []).map((link) => ({
+  const linkEntries = flattenRuntimeRegistry(data).map((link) => ({
     type: link.match === "splat" ? "dynamic" : "static",
     source: `/${link.slug}`,
     target: link.target,
@@ -1298,6 +1261,32 @@ async function renderStatsRedirects(request, env) {
     reservedViolations,
     dynamicRoutes: dynamicRoutes.slice(0, 50),
     all
+  });
+}
+
+function flattenRuntimeRegistry(registry) {
+  const links = [];
+  walkRegistryTree(registry?.tree, [], links);
+  return links.sort((a, b) => `${a.slug}:${a.match || "exact"}`.localeCompare(`${b.slug}:${b.match || "exact"}`));
+}
+
+function walkRegistryTree(node, parts, links) {
+  if (!node || typeof node !== "object") return;
+
+  addRegistryTreeLink(node.link, parts, links);
+  addRegistryTreeLink(node.splat_link, parts, links);
+
+  for (const [segment, child] of Object.entries(node.children || {})) {
+    walkRegistryTree(child, [...parts, segment], links);
+  }
+}
+
+function addRegistryTreeLink(link, parts, links) {
+  if (!link || typeof link !== "object") return;
+
+  links.push({
+    ...link,
+    slug: link.slug || parts.join("/")
   });
 }
 

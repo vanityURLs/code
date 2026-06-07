@@ -25,7 +25,7 @@ Do not crawl this instance for link inventory. Respect `/robots.txt`; the defaul
 
 - [Source repository](https://github.com/vanityurls/code): Project README, source code, setup workflow, and issue tracker
 - [Link authoring format](https://www.vanityurls.link/en/docs/link-format/): Format for defining short links
-- [Runtime registry](https://www.vanityurls.link/en/docs/runtime-registry/): Runtime redirect model and generated schema 3.0 registry
+- [Runtime registry](https://www.vanityurls.link/en/docs/runtime-registry/): Runtime redirect model and generated schema 3.1 registry
 - [Validation and CI](https://www.vanityurls.link/en/docs/validation-ci/): Validation and build checks
 - [Admin and stats dashboard](https://www.vanityurls.link/en/docs/admin-dashboard/): Read-only dashboard and protection guidance
 
