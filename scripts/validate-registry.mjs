@@ -13,7 +13,7 @@ import {
 const filePath = process.argv[2];
 
 if (!filePath) {
-  console.error("Usage: node scripts/validate-registry.mjs <registry.json>");
+  console.error("Usage: node scripts/validate-registry.mjs <runtime-link-registry.json>");
   process.exit(1);
 }
 
@@ -285,7 +285,7 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`Valid registry: ${filePath}`);
+  console.log(`Valid runtime link registry: ${filePath}`);
   console.log(`Links checked: ${(registry.links || []).length}`);
 }
 

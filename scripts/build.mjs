@@ -749,7 +749,7 @@ function firstExistingPath(...paths) {
 }
 
 function buildRedirectTargets() {
-  log("Building v8s.json");
+  log("Building runtime link registry build/v8s.json");
 
   const linksSource = fs.existsSync(path.join(CUSTOM_DIR, "v8s-links.txt"))
     ? "custom/v8s-links.txt"
@@ -759,7 +759,7 @@ function buildRedirectTargets() {
 }
 
 function validateRuntimeRegistry() {
-  log("Validating v8s.json");
+  log("Validating runtime link registry build/v8s.json");
 
   run("node scripts/validate-registry.mjs build/v8s.json");
 }
@@ -771,7 +771,7 @@ function assertNestedSlugSupport() {
   const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
 
   if (!Array.isArray(registry.links)) {
-    throw new Error("Runtime registry must contain links[]");
+    throw new Error("Runtime link registry must contain links[]");
   }
 
   const hasNested = registry.links.some((link) => {
@@ -805,7 +805,7 @@ function shouldSyncHomeRegistry() {
 function syncHomeRegistry() {
   const localConfig = loadLocalConfig();
   if (!shouldSyncHomeRegistry()) {
-    log("Skipping workstation registry sync");
+    log("Skipping workstation runtime link registry sync");
     return;
   }
 
@@ -814,7 +814,7 @@ function syncHomeRegistry() {
   try {
     fs.mkdirSync(path.dirname(homeRegistryPath), { recursive: true });
     fs.copyFileSync(RUNTIME_REGISTRY_PATH, homeRegistryPath);
-    log(`Copied v8s.json to ${homeRegistryPath}`);
+    log(`Copied runtime link registry v8s.json to ${homeRegistryPath}`);
   } catch (error) {
     if (process.env.V8S_SYNC_HOME_REQUIRED === "1" || process.env.V8S_SYNC_HOME_REQUIRED === "true") {
       throw new Error(`Unable to copy v8s.json to ${homeRegistryPath}: ${error.message}`);

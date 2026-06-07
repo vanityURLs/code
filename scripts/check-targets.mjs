@@ -13,6 +13,7 @@ const userAgent = "Mozilla/5.0 (compatible; VanityURLs-LinkChecker/1.0; +https:/
 
 function usage() {
   console.error("Usage: node scripts/check-targets.mjs [build/v8s.json]");
+  console.error("Checks targets from the generated runtime link registry.");
 }
 
 function isWebUrl(value) {
@@ -145,12 +146,12 @@ async function runPool(entries) {
 async function main() {
   if (!fs.existsSync(registryPath)) {
     usage();
-    throw new Error(`Registry not found: ${registryPath}. Run npm run build first.`);
+    throw new Error(`Runtime link registry not found: ${registryPath}. Run npm run build first.`);
   }
 
   const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
   if (!Array.isArray(registry.links)) {
-    throw new Error("Registry must contain links[]");
+    throw new Error("Runtime link registry must contain links[]");
   }
 
   const entries = uniqueTargets(registry.links);

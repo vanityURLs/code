@@ -3,7 +3,7 @@
 const daily = [
   {
     title: "1. Modify links",
-    detail: "Edit custom/v8s-links.txt with v8s-lnk or your preferred editor."
+    detail: "Edit the source link registry custom/v8s-links.txt with v8s-lnk or your preferred editor."
   },
   {
     title: "2. Prove the change",
@@ -35,12 +35,17 @@ const sections = [
     rationale: "Use these when check fails or when you want to isolate one layer.",
     commands: [
       ["npm run validate", "Validate generated runtime artifacts."],
-      ["npm run validate:registry", "Validate build/v8s.json structure and policy constraints."],
+      [
+        "npm run validate:runtime-registry",
+        "Validate generated runtime link registry structure and policy constraints."
+      ],
+      ["npm run validate:registry", "Compatibility alias for npm run validate:runtime-registry."],
       ["npm run validate:targets", "Check outbound link targets for release confidence."],
       ["npm run check:long-urls", "Find shortener-loop and platform-share targets that resolve to cleaner long URLs."],
       ["npm run test", "Run all behavior tests."],
       ["npm run test:worker", "Worker runtime behavior tests only."],
-      ["npm run test:registry", "Registry generation and schema contract tests only."],
+      ["npm run test:runtime-registry", "Runtime link registry generation and schema contract tests only."],
+      ["npm run test:registry", "Compatibility alias for npm run test:runtime-registry."],
       ["npm run lint", "Run vanityURLs-specific repository hygiene checks."],
       ["npm run format", "Rewrite supported files with Prettier."],
       ["npm run clean", "Remove generated output before rebuilding or comparing artifacts."],
@@ -107,7 +112,7 @@ for (const section of sections) {
 
 console.log("Mental model");
 console.log("  build    = make deployable output");
-console.log("  validate = prove generated data is structurally correct");
+console.log("  validate = prove generated runtime data is structurally correct");
 console.log("  test     = prove behavior");
 console.log("  smoke    = try runtime/provider integrations");
 console.log("  check    = build + lint + tests, the normal pre-push gate");
