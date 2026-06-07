@@ -15,3 +15,11 @@ export function latestStableTagFromLsRemote(output) {
   tags.sort((left, right) => compareVersions(right, left));
   return tags[0] || "";
 }
+
+export function formatUpgradeSource(ref) {
+  const value = String(ref || "").trim();
+  if (!value) return "";
+  if (isLatestReleaseRef(value)) return "[source] vanityURLs latest stable release tag";
+  if (normalizeVersion(value)) return `[source] vanityURLs release ${value}`;
+  return `[source] vanityURLs ${value} (unreleased or mutable ref)`;
+}

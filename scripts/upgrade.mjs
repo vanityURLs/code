@@ -4,7 +4,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { LATEST_RELEASE_REF, isLatestReleaseRef, latestStableTagFromLsRemote } from "./lib/upgrade-source.mjs";
+import {
+  LATEST_RELEASE_REF,
+  formatUpgradeSource,
+  isLatestReleaseRef,
+  latestStableTagFromLsRemote
+} from "./lib/upgrade-source.mjs";
 
 const ROOT = process.cwd();
 const DEFAULT_REMOTE = "https://github.com/vanityurls/code.git";
@@ -255,15 +260,20 @@ function resolveRemote(args) {
 }
 
 function resolveSource(args) {
-  if (args.source) return args.source;
+  if (args.source) {
+    args.resolvedRef = args.source;
+    return args.source;
+  }
 
   const remote = resolveRemote(args);
   if (args.dryRun) {
+    args.resolvedRef = args.ref;
     console.log(`[dry-run] would fetch ${args.ref} from ${remote}`);
     return "HEAD";
   }
 
   const ref = resolveRef(args, remote);
+  args.resolvedRef = ref;
   console.log(`[fetch] ${remoteLabel(remote)} ${ref}`);
   git(["fetch", "--depth=1", remote, ref], { capture: true });
   return "FETCH_HEAD";
@@ -411,6 +421,9 @@ function packageVersion() {
 }
 
 function printPostRunNote(args) {
+  const source = formatUpgradeSource(args.resolvedRef);
+  if (source) console.log(source);
+
   const version = packageVersion();
   if (version) console.log(`[version] vanityURLs ${version}`);
 
