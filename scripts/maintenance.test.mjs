@@ -9,7 +9,7 @@ import path from "node:path";
 const ROOT = process.cwd();
 
 function makeFixture() {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "v8s-maintenance-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "v8s-custom-overrides-"));
 
   fs.cpSync(ROOT, tmpDir, {
     recursive: true,

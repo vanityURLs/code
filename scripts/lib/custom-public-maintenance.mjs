@@ -14,13 +14,12 @@ export function loadMaintenanceContext(root = process.cwd()) {
   const defaultConfigPath = path.join(defaultsDir, "v8s-site-config.json");
   const customConfigPath = path.join(customDir, "v8s-site-config.json");
   const maintenanceConfigPath = path.join(customDir, "v8s-custom-overrides.json");
-  const legacyMaintenanceConfigPath = path.join(customDir, "v8s-maintenance.json");
   const languageMetadataPath = path.join(defaultsDir, "v8s-language-metadata.json");
   const defaultPublicDir = path.join(defaultsDir, "public");
   const customPublicDir = path.join(customDir, "public");
   const defaultConfig = readJson(defaultConfigPath);
   const customConfig = readJson(customConfigPath);
-  const maintenanceConfig = readJson(maintenanceConfigPath, readJson(legacyMaintenanceConfigPath));
+  const maintenanceConfig = readJson(maintenanceConfigPath);
   const siteConfig = mergeSiteConfig(defaultConfig, customConfig);
   const languageMetadata = readJson(languageMetadataPath);
 
