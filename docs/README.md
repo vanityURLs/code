@@ -3,7 +3,8 @@
 This repository contains the source of truth for a vanityURLs short-link redirector instance.
 
 Instance-owned configuration lives in `custom/` and `wrangler.toml`. Product defaults live in `defaults/` and are
-refreshed by `npm run upgrade`.
+refreshed by `npm run upgrade`. By default, upgrades pull the latest stable upstream release tag; use
+`npm run upgrade -- --ref main` only when intentionally testing unreleased product code.
 
 ## Everyday workflow
 
@@ -44,6 +45,7 @@ Generated files in `build/`, `src/`, and `functions/` are build outputs. Do not 
 
 ```bash
 npm run setup
+npm run upgrade
 npm run help
 npm run check
 npm run test

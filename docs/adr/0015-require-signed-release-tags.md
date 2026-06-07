@@ -42,9 +42,12 @@ Protect release tags with GitHub tag rules for `refs/tags/v*`:
 - require the release tag to be created by a trusted maintainer
 - include administrators in the rules and avoid bypass actors
 
-Future upgrade hardening should make `npm run upgrade` default to the latest verified release tag instead of `main`,
-support explicit `--ref vX.Y.Z` pinning, warn on mutable branch refs, verify the selected release tag before extracting
-or executing product files, and document `--no-check` as the high-assurance "sync, review, then run checks" path.
+`npm run upgrade` defaults to `latest-release`, which resolves the newest stable `vX.Y.Z` tag advertised by the upstream
+Git remote. Operators can still pin an explicit release with `--ref vX.Y.Z`, or opt into unreleased code with
+`--ref main` when testing.
+
+Future upgrade hardening should warn on mutable branch refs, verify the selected release tag before extracting or
+executing product files, and document `--no-check` as the high-assurance "sync, review, then run checks" path.
 
 The operational workflow maintainers must follow is documented in [RELEASE_WORKFLOW.md](../../RELEASE_WORKFLOW.md).
 

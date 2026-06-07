@@ -146,7 +146,7 @@ export function compareVersions(left, right) {
   return 0;
 }
 
-function normalizeVersion(value) {
+export function normalizeVersion(value) {
   const match = /^v?(\d+)\.(\d+)\.(\d+)(?:[+-].*)?$/.exec(String(value || "").trim());
   return match ? `${match[1]}.${match[2]}.${match[3]}` : "";
 }

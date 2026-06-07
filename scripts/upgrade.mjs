@@ -4,10 +4,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { LATEST_RELEASE_REF, isLatestReleaseRef, latestStableTagFromLsRemote } from "./lib/upgrade-source.mjs";
 
 const ROOT = process.cwd();
 const DEFAULT_REMOTE = "https://github.com/vanityurls/code.git";
-const DEFAULT_REF = "main";
+const DEFAULT_REF = LATEST_RELEASE_REF;
 const DEFAULT_PATHS = [
   "defaults",
   "scripts",
@@ -101,7 +102,8 @@ Safely refresh product-owned vanityURLs files from an upstream Git ref.
 
 Options:
   --remote <name-or-url>  Remote to fetch from. Defaults to upstream, then ${DEFAULT_REMOTE}
-  --ref <ref>             Upstream ref to fetch. Default: ${DEFAULT_REF}
+  --ref <ref>             Upstream ref to fetch. Default: latest stable release tag.
+                          Use --ref main only when intentionally testing unreleased code.
   --source <git-ref>      Use an already-available local git ref instead of fetching
   --paths <a,b>           Product-owned paths to replace. Default: ${DEFAULT_PATHS.join(",")}
   --path <path>           Add one product-owned path to replace
@@ -261,9 +263,18 @@ function resolveSource(args) {
     return "HEAD";
   }
 
-  console.log(`[fetch] ${remoteLabel(remote)} ${args.ref}`);
-  git(["fetch", "--depth=1", remote, args.ref], { capture: true });
+  const ref = resolveRef(args, remote);
+  console.log(`[fetch] ${remoteLabel(remote)} ${ref}`);
+  git(["fetch", "--depth=1", remote, ref], { capture: true });
   return "FETCH_HEAD";
+}
+
+function resolveRef(args, remote) {
+  if (!isLatestReleaseRef(args.ref)) return args.ref;
+
+  const tag = latestStableTagFromLsRemote(git(["ls-remote", "--tags", "--refs", remote, "v*"], { capture: true }));
+  if (!tag) throw new Error(`No stable upstream release tag was found for ${remoteLabel(remote)}.`);
+  return tag;
 }
 
 function clean(args) {
