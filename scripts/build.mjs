@@ -30,8 +30,8 @@ import {
   validateSecurityConfig,
   validateTrustConfig,
   withTheme
-} from "./lib/build/site-core.mjs";
-import { normalizeHtmlHead } from "./lib/build/html-core.mjs";
+} from "./lib/build-core/site-core.mjs";
+import { normalizeHtmlHead } from "./lib/build-core/html-core.mjs";
 
 const ROOT = process.cwd();
 const BUILD_DIR = path.join(ROOT, "build");

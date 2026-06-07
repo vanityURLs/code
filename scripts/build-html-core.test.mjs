@@ -7,7 +7,7 @@ import {
   normalizeHtmlHead,
   normalizePublicAssetVersions,
   THEME_OVERRIDE_SCRIPT
-} from "./lib/build/html-core.mjs";
+} from "./lib/build-core/html-core.mjs";
 
 {
   assert.equal(

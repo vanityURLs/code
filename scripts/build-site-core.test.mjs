@@ -17,7 +17,7 @@ import {
   validateSecurityConfig,
   validateTrustConfig,
   withTheme
-} from "./lib/build/site-core.mjs";
+} from "./lib/build-core/site-core.mjs";
 
 {
   assert.equal(legalPagesEnabled({}), true);

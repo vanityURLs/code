@@ -157,8 +157,9 @@ Replaced legacy blocklist naming with the broader policy source:
 Compatibility: additive and rename-compatible, no `schema_version` bump
 
 Migration: legacy `v8s-blocklist.json` filenames are still recognized for migration compatibility, but new instances
-should use `v8s-policies.json`. When a custom policy exists, it replaces the default source policy instead of merging
-with it.
+should use `v8s-policies.json`. When a custom policy exists, `build/v8s-blocklist.json` is generated from that custom
+source policy instead of merging it with defaults. Operators who want the product defaults as a starting point should
+copy `defaults/v8s-policies.json` to `custom/v8s-policies.json` and edit the copy.
 
 ### v8s-links.txt inline schedules
 
