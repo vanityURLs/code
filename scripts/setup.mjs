@@ -353,7 +353,6 @@ async function question(rl, label, defaultValue) {
 
 function createCustomFiles(args) {
   fs.mkdirSync(CUSTOM_DIR, { recursive: true });
-  fs.mkdirSync(CUSTOM_PUBLIC_DIR, { recursive: true });
 
   if (!fs.existsSync(CUSTOM_LINKS_PATH) || args.force) {
     writeFile(CUSTOM_LINKS_PATH, starterLinks(args), args);

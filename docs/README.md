@@ -35,7 +35,7 @@ the pushed commit automatically.
 - `custom/v8s-links.txt` is the human-authored source of truth for short links
 - `custom/v8s-site-config.json` stores instance settings such as domain, languages, operator contacts, branding, and
   link defaults
-- `custom/v8s-policies.json` stores instance destination policy overrides when needed
+- `custom/v8s-policies.json` replaces the default destination policy when an instance needs its own policy
 - `wrangler.toml` stores the Worker name, route, assets binding, and Cloudflare variables
 
 Generated files in `build/`, `src/`, and `functions/` are build outputs. Do not edit them directly.

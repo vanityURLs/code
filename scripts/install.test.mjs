@@ -160,6 +160,7 @@ function assertLinkedSlogan(html) {
   assert.equal(siteConfig.branding.custom_public, false);
   assert.equal(siteConfig.branding.wordmark.black, "v8s.");
   assert.equal(siteConfig.branding.wordmark.green, "link");
+  assert.equal(fs.existsSync(path.join(fixture, "custom", "public")), false);
   assert.equal(fs.existsSync(path.join(fixture, "custom", "public", "en", "index.html")), false);
 
   execFileSync(process.execPath, ["scripts/build.mjs"], {
@@ -179,6 +180,42 @@ function assertLinkedSlogan(html) {
   const manifest = JSON.parse(fs.readFileSync(path.join(fixture, "build", "site.webmanifest"), "utf8"));
   assert.equal(manifest.short_name, "v8s.link");
   assert.equal(manifest.name, "v8s.link short links");
+}
+
+{
+  const fixture = makeFixture();
+  fs.mkdirSync(path.join(fixture, "custom"), { recursive: true });
+  fs.writeFileSync(
+    path.join(fixture, "custom", "v8s-policies.json"),
+    JSON.stringify(
+      {
+        schema_version: "1.0",
+        defaults: {
+          allowed_protocols: ["https:"]
+        },
+        block_domains: [
+          {
+            domain: "operator.example",
+            category: "local-policy"
+          }
+        ]
+      },
+      null,
+      2
+    )
+  );
+
+  execFileSync(process.execPath, ["scripts/build.mjs"], {
+    cwd: fixture,
+    stdio: "pipe"
+  });
+
+  const policy = JSON.parse(fs.readFileSync(path.join(fixture, "build", "v8s-blocklist.json"), "utf8"));
+  assert.deepEqual(
+    policy.block_domains.map((entry) => entry.domain),
+    ["operator.example"]
+  );
+  assert.deepEqual(policy.defaults.allowed_protocols, ["https:"]);
 }
 
 console.log("install tests ok");

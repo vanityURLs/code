@@ -50,11 +50,11 @@ The runtime registry is private to the Worker runtime. Instance owners should no
 
 The localized `_stats` dashboard exposes routing inventory and should be protected with Cloudflare Access or equivalent controls when deployed publicly. The `/_tests/` page is also intended for protected QA access.
 
-The default policy rejects risky destinations such as credentialed URLs, non-HTTP(S) protocols, private IP ranges, known shortener chains, phishing lures, and high-risk executable downloads. Instance owners should add local policy in `custom/v8s-policies.json` and must not use the redirect engine for phishing, malware, undisclosed tracking, or other harmful activity.
+The default policy rejects risky destinations such as credentialed URLs, non-HTTP(S) protocols, private IP ranges, known shortener chains, phishing lures, and high-risk executable downloads. Instance owners can replace that source policy with `custom/v8s-policies.json` and must not use the redirect engine for phishing, malware, undisclosed tracking, or other harmful activity.
 
 ## Instance Maintenance
 
-Product defaults live in `defaults/`. Instance-owned files live in `custom/` and are not overwritten automatically during updates. The build copies defaults first, overlays `custom/public`, and then generates runtime files.
+Product defaults live in `defaults/`. Instance-owned files live in `custom/` and are not overwritten automatically during updates. The build copies defaults first, overlays `custom/public` only when copied public files exist, and then generates runtime files.
 
 Use `npm run doctor` to detect stale copied public assets, stale copied product pages, unsupported copied language folders, stale branding, and missing shared head assets. Use `./scripts/v8s-fix --assets`, `--head-assets`, `--product-pages`, `--languages`, `--branding`, or `--all` to apply explicit maintenance fixes to copied public files.
 
