@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import { checkTargetUrl, classifyTargetUrl, loadBlocklistPolicy } from "./blocklist-policy.mjs";
 
 const registryPath = process.argv[2] || "build/v8s.json";
 const timeoutMs = Number(process.env.V8S_TARGET_TIMEOUT_MS || 8000);
 const concurrency = Number(process.env.V8S_TARGET_CONCURRENCY || 8);
+const policy = loadBlocklistPolicy();
 const redirectableStates = new Set(["permanent", "ephemeral"]);
+const longUrlCategories = new Set(["shortener-loop", "platform-share"]);
 const userAgent = "Mozilla/5.0 (compatible; VanityURLs-LinkChecker/1.0; +https://vanityURLs.link)";
 
 function usage() {
@@ -14,6 +17,16 @@ function usage() {
 
 function isWebUrl(value) {
   return /^https?:\/\//i.test(String(value || ""));
+}
+
+function normalizeComparableUrl(value) {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return String(value || "");
+  }
 }
 
 function uniqueTargets(links) {
@@ -78,7 +91,8 @@ async function checkTarget(entry) {
       slugs,
       status: response.status,
       ok: response.status >= 200 && response.status < 400,
-      finalUrl: response.url
+      finalUrl: response.url,
+      longUrlSuggestion: longUrlSuggestion(target, response.url)
     };
   } catch (error) {
     return {
@@ -89,6 +103,26 @@ async function checkTarget(entry) {
       error: error.name === "AbortError" ? `timeout after ${timeoutMs}ms` : error.message
     };
   }
+}
+
+function longUrlSuggestion(target, finalUrl) {
+  if (!isWebUrl(target) || !isWebUrl(finalUrl)) return null;
+  if (normalizeComparableUrl(target) === normalizeComparableUrl(finalUrl)) return null;
+
+  const targetClass = classifyTargetUrl(target, policy);
+  if (!longUrlCategories.has(targetClass.category)) return null;
+
+  const finalClass = classifyTargetUrl(finalUrl, policy);
+  const finalViolations = checkTargetUrl(finalUrl, policy);
+  if (longUrlCategories.has(finalClass.category) || finalViolations.length) {
+    return null;
+  }
+
+  return {
+    category: targetClass.category,
+    matchedDomain: targetClass.reviewDomain?.domain || targetClass.blockedDomain?.domain || targetClass.hostname,
+    url: finalUrl
+  };
 }
 
 async function runPool(entries) {
@@ -122,8 +156,23 @@ async function main() {
   const entries = uniqueTargets(registry.links);
   const results = await runPool(entries);
   const broken = results.filter((result) => !result.ok).sort((a, b) => a.target.localeCompare(b.target));
+  const suggestions = results
+    .filter((result) => result.ok && result.longUrlSuggestion)
+    .sort((a, b) => a.target.localeCompare(b.target));
 
   console.log(`Checked ${results.length} unique active web target(s).`);
+
+  if (suggestions.length) {
+    console.log(`Long URL suggestions: ${suggestions.length}`);
+    for (const result of suggestions) {
+      const suggestion = result.longUrlSuggestion;
+      console.log(`- ${suggestion.category} (${suggestion.matchedDomain}): ${result.target}`);
+      console.log(`  replace with: ${suggestion.url}`);
+      console.log(`  slugs: ${result.slugs.join(", ")}`);
+    }
+  } else {
+    console.log("No long URL suggestions found.");
+  }
 
   if (!broken.length) {
     console.log("No broken targets found.");

@@ -84,6 +84,33 @@ export function checkTargetUrl(target, policy = loadBlocklistPolicy()) {
   return violations;
 }
 
+export function classifyTargetUrl(target, policy = loadBlocklistPolicy()) {
+  let url;
+
+  try {
+    url = new URL(target);
+  } catch {
+    return {
+      valid: false,
+      hostname: "",
+      blockedDomain: null,
+      reviewDomain: null
+    };
+  }
+
+  const hostname = canonicalizeHostname(url.hostname);
+  const reviewDomain = findReviewDomain(hostname, policy);
+  const blockedDomain = reviewDomain ? null : findBlockedDomain(hostname, policy);
+
+  return {
+    valid: true,
+    hostname,
+    blockedDomain,
+    reviewDomain,
+    category: reviewDomain?.category || blockedDomain?.category || ""
+  };
+}
+
 function normalizePolicy(raw) {
   const defaults = raw.defaults || {};
   const blockDomains = Array.isArray(raw.block_domains) ? raw.block_domains : [];
@@ -281,7 +308,11 @@ function isAllowedDomain(hostname, policy) {
 }
 
 function isReviewDomain(hostname, policy) {
-  return policy.reviewDomains.some((entry) => domainMatches(hostname, entry.domain));
+  return Boolean(findReviewDomain(hostname, policy));
+}
+
+function findReviewDomain(hostname, policy) {
+  return policy.reviewDomains.find((entry) => domainMatches(hostname, entry.domain));
 }
 
 function findBlockedDomain(hostname, policy) {

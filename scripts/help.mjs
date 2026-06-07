@@ -37,6 +37,7 @@ const sections = [
       ["npm run validate", "Validate generated runtime artifacts."],
       ["npm run validate:registry", "Validate build/v8s.json structure and policy constraints."],
       ["npm run validate:targets", "Check outbound link targets for release confidence."],
+      ["npm run check:long-urls", "Find shortener-loop and platform-share targets that resolve to cleaner long URLs."],
       ["npm run test", "Run all behavior tests."],
       ["npm run test:worker", "Worker runtime behavior tests only."],
       ["npm run test:registry", "Registry generation and schema contract tests only."],
