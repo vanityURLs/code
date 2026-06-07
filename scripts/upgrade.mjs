@@ -23,6 +23,7 @@ const DEFAULT_PATHS = [
   ".npmrc",
   ".prettierignore"
 ];
+const BOOTSTRAP_PATHS = ["scripts/upgrade.mjs", "scripts/lib/upgrade-source.mjs", "scripts/lib/upstream-release.mjs"];
 const PROTECTED_PATHS = ["custom", "wrangler.toml", ".dev.vars", "README.md"];
 const GENERATED_PATHS = ["build", "functions", "src"];
 const REQUIRED_CHECK_BINS = ["prettier"];
@@ -31,6 +32,7 @@ const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDepende
 function parseArgs(argv) {
   const args = {
     allowDirty: false,
+    bootstrapComplete: false,
     check: true,
     clean: true,
     dryRun: false,
@@ -44,6 +46,8 @@ function parseArgs(argv) {
 
     if (arg === "--allow-dirty") {
       args.allowDirty = true;
+    } else if (arg === "--bootstrap-complete") {
+      args.bootstrapComplete = true;
     } else if (arg === "--dry-run") {
       args.dryRun = true;
     } else if (arg === "--no-check") {
@@ -64,6 +68,8 @@ function parseArgs(argv) {
       args.ref = readValue(argv, ++index, arg);
     } else if (arg === "--remote") {
       args.remote = readValue(argv, ++index, arg);
+    } else if (arg === "--resolved-ref") {
+      args.resolvedRefOverride = readValue(argv, ++index, arg);
     } else if (arg === "--source") {
       args.source = readValue(argv, ++index, arg);
     } else {
@@ -155,6 +161,7 @@ function ensureCleanWorktree(args) {
   if (args.allowDirty) return;
   const status = worktreeStatus();
   if (!status) return;
+  if (args.bootstrapComplete && statusOnlyTouches(status, BOOTSTRAP_PATHS)) return;
   throw new Error(
     [
       "Worktree is not clean. Commit or stash local changes before upgrading.",
@@ -162,6 +169,21 @@ function ensureCleanWorktree(args) {
       status
     ].join("\n")
   );
+}
+
+function statusOnlyTouches(status, allowedPaths) {
+  const allowed = new Set(allowedPaths);
+  return status
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .every((line) => {
+      const relativePath = line
+        .trim()
+        .replace(/^\S+\s+/, "")
+        .replace(/^"|"$/g, "");
+      return allowed.has(relativePath);
+    });
 }
 
 function dependencyIssue() {
@@ -261,7 +283,7 @@ function resolveRemote(args) {
 
 function resolveSource(args) {
   if (args.source) {
-    args.resolvedRef = args.source;
+    args.resolvedRef = args.resolvedRefOverride || args.source;
     return args.source;
   }
 
@@ -277,6 +299,83 @@ function resolveSource(args) {
   console.log(`[fetch] ${remoteLabel(remote)} ${ref}`);
   git(["fetch", "--depth=1", remote, ref], { capture: true });
   return "FETCH_HEAD";
+}
+
+function shouldBootstrap(args) {
+  if (args.dryRun || args.bootstrapComplete) return false;
+  return args.paths.some((relativePath) =>
+    BOOTSTRAP_PATHS.some(
+      (bootstrapPath) => relativePath === bootstrapPath || bootstrapPath.startsWith(`${relativePath}/`)
+    )
+  );
+}
+
+function changedBootstrapPaths(source) {
+  return BOOTSTRAP_PATHS.filter((relativePath) => {
+    const upstream = sourceFile(source, relativePath);
+    if (upstream === null) return false;
+
+    const localPath = path.join(ROOT, relativePath);
+    const local = fs.existsSync(localPath) ? fs.readFileSync(localPath, "utf8") : "";
+    return upstream !== local;
+  });
+}
+
+function sourceFile(source, relativePath) {
+  try {
+    return git(["show", `${source}:${relativePath}`], { capture: true });
+  } catch {
+    return null;
+  }
+}
+
+function bootstrapUpgradeTool(args, source, argv) {
+  if (!shouldBootstrap(args)) return false;
+  if (!sourceSupportsBootstrap(source)) return false;
+
+  const changed = changedBootstrapPaths(source);
+  if (!changed.length) return false;
+
+  const result = syncPaths({ ...args, paths: BOOTSTRAP_PATHS }, source);
+  console.log(`[bootstrap] Updated upgrade tool files: ${formatSyncList(result.synced)}`);
+  if (result.missing.length) console.log(`[bootstrap] Missing upstream tool files: ${formatSyncList(result.missing)}`);
+  console.log("[bootstrap] Restarting upgrade with refreshed tool files");
+
+  const restartArgv = [
+    ...withoutFlagValues(argv, new Set(["--source", "--resolved-ref"])),
+    "--source",
+    source,
+    "--resolved-ref",
+    args.resolvedRef,
+    "--bootstrap-complete"
+  ];
+  const child = spawnSync(process.execPath, [path.join(ROOT, "scripts", "upgrade.mjs"), ...restartArgv], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      LC_ALL: "C"
+    },
+    stdio: "inherit"
+  });
+
+  process.exit(child.status ?? 1);
+}
+
+function withoutFlagValues(argv, flags) {
+  const next = [];
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (flags.has(arg)) {
+      index += 1;
+      continue;
+    }
+    next.push(arg);
+  }
+  return next;
+}
+
+function sourceSupportsBootstrap(source) {
+  return sourceFile(source, "scripts/upgrade.mjs")?.includes("--bootstrap-complete") || false;
 }
 
 function resolveRef(args, remote) {
@@ -445,15 +544,17 @@ function formatSyncPath(relativePath) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  const args = parseArgs(argv);
 
   ensureCleanWorktree(args);
   ensureDependencies(args, "before-sync");
+  const source = resolveSource(args);
+  bootstrapUpgradeTool(args, source, argv);
   const dependenciesBefore = dependencySnapshot();
   clean(args);
   ensureCleanWorktree(args);
 
-  const source = resolveSource(args);
   const result = syncPaths(args, source);
   if (!args.dryRun) {
     console.log(`[sync] ${formatSyncList(result.synced)}`);

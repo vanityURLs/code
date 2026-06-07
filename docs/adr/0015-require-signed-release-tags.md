@@ -46,6 +46,10 @@ Protect release tags with GitHub tag rules for `refs/tags/v*`:
 Git remote. Operators can still pin an explicit release with `--ref vX.Y.Z`, or opt into unreleased code with
 `--ref main` when testing.
 
+When the selected upstream source contains a newer bootstrap-capable updater, `npm run upgrade` refreshes its own
+upgrade tool files first and restarts from the same fetched source before syncing the rest of the product-owned files.
+This prevents an older local updater from running stale upgrade logic against newer product files.
+
 Future upgrade hardening should warn on mutable branch refs, verify the selected release tag before extracting or
 executing product files, and document `--no-check` as the high-assurance "sync, review, then run checks" path.
 
