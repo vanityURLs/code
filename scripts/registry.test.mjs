@@ -128,6 +128,16 @@ assert(
   checkTargetUrl("https://bit.ly/example").some((violation) => violation.includes("shortener-loop")),
   "default policy should block baseline public shorteners"
 );
+assert.deepEqual(
+  checkTargetUrl("https://youtu.be/dQw4w9WgXcQ"),
+  [],
+  "default policy should not block official platform share domains"
+);
+assert.deepEqual(
+  checkTargetUrl("https://photos.app.goo.gl/example"),
+  [],
+  "platform share domains should not be blocked by parent shortener domains"
+);
 assert(
   checkTargetUrl("http://2130706433/").some((violation) => violation.includes("private or reserved")),
   "numeric IPv4 host forms should be blocked after URL canonicalization"

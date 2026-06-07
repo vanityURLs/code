@@ -64,7 +64,7 @@ export function checkTargetUrl(target, policy = loadBlocklistPolicy()) {
     violations.push(`hostname '${hostname}' resolves to a private or reserved address form`);
   }
 
-  const blockedDomain = findBlockedDomain(hostname, policy);
+  const blockedDomain = isReviewDomain(hostname, policy) ? null : findBlockedDomain(hostname, policy);
   if (blockedDomain) {
     violations.push(
       `hostname '${hostname}' matches blocklist domain '${blockedDomain.domain}' (${blockedDomain.category})`
@@ -87,6 +87,7 @@ export function checkTargetUrl(target, policy = loadBlocklistPolicy()) {
 function normalizePolicy(raw) {
   const defaults = raw.defaults || {};
   const blockDomains = Array.isArray(raw.block_domains) ? raw.block_domains : [];
+  const reviewDomains = Array.isArray(raw.review_domains) ? raw.review_domains : [];
   const allowDomains = Array.isArray(raw.allow_domains) ? raw.allow_domains : [];
   const blockedKeywords = Array.isArray(raw.blocked_keywords) ? raw.blocked_keywords : [];
   const allowedProtocols = Array.isArray(defaults.allowed_protocols) ? defaults.allowed_protocols : ["http:", "https:"];
@@ -100,6 +101,9 @@ function normalizePolicy(raw) {
     blockedFileExtensions: blockedFileExtensions.map((suffix) => String(suffix).toLowerCase()),
     allowDomains: allowDomains
       .map((entry) => normalizeAllowDomainEntry(entry))
+      .filter((entry) => entry.domain && entry.enabled !== false),
+    reviewDomains: reviewDomains
+      .map((entry) => normalizeDomainEntry(entry))
       .filter((entry) => entry.domain && entry.enabled !== false),
     blockedKeywords: blockedKeywords.map((entry) => normalizeKeywordEntry(entry)).filter((entry) => entry.keyword),
     blockDomains: blockDomains
@@ -129,6 +133,7 @@ function mergePolicy(localPolicy, generatedPolicy) {
       )
     },
     allow_domains: mergeAllowDomains(generatedPolicy.allow_domains, localPolicy.allow_domains),
+    review_domains: mergeDomainEntries(generatedPolicy.review_domains, localPolicy.review_domains),
     blocked_keywords: mergeKeywordEntries(generatedPolicy.blocked_keywords, localPolicy.blocked_keywords),
     block_domains: mergeBlockDomains(generatedPolicy.block_domains, localPolicy.block_domains)
   };
@@ -152,17 +157,21 @@ function mergeAllowDomains(first = [], second = []) {
 }
 
 function mergeBlockDomains(first = [], second = []) {
+  return mergeDomainEntries(first, second);
+}
+
+function mergeDomainEntries(first = [], second = []) {
   const merged = new Map();
 
   for (const entry of [...asArray(first), ...asArray(second)]) {
-    if (!entry || typeof entry !== "object") continue;
-
-    const domain = normalizeHostname(entry.domain);
+    const normalized = normalizeDomainEntry(entry);
+    const domain = normalized.domain;
     if (!domain) continue;
 
     merged.set(domain, {
-      ...entry,
-      domain
+      ...normalized,
+      domain,
+      category: normalized.category || "blocked"
     });
   }
 
@@ -227,6 +236,29 @@ function normalizeAllowDomainEntry(entry) {
   };
 }
 
+function normalizeDomainEntry(entry) {
+  if (typeof entry === "string") {
+    return {
+      domain: normalizeHostname(entry),
+      enabled: true
+    };
+  }
+
+  if (!entry || typeof entry !== "object") {
+    return {
+      domain: "",
+      enabled: false
+    };
+  }
+
+  return {
+    ...entry,
+    domain: normalizeHostname(entry.domain),
+    category: entry.category || "custom",
+    enabled: entry.enabled !== false
+  };
+}
+
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -246,6 +278,10 @@ function canonicalizeHostname(value) {
 
 function isAllowedDomain(hostname, policy) {
   return policy.allowDomains.some((entry) => domainMatches(hostname, entry.domain));
+}
+
+function isReviewDomain(hostname, policy) {
+  return policy.reviewDomains.some((entry) => domainMatches(hostname, entry.domain));
 }
 
 function findBlockedDomain(hostname, policy) {

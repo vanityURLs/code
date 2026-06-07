@@ -180,6 +180,80 @@
       "added_at": "2026-05-05"
     }
   ],
+  "review_domains": [
+    {
+      "domain": "a.co",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Official Amazon product sharing domain",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    },
+    {
+      "domain": "aka.ms",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Official Microsoft sharing and documentation domain",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    },
+    {
+      "domain": "amzn.to",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Official Amazon sharing domain",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    },
+    {
+      "domain": "discord.gg",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Official Discord invite sharing domain",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    },
+    {
+      "domain": "git.io",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Legacy GitHub sharing domain for github.com and github.io links",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    },
+    {
+      "domain": "lnkd.in",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Official LinkedIn sharing domain",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    },
+    {
+      "domain": "photos.app.goo.gl",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Official Google Photos sharing domain",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    },
+    {
+      "domain": "spotify.link",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Official Spotify sharing domain",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    },
+    {
+      "domain": "youtu.be",
+      "category": "platform-share",
+      "severity": "info",
+      "reason": "Official YouTube sharing domain",
+      "source": "local-policy",
+      "added_at": "2026-06-07"
+    }
+  ],
   "block_domains": [
     {
       "domain": "accounts-google.com",
@@ -263,14 +337,6 @@
     },
     {
       "domain": "rebrand.ly",
-      "category": "shortener-loop",
-      "severity": "medium",
-      "reason": "Public URL shortener that can obscure the final destination",
-      "source": "local-policy",
-      "added_at": "2026-06-04"
-    },
-    {
-      "domain": "lnkd.in",
       "category": "shortener-loop",
       "severity": "medium",
       "reason": "Public URL shortener that can obscure the final destination",

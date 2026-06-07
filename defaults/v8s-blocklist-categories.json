@@ -12,6 +12,9 @@
       "description": "Public URL shorteners used to hide redirect chains or obscure the final destination",
       "default_sources": ["url_shorteners"]
     },
+    "platform-share": {
+      "description": "Official sharing domains operated by major platforms where the short domain is part of the product experience rather than an open generic shortener"
+    },
     "scanner-probe": {
       "description": "Automated vulnerability scanner paths that should not resolve as short links"
     },

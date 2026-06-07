@@ -718,6 +718,7 @@ function mergePolicy(base = {}, custom = {}) {
     defaults: mergeObject(base.defaults, custom.defaults),
     generated_sources: mergeObject(base.generated_sources, custom.generated_sources),
     allow_domains: mergeArray(base.allow_domains, custom.allow_domains),
+    review_domains: mergeArray(base.review_domains, custom.review_domains),
     blocked_keywords: mergeArray(base.blocked_keywords, custom.blocked_keywords),
     block_domains: mergeArray(base.block_domains, custom.block_domains)
   };

@@ -105,6 +105,7 @@ function mergePolicy(base = {}, custom = {}) {
     defaults: mergeObject(base.defaults, custom.defaults),
     generated_sources: mergeObject(base.generated_sources, custom.generated_sources),
     allow_domains: mergeArray(base.allow_domains, custom.allow_domains),
+    review_domains: mergeArray(base.review_domains, custom.review_domains),
     blocked_keywords: mergeArray(base.blocked_keywords, custom.blocked_keywords),
     block_domains: mergeArray(base.block_domains, custom.block_domains)
   };
@@ -147,6 +148,40 @@ function loadEnabledAllowDomains() {
   return entries
     .map((entry) => normalizeAllowDomainEntry(entry))
     .filter((entry) => entry.domain && entry.enabled !== false);
+}
+
+function loadPlatformShareDomains() {
+  const policy = loadPolicy();
+  const entries = Array.isArray(policy.review_domains) ? policy.review_domains : [];
+
+  return entries
+    .map((entry) => normalizeDomainEntry(entry))
+    .filter((entry) => entry.domain && entry.enabled !== false && entry.category === "platform-share");
+}
+
+function normalizeDomainEntry(entry) {
+  if (typeof entry === "string") {
+    return {
+      domain: normalizeHostname(entry),
+      category: "custom",
+      enabled: true
+    };
+  }
+
+  if (!entry || typeof entry !== "object") {
+    return {
+      domain: "",
+      category: "",
+      enabled: false
+    };
+  }
+
+  return {
+    ...entry,
+    domain: normalizeHostname(entry.domain),
+    category: String(entry.category || ""),
+    enabled: entry.enabled !== false
+  };
 }
 
 async function fetchText(url) {
@@ -234,6 +269,7 @@ function notifyForcedAllowlistOverrides(forcedOverrides) {
 async function main() {
   const sources = loadGeneratedSources();
   const allowDomains = loadEnabledAllowDomains();
+  const platformShareDomains = loadPlatformShareDomains();
   const generatedEntries = [];
   const sourceSummaries = [];
 
@@ -246,15 +282,13 @@ async function main() {
     const text = await fetchText(source.url);
     const domains = parseDomainLines(text);
 
-    sourceSummaries.push({
-      name: sourceName,
-      url: source.url,
-      category: source.category,
-      severity: source.severity,
-      domains: domains.length
-    });
-
+    let excludedPlatformShareDomains = 0;
     for (const domain of domains) {
+      if (source.category === "shortener-loop" && isPlatformShareDomain(domain, platformShareDomains)) {
+        excludedPlatformShareDomains += 1;
+        continue;
+      }
+
       generatedEntries.push({
         domain,
         category: source.category || "custom",
@@ -263,6 +297,15 @@ async function main() {
         source: sourceName
       });
     }
+
+    sourceSummaries.push({
+      name: sourceName,
+      url: source.url,
+      category: source.category,
+      severity: source.severity,
+      domains: domains.length,
+      excluded_platform_share_domains: excludedPlatformShareDomains
+    });
   }
 
   const forcedOverrides = findForcedAllowlistOverrides(generatedEntries, allowDomains);
@@ -278,6 +321,10 @@ async function main() {
   console.log(
     `Generated ${OUTPUT_PATH} with ${policy.block_domains.length} blocked domains from ${sourceSummaries.length} source(s)`
   );
+}
+
+function isPlatformShareDomain(domain, platformShareDomains) {
+  return platformShareDomains.some((entry) => domainMatches(domain, entry.domain));
 }
 
 main().catch((error) => {
