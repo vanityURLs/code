@@ -12,11 +12,13 @@ export function loadMaintenanceContext(root = process.cwd()) {
   const customDir = path.join(root, "custom");
   const defaultConfigPath = path.join(defaultsDir, "v8s-site-config.json");
   const customConfigPath = path.join(customDir, "v8s-site-config.json");
+  const maintenanceConfigPath = path.join(customDir, "v8s-maintenance.json");
   const languageMetadataPath = path.join(defaultsDir, "v8s-language-metadata.json");
   const defaultPublicDir = path.join(defaultsDir, "public");
   const customPublicDir = path.join(customDir, "public");
   const defaultConfig = readJson(defaultConfigPath);
   const customConfig = readJson(customConfigPath);
+  const maintenanceConfig = readJson(maintenanceConfigPath);
   const siteConfig = mergeSiteConfig(defaultConfig, customConfig);
   const languageMetadata = readJson(languageMetadataPath);
 
@@ -28,6 +30,7 @@ export function loadMaintenanceContext(root = process.cwd()) {
     customPublicDir,
     siteConfig,
     languageMetadata,
+    maintenanceConfig,
     languages: supportedLanguages(siteConfig)
   };
 }
@@ -48,7 +51,7 @@ export function diagnoseCustomPublic(context) {
         message: "branding.custom_public is true, but custom/public has no copied pages."
       });
     }
-    return issues;
+    return applyDoctorIgnores(context, issues);
   }
 
   issues.push(...diagnoseHtmlHeadAssets(context));
@@ -85,7 +88,7 @@ export function diagnoseCustomPublic(context) {
     }
   }
 
-  return issues;
+  return applyDoctorIgnores(context, issues);
 }
 
 export function reconcileCustomPublic(context, options = {}) {
@@ -192,10 +195,13 @@ function diagnoseHtmlHeadAssets(context) {
 }
 
 function diagnoseSharedAssets(context) {
+  const customPublicEnabled = context.siteConfig.branding?.custom_public === true;
+
   return listSharedDefaultAssets(context)
     .filter((defaultPath) => {
       const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
-      return !fs.existsSync(customPath) || !sameFile(defaultPath, customPath);
+      if (!fs.existsSync(customPath)) return customPublicEnabled;
+      return !sameFile(defaultPath, customPath);
     })
     .map((defaultPath) => {
       const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
@@ -207,6 +213,44 @@ function diagnoseSharedAssets(context) {
         message: "Shared public asset is missing or differs from defaults."
       };
     });
+}
+
+function applyDoctorIgnores(context, issues) {
+  const ignoreRules = Array.isArray(context.maintenanceConfig?.doctor?.ignore)
+    ? context.maintenanceConfig.doctor.ignore
+    : [];
+  if (!ignoreRules.length) return issues;
+
+  return issues.filter((issue) => !ignoreRules.some((rule) => matchesDoctorIgnoreRule(issue, rule)));
+}
+
+function matchesDoctorIgnoreRule(issue, rule) {
+  const paths = normalizeRuleList(rule.path || rule.paths);
+  if (paths.length && !paths.some((pattern) => matchesPathPattern(issue.path, pattern))) return false;
+
+  const codes = normalizeRuleList(rule.code || rule.codes);
+  if (codes.length && !codes.includes(issue.code)) return false;
+
+  const fixes = normalizeRuleList(rule.fix || rule.fixes);
+  if (fixes.length && !fixes.includes(issue.fix)) return false;
+
+  return true;
+}
+
+function normalizeRuleList(value) {
+  if (Array.isArray(value)) return value.map((entry) => String(entry || "").trim()).filter(Boolean);
+  const single = String(value || "").trim();
+  return single ? [single] : [];
+}
+
+function matchesPathPattern(pathname, pattern) {
+  const normalizedPath = String(pathname || "").replaceAll("\\", "/");
+  const normalizedPattern = String(pattern || "").replaceAll("\\", "/");
+  if (normalizedPattern.endsWith("/**")) {
+    const prefix = normalizedPattern.slice(0, -3);
+    return normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`);
+  }
+  return normalizedPath === normalizedPattern;
 }
 
 function diagnoseProductPages(context) {

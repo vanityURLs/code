@@ -47,6 +47,66 @@ function runCommand(cwd, args) {
 
 {
   const fixture = makeFixture();
+  fs.mkdirSync(path.join(fixture, "custom", "public"), { recursive: true });
+  fs.writeFileSync(
+    path.join(fixture, "custom", "v8s-site-config.json"),
+    `${JSON.stringify(
+      {
+        schema_version: "1.0",
+        branding: { custom_public: false }
+      },
+      null,
+      2
+    )}\n`
+  );
+  fs.writeFileSync(path.join(fixture, "custom", "public", "index.html"), "<!doctype html><title>Custom</title>\n");
+
+  const missingAssetDoctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
+  assert.equal(
+    missingAssetDoctorJson.issues.some(
+      (issue) => issue.code === "shared-asset-stale" && issue.path === "custom/public/logo.svg"
+    ),
+    false
+  );
+
+  fs.writeFileSync(path.join(fixture, "custom", "public", "logo.svg"), "<svg><title>custom logo</title></svg>\n");
+  const staleAssetDoctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
+  assert(
+    staleAssetDoctorJson.issues.some(
+      (issue) => issue.code === "shared-asset-stale" && issue.path === "custom/public/logo.svg"
+    )
+  );
+
+  fs.writeFileSync(
+    path.join(fixture, "custom", "v8s-maintenance.json"),
+    `${JSON.stringify(
+      {
+        schema_version: "1.0",
+        doctor: {
+          ignore: [
+            {
+              path: "custom/public/logo.svg",
+              codes: ["shared-asset-stale"],
+              reason: "Instance-owned logo."
+            }
+          ]
+        }
+      },
+      null,
+      2
+    )}\n`
+  );
+  const ignoredAssetDoctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
+  assert.equal(
+    ignoredAssetDoctorJson.issues.some(
+      (issue) => issue.code === "shared-asset-stale" && issue.path === "custom/public/logo.svg"
+    ),
+    false
+  );
+}
+
+{
+  const fixture = makeFixture();
   run(fixture, [
     "scripts/setup.mjs",
     "--no-check",
