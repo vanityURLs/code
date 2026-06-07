@@ -56,38 +56,7 @@
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-
-      const slug = normalizeSlug(input.value);
-      input.value = slug;
-      syncFormState(form, input);
-
-      if (!slug) {
-        renderMessage(result, labels.empty);
-        return;
-      }
-
-      try {
-        const lookup = await lookupSlug(slug);
-
-        if (lookup.result === "miss") {
-          renderMessage(result, labels.miss);
-          trackLookup(slug, "", "", "miss");
-          return;
-        }
-
-        const state = lookup.state || "";
-        if (lookup.result !== "resolved" || !lookup.target) {
-          renderMessage(result, labels.notRedirecting);
-          trackLookup(slug, state, "", "not-redirecting");
-          return;
-        }
-
-        renderTarget(result, slug, lookup.target, state);
-        trackLookup(slug, state, lookup.target, "resolved");
-      } catch {
-        renderMessage(result, labels.error);
-        trackLookup(slug, "", "", "error");
-      }
+      await resolveInputSlug(form, input, result);
     });
 
     input.addEventListener("input", (event) => {
@@ -102,8 +71,52 @@
       syncFormState(form, input);
     });
 
+    const initialSlug = initialLookupSlug();
+    if (initialSlug) {
+      input.value = initialSlug;
+      void resolveInputSlug(form, input, result);
+    }
+
     syncFormState(form, input);
   });
+
+  async function resolveInputSlug(form, input, result) {
+    const slug = normalizeSlug(input.value);
+    input.value = slug;
+    syncFormState(form, input);
+
+    if (!slug) {
+      renderMessage(result, labels.empty);
+      return;
+    }
+
+    try {
+      const lookup = await lookupSlug(slug);
+
+      if (lookup.result === "miss") {
+        renderMessage(result, labels.miss);
+        trackLookup(slug, "", "", "miss");
+        return;
+      }
+
+      const state = lookup.state || "";
+      if (lookup.result !== "resolved" || !lookup.target) {
+        renderMessage(result, labels.notRedirecting);
+        trackLookup(slug, state, "", "not-redirecting");
+        return;
+      }
+
+      renderTarget(result, slug, lookup.target, state);
+      trackLookup(slug, state, lookup.target, "resolved");
+    } catch {
+      renderMessage(result, labels.error);
+      trackLookup(slug, "", "", "error");
+    }
+  }
+
+  function initialLookupSlug() {
+    return normalizeSlug(new URLSearchParams(window.location.search).get("slug"));
+  }
 
   function syncFormState(form, input) {
     form.classList.toggle("has-value", input.value.trim().length > 0);
