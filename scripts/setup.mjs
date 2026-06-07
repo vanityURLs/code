@@ -9,6 +9,7 @@ import { copyDirectory, hasCopyableFiles, mergeSiteConfig, supportedLanguages } 
 import {
   analyticsDisclosureDefault,
   analyticsRetentionDefault,
+  configuredBrandingCustomMode,
   configuredTimezone,
   DEFAULT_DOMAIN,
   DEFAULT_LANGUAGE,
@@ -22,6 +23,7 @@ import {
   hasConfiguredSlogan,
   hasContactArgs,
   isAnalyticsDisabled,
+  isFullCustomMode,
   normalizeAccessTeamDomain,
   normalizeArgs,
   normalizeDomain,
@@ -254,7 +256,7 @@ async function promptForMissing(args) {
         false
       );
     } else {
-      args.customizePublic = args.customizePublic ?? siteConfig.branding?.custom_public === true;
+      args.customizePublic = args.customizePublic ?? isFullCustomMode(siteConfig.branding);
       args.brandingSlogans = normalizeSloganMap(configuredBranding.slogan, args.languages, args);
     }
   } finally {
@@ -391,7 +393,7 @@ function updateSiteConfig(args) {
           domain: args.domain,
           slogan: args.brandingSlogans,
           slogan_link_text: existingSiteConfig.branding?.slogan_link_text || {},
-          custom_public: args.customizePublic === true,
+          custom_mode: configuredBrandingCustomMode(args),
           wordmark: {
             black: args.wordmarkBlack,
             green: args.wordmarkGreen
@@ -409,7 +411,7 @@ function updateSiteConfig(args) {
 function customizePublicPages(args) {
   if (!args.customizePublic) return;
   const currentSiteConfig = args.previousSiteConfig || loadSiteConfig();
-  const isInstallerManaged = currentSiteConfig.branding?.custom_public === true;
+  const isInstallerManaged = isFullCustomMode(currentSiteConfig.branding);
 
   if (hasCopyableFiles(CUSTOM_PUBLIC_DIR) && !isInstallerManaged && !args.force) {
     throw new Error("custom/public already contains files. Rerun with --force to replace them with branded defaults.");

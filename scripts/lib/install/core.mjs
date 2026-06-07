@@ -81,6 +81,31 @@ export function normalizeArgs(args, options = {}) {
   return args;
 }
 
+export function brandingCustomMode(branding) {
+  const configured = String(branding?.custom_mode || "")
+    .trim()
+    .toLowerCase();
+  if (["default", "partial", "full"].includes(configured)) return configured;
+  if (branding?.custom_public === true) return "full";
+  return "default";
+}
+
+export function isFullCustomMode(branding) {
+  return brandingCustomMode(branding) === "full";
+}
+
+export function configuredBrandingCustomMode(args) {
+  if (args.customizePublic === true) return "full";
+  if (
+    hasConfiguredSlogan(args.brandingSlogans) ||
+    String(args.wordmarkBlack || "").trim() ||
+    String(args.wordmarkGreen || "").trim()
+  ) {
+    return "partial";
+  }
+  return "default";
+}
+
 export function normalizeDomain(value) {
   return String(value || "")
     .trim()
@@ -320,7 +345,7 @@ export function suggestWordmarkSplit(domain) {
 
 export function hasConfiguredBranding(branding) {
   return Boolean(
-    branding?.custom_public === true ||
+    brandingCustomMode(branding) !== "default" ||
     hasConfiguredSlogan(branding?.slogan) ||
     String(branding?.wordmark?.black || "").trim() ||
     String(branding?.wordmark?.green || "").trim()

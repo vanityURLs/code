@@ -37,7 +37,7 @@ the pushed commit automatically.
 - `custom/v8s-site-config.json` stores instance settings such as domain, languages, operator contacts, branding, and
   link defaults
 - `custom/v8s-policies.json` replaces the default destination policy when an instance needs its own policy
-- `custom/v8s-maintenance.json` can document intentional doctor ignores for instance-owned custom public files
+- `custom/v8s-custom-overrides.json` can document intentional doctor ignores for instance-owned custom public files
 - `wrangler.toml` stores the Worker name, route, assets binding, and Cloudflare variables
 
 Generated files in `build/`, `src/`, and `functions/` are build outputs. Do not edit them directly.

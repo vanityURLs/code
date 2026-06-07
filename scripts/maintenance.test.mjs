@@ -53,7 +53,7 @@ function runCommand(cwd, args) {
     `${JSON.stringify(
       {
         schema_version: "1.0",
-        branding: { custom_public: false }
+        branding: { custom_mode: "default" }
       },
       null,
       2
@@ -78,7 +78,7 @@ function runCommand(cwd, args) {
   );
 
   fs.writeFileSync(
-    path.join(fixture, "custom", "v8s-maintenance.json"),
+    path.join(fixture, "custom", "v8s-custom-overrides.json"),
     `${JSON.stringify(
       {
         schema_version: "1.0",

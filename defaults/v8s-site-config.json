@@ -33,7 +33,7 @@
     "domain": "",
     "slogan": {},
     "slogan_link_text": {},
-    "custom_public": false,
+    "custom_mode": "default",
     "wordmark": {
       "black": "",
       "green": ""

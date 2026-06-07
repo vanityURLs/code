@@ -39,7 +39,7 @@ Added installer-managed branding fields:
 
 - `branding.domain`
 - `branding.slogan`
-- `branding.custom_public`
+- `branding.custom_mode`
 - `branding.wordmark.black`
 - `branding.wordmark.green`
 
@@ -49,7 +49,8 @@ Follow-up: `branding.slogan` now supports localized slogan maps such as `{ "en":
 values remain valid and are treated as the English fallback.
 
 Migration: none required. Existing instances without `branding` continue to use default public assets or custom public
-files.
+files. Existing `branding.custom_public: true` values are still read as `branding.custom_mode: "full"` for
+compatibility.
 
 ### v8s-site-config.json
 

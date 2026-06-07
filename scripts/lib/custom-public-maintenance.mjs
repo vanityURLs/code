@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { copyDirectory, hasCopyableFiles, mergeSiteConfig, supportedLanguages } from "./build-assets.mjs";
+import { isFullCustomMode } from "./install/core.mjs";
 
 const PROJECT_SITE_URL = "https://www.vanityURLs.link";
 const PUBLIC_ASSET_VERSION = "20260601";
@@ -12,13 +13,14 @@ export function loadMaintenanceContext(root = process.cwd()) {
   const customDir = path.join(root, "custom");
   const defaultConfigPath = path.join(defaultsDir, "v8s-site-config.json");
   const customConfigPath = path.join(customDir, "v8s-site-config.json");
-  const maintenanceConfigPath = path.join(customDir, "v8s-maintenance.json");
+  const maintenanceConfigPath = path.join(customDir, "v8s-custom-overrides.json");
+  const legacyMaintenanceConfigPath = path.join(customDir, "v8s-maintenance.json");
   const languageMetadataPath = path.join(defaultsDir, "v8s-language-metadata.json");
   const defaultPublicDir = path.join(defaultsDir, "public");
   const customPublicDir = path.join(customDir, "public");
   const defaultConfig = readJson(defaultConfigPath);
   const customConfig = readJson(customConfigPath);
-  const maintenanceConfig = readJson(maintenanceConfigPath);
+  const maintenanceConfig = readJson(maintenanceConfigPath, readJson(legacyMaintenanceConfigPath));
   const siteConfig = mergeSiteConfig(defaultConfig, customConfig);
   const languageMetadata = readJson(languageMetadataPath);
 
@@ -39,7 +41,7 @@ export function diagnoseCustomPublic(context) {
   const issues = [];
   const { customPublicDir, languageMetadata, languages, siteConfig } = context;
   const hasCustomPublic = hasCopyableFiles(customPublicDir);
-  const customPublicEnabled = siteConfig.branding?.custom_public === true;
+  const customPublicEnabled = isFullCustomMode(siteConfig.branding);
 
   if (!hasCustomPublic) {
     if (customPublicEnabled) {
@@ -48,7 +50,7 @@ export function diagnoseCustomPublic(context) {
         severity: "warn",
         fix: "public",
         path: "custom/public",
-        message: "branding.custom_public is true, but custom/public has no copied pages."
+        message: "branding.custom_mode is full, but custom/public has no copied pages."
       });
     }
     return applyDoctorIgnores(context, issues);
@@ -195,7 +197,7 @@ function diagnoseHtmlHeadAssets(context) {
 }
 
 function diagnoseSharedAssets(context) {
-  const customPublicEnabled = context.siteConfig.branding?.custom_public === true;
+  const customPublicEnabled = isFullCustomMode(context.siteConfig.branding);
 
   return listSharedDefaultAssets(context)
     .filter((defaultPath) => {
@@ -601,8 +603,8 @@ function relativePath(context, filePath) {
   return path.relative(context.root, filePath).replaceAll(path.sep, "/");
 }
 
-function readJson(filePath) {
-  if (!fs.existsSync(filePath)) return {};
+function readJson(filePath, fallback = {}) {
+  if (!fs.existsSync(filePath)) return fallback;
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 

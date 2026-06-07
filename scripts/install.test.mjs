@@ -157,7 +157,7 @@ function assertLinkedSlogan(html) {
   ]);
 
   const siteConfig = JSON.parse(fs.readFileSync(path.join(fixture, "custom", "v8s-site-config.json"), "utf8"));
-  assert.equal(siteConfig.branding.custom_public, false);
+  assert.equal(siteConfig.branding.custom_mode, "partial");
   assert.equal(siteConfig.branding.wordmark.black, "v8s.");
   assert.equal(siteConfig.branding.wordmark.green, "link");
   assert.equal(fs.existsSync(path.join(fixture, "custom", "public")), false);

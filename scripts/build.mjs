@@ -32,6 +32,7 @@ import {
   withTheme
 } from "./lib/build-core/site-core.mjs";
 import { normalizeHtmlHead } from "./lib/build-core/html-core.mjs";
+import { isFullCustomMode } from "./lib/install/core.mjs";
 
 const ROOT = process.cwd();
 const BUILD_DIR = path.join(ROOT, "build");
@@ -109,7 +110,7 @@ function renderLegalPages(siteConfig) {
   const operatorConfigIssues = legalPagesEnabled(siteConfig)
     ? validateOperatorConfig(operator)
     : validateTrustConfig(operator);
-  const requiresOperatorConfig = siteConfig?.branding?.custom_public === true;
+  const requiresOperatorConfig = isFullCustomMode(siteConfig?.branding);
   if (operatorConfigIssues.length && requiresOperatorConfig) {
     throw new Error(
       `custom/v8s-site-config.json operator fields are required for default legal pages: ${operatorConfigIssues.join(", ")}`

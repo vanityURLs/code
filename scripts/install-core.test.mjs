@@ -3,6 +3,8 @@
 import assert from "node:assert/strict";
 import {
   analyticsDisclosureDefault,
+  brandingCustomMode,
+  configuredBrandingCustomMode,
   defaultBrandingSlogan,
   defaultContactEmail,
   normalizeAccessTeamDomain,
@@ -30,6 +32,16 @@ import {
   });
   assert.throws(() => parseArgs(["--domain"]), /Missing value/);
   assert.throws(() => parseArgs(["unexpected"]), /Unknown argument/);
+}
+
+{
+  assert.equal(brandingCustomMode({ custom_mode: "full" }), "full");
+  assert.equal(brandingCustomMode({ custom_mode: "partial" }), "partial");
+  assert.equal(brandingCustomMode({ custom_public: true }), "full");
+  assert.equal(brandingCustomMode({ custom_public: false }), "default");
+  assert.equal(configuredBrandingCustomMode({ customizePublic: true }), "full");
+  assert.equal(configuredBrandingCustomMode({ brandingSlogans: { en: "Demo" } }), "partial");
+  assert.equal(configuredBrandingCustomMode({}), "default");
 }
 
 {
