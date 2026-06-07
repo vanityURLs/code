@@ -89,6 +89,11 @@ async function handleRequest(context) {
     return Response.redirect(new URL(legacyStatsRedirectPath, request.url).toString(), 308);
   }
 
+  const legacyTestsRedirectPath = legacyTestsRedirect(slug);
+  if (legacyTestsRedirectPath) {
+    return Response.redirect(new URL(legacyTestsRedirectPath, request.url).toString(), 308);
+  }
+
   if (isProtectedPath(slug)) {
     const accessResponse = await requireCloudflareAccess(request, env);
     if (accessResponse) return accessResponse;
@@ -333,6 +338,11 @@ function legacyStatsRedirect(slug) {
   return "";
 }
 
+function legacyTestsRedirect(slug) {
+  if (slug === "_tests" || slug === "_tests/index.html" || slug.startsWith("_tests/")) return "/en/_tests/";
+  return "";
+}
+
 function localizedStatsApiEndpoint(slug) {
   const [language, stats, api, endpoint, ...rest] = slug.split("/");
   if (rest.length || stats !== "_stats" || api !== "api" || !statsPageLanguages().includes(language)) return "";
@@ -356,8 +366,6 @@ function isTestsPath(slug) {
 }
 
 function testsPageAssetPath(slug) {
-  if (slug === "_tests" || slug === "_tests/index.html") return "/_tests/index.html";
-
   const [language, tests, file = "", ...rest] = slug.split("/");
   if (rest.length || tests !== "_tests" || !statsPageLanguages().includes(language)) return "";
 

@@ -635,7 +635,7 @@ await run("redirects mixed-case well-known security.txt to canonical path", asyn
 
 await run("requires Cloudflare Access config for protected paths", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_tests"), env(), ctx);
+  const response = await worker.fetch(request("/en/_tests/"), env(), ctx);
   assert(response.status === 503, "status");
   assertSecurityHeaders(response);
   await ctx.flush();
@@ -676,19 +676,15 @@ await run("redirects legacy stats API paths to English stats API", async () => {
   assert(analyticsCalls.length === 0, "no analytics");
 });
 
-await run("serves tests page with valid Cloudflare Access token", async () => {
+await run("redirects legacy tests page paths to English tests", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(
-    request("/_tests", {
-      headers: {
-        ...(await accessHeaders())
-      }
-    }),
-    await accessEnv(),
-    ctx
-  );
-  assert(response.status === 200, "status");
-  assert((await response.text()).includes("tests"), "body");
+  for (const path of ["/_tests", "/_tests/", "/_tests/index.html", "/_tests/runtime.html"]) {
+    const response = await worker.fetch(request(path), env(), ctx);
+    assert(response.status === 308, `${path} status`);
+    assert(response.headers.get("location") === "https://dicai.re/en/_tests/", `${path} location`);
+  }
+  await ctx.flush();
+  assert(analyticsCalls.length === 0, "no analytics");
 });
 
 await run("serves localized tests page aliases with valid Cloudflare Access token", async () => {
@@ -740,7 +736,7 @@ await run("serves English stats page with valid Cloudflare Access token", async 
 
 await run("protects direct tests asset path with Cloudflare Access", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/_tests/index.html"), await accessEnv(), ctx);
+  const response = await worker.fetch(request("/en/_tests/index.html"), await accessEnv(), ctx);
   assert(response.status === 403, "status");
 });
 
@@ -753,7 +749,7 @@ await run("protects localized tests page aliases with Cloudflare Access", async 
 await run("rejects Cloudflare Access tokens with the wrong audience", async () => {
   const ctx = mockCtx();
   const response = await worker.fetch(
-    request("/_tests", {
+    request("/en/_tests/", {
       headers: {
         ...(await accessHeaders({ aud: ["wrong-aud"] }))
       }
@@ -768,7 +764,7 @@ await run("rejects malformed Cloudflare Access JWTs", async () => {
   for (const token of ["not-a-jwt", "a.b.c", `${base64UrlJson({ alg: "RS256" })}.payload.signature`]) {
     const ctx = mockCtx();
     const response = await worker.fetch(
-      request("/_tests", {
+      request("/en/_tests/", {
         headers: {
           "cf-access-jwt-assertion": token
         }
@@ -791,7 +787,7 @@ await run("rejects Cloudflare Access tokens with invalid JWT claims", async () =
   ]) {
     const ctx = mockCtx();
     const response = await worker.fetch(
-      request("/_tests", {
+      request("/en/_tests/", {
         headers: {
           ...(await accessHeaders(overrides))
         }
@@ -817,7 +813,7 @@ await run("rejects Cloudflare Access tokens with invalid JWT headers or signatur
   ]) {
     const ctx = mockCtx();
     const response = await worker.fetch(
-      request("/_tests", {
+      request("/en/_tests/", {
         headers: {
           "cf-access-jwt-assertion": token
         }
