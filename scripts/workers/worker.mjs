@@ -549,9 +549,10 @@ function resolveTreeLink(tree, slug) {
   let splatCandidate = null;
 
   for (let index = 0; index < segments.length; index += 1) {
-    if (node?.link?.match === "splat") {
+    const splatLink = node?.splat_link || (node?.link?.match === "splat" ? node.link : null);
+    if (splatLink) {
       splatCandidate = {
-        link: node.link,
+        link: splatLink,
         splat: segments.slice(index).join("/")
       };
     }

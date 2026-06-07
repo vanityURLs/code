@@ -58,12 +58,13 @@ function loadGeneratedSources() {
 }
 
 function loadPolicy() {
+  const basePolicy = readJsonFile(resolvePath(POLICY_PATH, LEGACY_POLICY_PATH));
   const customPolicyPath = resolvePath(CUSTOM_POLICY_PATH, LEGACY_CUSTOM_POLICY_PATH);
   if (fs.existsSync(customPolicyPath)) {
-    return readJsonFile(customPolicyPath);
+    return mergePolicy(basePolicy, readJsonFile(customPolicyPath));
   }
 
-  return readJsonFile(resolvePath(POLICY_PATH, LEGACY_POLICY_PATH));
+  return basePolicy;
 }
 
 function loadCategories() {
@@ -95,6 +96,26 @@ function mergeObject(first = {}, second = {}) {
     ...(first || {}),
     ...(second || {})
   };
+}
+
+function mergePolicy(base = {}, custom = {}) {
+  return {
+    ...base,
+    ...custom,
+    defaults: mergeObject(base.defaults, custom.defaults),
+    generated_sources: mergeObject(base.generated_sources, custom.generated_sources),
+    allow_domains: mergeArray(base.allow_domains, custom.allow_domains),
+    blocked_keywords: mergeArray(base.blocked_keywords, custom.blocked_keywords),
+    block_domains: mergeArray(base.block_domains, custom.block_domains)
+  };
+}
+
+function mergeArray(first = [], second = []) {
+  return [...asArray(first), ...asArray(second)];
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function normalizeAllowDomainEntry(entry) {

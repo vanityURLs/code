@@ -22,6 +22,8 @@ fs.writeFileSync(
     "  @schedule timezone=America/Toronto",
     "  @schedule rule=workdays days=mon,tue,wed,thu,fri from=09:00 to=17:00 target=https://example.com/open",
     "docs/api/*|https://example.com/api/:splat|permanent|API|API docs|docs|team||",
+    "files|https://example.com/files|permanent|Files|Files home|files|team||",
+    "files/*|https://example.com/files/:splat|permanent|Files|Files nested|files|team||",
     ""
   ].join("\n")
 );
@@ -72,10 +74,14 @@ if (registry.generated_git.commit_url) {
   assert(registry.generated_git.commit_url.includes(registry.generated_git.commit));
 }
 assert.ok(Array.isArray(registry.links), "links compatibility array");
-assert.equal(registry.links.length, 3);
+assert.equal(registry.links.length, 5);
 assert.equal(registry.tree.children.docs.link.slug, "docs");
 assert.equal(registry.tree.children.docs.children.api.link.slug, "docs/api");
 assert.equal(registry.tree.children.docs.children.api.link.match, "splat");
+assert.equal(registry.tree.children.files.link.slug, "files");
+assert.equal(registry.tree.children.files.link.match, "exact");
+assert.equal(registry.tree.children.files.splat_link.slug, "files");
+assert.equal(registry.tree.children.files.splat_link.match, "splat");
 assert.deepEqual(registry.tree.children.office.link.schedule.rules, [
   {
     label: "workdays",

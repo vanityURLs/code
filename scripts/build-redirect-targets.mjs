@@ -90,7 +90,12 @@ function createRegistryTree(links) {
       node = node.children[segment];
     }
 
-    node.link = link;
+    if (link.match === "splat") {
+      node.splat_link = link;
+      node.link ||= link;
+    } else {
+      node.link = link;
+    }
   }
 
   return root;
