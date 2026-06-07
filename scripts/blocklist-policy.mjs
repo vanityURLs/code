@@ -7,15 +7,18 @@ const DEFAULT_CUSTOM_POLICY_PATH = "custom/v8s-policies.json";
 const LEGACY_CUSTOM_POLICY_PATH = "custom/v8s-blocklist.json";
 const DEFAULT_GENERATED_POLICY_PATH = "build/blocklist.generated.json";
 
-export function loadBlocklistPolicy(path = DEFAULT_POLICY_PATH) {
+export function loadBlocklistPolicy(
+  path = DEFAULT_POLICY_PATH,
+  { includeCustom = true, includeGenerated = true } = {}
+) {
   const resolvedPath = resolvePolicyPath(path, LEGACY_POLICY_PATH);
   const raw = fs.existsSync(resolvedPath) ? JSON.parse(fs.readFileSync(resolvedPath, "utf8")) : {};
   const isDefaultPolicy = path === DEFAULT_POLICY_PATH || path === LEGACY_POLICY_PATH;
   const customPath = resolvePolicyPath(DEFAULT_CUSTOM_POLICY_PATH, LEGACY_CUSTOM_POLICY_PATH);
-  const hasCustom = isDefaultPolicy && fs.existsSync(customPath);
+  const hasCustom = includeCustom && isDefaultPolicy && fs.existsSync(customPath);
   const custom = hasCustom ? JSON.parse(fs.readFileSync(customPath, "utf8")) : {};
   const generated =
-    isDefaultPolicy && fs.existsSync(DEFAULT_GENERATED_POLICY_PATH)
+    includeGenerated && isDefaultPolicy && fs.existsSync(DEFAULT_GENERATED_POLICY_PATH)
       ? JSON.parse(fs.readFileSync(DEFAULT_GENERATED_POLICY_PATH, "utf8"))
       : {};
   const ownerPolicy = isDefaultPolicy && hasCustom ? custom : raw;

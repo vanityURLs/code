@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { checkTargetUrl, classifyTargetUrl } from "./blocklist-policy.mjs";
+import { checkTargetUrl, classifyTargetUrl, loadBlocklistPolicy } from "./blocklist-policy.mjs";
 import { mergeSiteConfig } from "./lib/build-assets.mjs";
 import { RUNTIME_REGISTRY_SCHEMA_VERSION } from "./lib/constants.mjs";
 import { flattenRuntimeRegistry } from "./lib/runtime-registry.mjs";
@@ -126,23 +126,30 @@ assert.deepEqual(
   }
 );
 
+const projectDefaultPolicy = loadBlocklistPolicy("defaults/v8s-policies.json", {
+  includeCustom: false,
+  includeGenerated: true
+});
+
 assert(
-  checkTargetUrl("https://bit.ly/example").some((violation) => violation.includes("shortener-loop")),
+  checkTargetUrl("https://bit.ly/example", projectDefaultPolicy).some((violation) =>
+    violation.includes("shortener-loop")
+  ),
   "default policy should block baseline public shorteners"
 );
-assert.equal(classifyTargetUrl("https://bit.ly/example").category, "shortener-loop");
+assert.equal(classifyTargetUrl("https://bit.ly/example", projectDefaultPolicy).category, "shortener-loop");
 assert.deepEqual(
-  checkTargetUrl("https://youtu.be/dQw4w9WgXcQ"),
+  checkTargetUrl("https://youtu.be/dQw4w9WgXcQ", projectDefaultPolicy),
   [],
   "default policy should not block official platform share domains"
 );
-assert.equal(classifyTargetUrl("https://youtu.be/dQw4w9WgXcQ").category, "platform-share");
+assert.equal(classifyTargetUrl("https://youtu.be/dQw4w9WgXcQ", projectDefaultPolicy).category, "platform-share");
 assert.deepEqual(
-  checkTargetUrl("https://photos.app.goo.gl/example"),
+  checkTargetUrl("https://photos.app.goo.gl/example", projectDefaultPolicy),
   [],
   "platform share domains should not be blocked by parent shortener domains"
 );
-assert.equal(classifyTargetUrl("https://photos.app.goo.gl/example").category, "platform-share");
+assert.equal(classifyTargetUrl("https://photos.app.goo.gl/example", projectDefaultPolicy).category, "platform-share");
 assert(
   checkTargetUrl("http://2130706433/").some((violation) => violation.includes("private or reserved")),
   "numeric IPv4 host forms should be blocked after URL canonicalization"
