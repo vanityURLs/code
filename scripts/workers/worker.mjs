@@ -173,8 +173,9 @@ async function handleRequest(context) {
     return renderStatePage(request, env, "maintenance", ctx);
   }
 
-  if (hasStaticPageAlias(slug)) {
-    return renderAsset(request, env, staticPageAliasPath(slug), 200, ctx);
+  const staticAssetPath = staticPageAliasPath(slug);
+  if (staticAssetPath) {
+    return renderAsset(request, env, staticAssetPath, 200, ctx);
   }
 
   if (slug === "deactivated") {
@@ -321,7 +322,7 @@ function lookupPageAssetPath(slug) {
   if (rest.length || !LOCALIZED_HTML_LANGUAGES.includes(language)) return "";
 
   const aliases = localizedLookupAliases[language] || [];
-  return aliases.includes(alias) ? `/${language}/lookup/index.html` : "";
+  return alias === "lookup" || aliases.includes(alias) ? `/${language}/lookup/index.html` : "";
 }
 
 function statsPageAssetPath(slug) {
@@ -774,12 +775,23 @@ function hasStatePage(state) {
   return Object.hasOwn(statePages, state);
 }
 
-function hasStaticPageAlias(slug) {
-  return staticPageAliases.has(slug);
-}
-
 function staticPageAliasPath(slug) {
-  return staticPageAliases.get(slug);
+  const directPath = staticPageAliases.get(slug);
+  if (directPath) return directPath;
+
+  const [language, page = "", ...rest] = slug.split("/");
+  if (rest.length || !statsPageLanguages().includes(language)) return "";
+
+  if (page === "" || page === "index" || page === "index.html") {
+    return `/${language}/index.html`;
+  }
+
+  if (page === "lookup") {
+    return `/${language}/lookup/index.html`;
+  }
+
+  const localizedPath = staticPageAliases.get(page);
+  return localizedPath ? `/${language}${localizedPath}` : "";
 }
 
 async function renderStatePage(request, env, state, ctx) {

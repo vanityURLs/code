@@ -105,6 +105,8 @@ const assets = {
   "/terms.html": html("<main>terms</main>"),
   "/abuse.html": html("<main>abuse</main>"),
   "/security.html": html("<main>security</main>"),
+  "/en/index.html": html("<main>home en</main>"),
+  "/en/lookup/index.html": html("<main>lookup en</main>"),
   "/fr/index.html": html("<main>accueil fr</main>"),
   "/fr/privacy.html": html("<main>confidentialite fr</main>"),
   "/fr/terms.html": html("<main>conditions fr</main>"),
@@ -455,6 +457,10 @@ await run("serves localized policy and lookup pages from Accept-Language", async
 
 await run("serves localized lookup aliases", async () => {
   for (const [path, expected] of [
+    ["/en/lookup", "lookup en"],
+    ["/en/lookup/", "lookup en"],
+    ["/fr/lookup", "lookup fr"],
+    ["/fr/lookup/", "lookup fr"],
     ["/fr/consultation", "lookup fr"],
     ["/es/consulta", "lookup es"],
     ["/it/consulta", "lookup it"],
@@ -463,6 +469,22 @@ await run("serves localized lookup aliases", async () => {
     const response = await worker.fetch(request(path), env(), mockCtx());
     assert(response.status === 200, `${path} status`);
     assert((await response.text()).includes(expected), `${path} localized lookup body`);
+  }
+});
+
+await run("serves localized directory page aliases", async () => {
+  for (const [path, expected] of [
+    ["/en", "home en"],
+    ["/en/", "home en"],
+    ["/fr", "accueil fr"],
+    ["/fr/", "accueil fr"],
+    ["/fr/index", "accueil fr"],
+    ["/fr/abuse", "abus fr"],
+    ["/fr/trust-safety", "abus fr"]
+  ]) {
+    const response = await worker.fetch(request(path), env(), mockCtx());
+    assert(response.status === 200, `${path} status`);
+    assert((await response.text()).includes(expected), `${path} body`);
   }
 });
 
