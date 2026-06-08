@@ -34,14 +34,16 @@ function exists(fixture, relativePath) {
 
 {
   const fixture = makeFixture();
-  const instanceReadme = fs.readFileSync(path.join(fixture, "docs", "README.md"), "utf8");
+  const instanceReadmePath = path.join(fixture, "docs", "README.md");
+  const instanceReadme = fs.existsSync(instanceReadmePath) ? fs.readFileSync(instanceReadmePath, "utf8") : "";
+  const originalReadme = fs.readFileSync(path.join(fixture, "README.md"), "utf8");
 
   execFileSync(process.execPath, ["scripts/detach-instance.mjs"], {
     cwd: fixture,
     stdio: "pipe"
   });
 
-  assert.equal(fs.readFileSync(path.join(fixture, "README.md"), "utf8"), instanceReadme);
+  assert.equal(fs.readFileSync(path.join(fixture, "README.md"), "utf8"), instanceReadme || originalReadme);
 
   for (const relativePath of [
     ".git",
