@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/vanityURLs/code/compare/v3.4.0...v3.4.1) (2026-06-08)
+
+
+### 🐛 Bug Fixes
+
+* support detach tests in instances ([09932d4](https://github.com/vanityURLs/code/commit/09932d43ef7b7843bdce2d08d24f782f0f755557))
+
 ## [3.4.0](https://github.com/vanityURLs/code/compare/v3.3.1...v3.4.0) (2026-06-08)
 
 
