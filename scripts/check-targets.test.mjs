@@ -28,6 +28,14 @@ const server = http.createServer((request, response) => {
     return;
   }
 
+  if (request.url === "/slow") {
+    setTimeout(() => {
+      response.writeHead(200, { "content-type": "text/plain" });
+      response.end("slow ok");
+    }, 150);
+    return;
+  }
+
   response.writeHead(500, { "content-type": "text/plain" });
   response.end("unexpected fixture path");
 });
@@ -153,6 +161,8 @@ try {
 
   const first = await run();
   assert.equal(first.status, 1, first.stderr);
+  assert.match(first.stdout, new RegExp(`\\[fix\\] migrated old: ${escapeRegExp(baseUrl)}/share ->`));
+  assert.match(first.stdout, new RegExp(`\\[fix\\] disabled 404 missing: ${escapeRegExp(baseUrl)}/missing`));
   assert.match(first.stdout, /Fixes applied: 1 long URL migration\(s\), 1 broken 404 disable\(s\)\./);
 
   const backup = fs.readFileSync(path.join(fixture, "custom", "v8s-links.bak"), "utf8");
@@ -172,6 +182,67 @@ try {
   assert.equal(second.status, 1, second.stderr);
   assert.match(second.stdout, /Fixes applied: 0 long URL migration\(s\), 0 broken 404 disable\(s\)\./);
   assert.equal(fs.readFileSync(linksPath, "utf8"), fixed);
+
+  const timeoutFixture = fs.mkdtempSync(path.join(os.tmpdir(), "v8s-check-targets-timeout-"));
+  fs.mkdirSync(path.join(timeoutFixture, "build"), { recursive: true });
+  fs.mkdirSync(path.join(timeoutFixture, "custom"), { recursive: true });
+  fs.mkdirSync(path.join(timeoutFixture, "defaults"), { recursive: true });
+  fs.writeFileSync(path.join(timeoutFixture, "defaults", "v8s-site-config.json"), "{}\n");
+  fs.writeFileSync(
+    path.join(timeoutFixture, "defaults", "v8s-policies.json"),
+    `${JSON.stringify({
+      defaults: {
+        allowed_protocols: ["http:", "https:"],
+        block_localhost: false,
+        block_private_networks: false
+      }
+    })}\n`
+  );
+  fs.writeFileSync(
+    path.join(timeoutFixture, "build", "v8s.json"),
+    `${JSON.stringify({
+      tree: {
+        children: {
+          slow1: {
+            link: {
+              slug: "slow1",
+              target: `${baseUrl}/slow`,
+              state: "permanent",
+              match: "exact"
+            }
+          },
+          slow2: {
+            link: {
+              slug: "slow2",
+              target: `${baseUrl}/final`,
+              state: "permanent",
+              match: "exact"
+            }
+          }
+        }
+      }
+    })}\n`
+  );
+
+  const timed = await runProcess(
+    process.execPath,
+    [
+      path.join(root, "scripts", "check-targets.mjs"),
+      "build/v8s.json",
+      "--timeout-ms=500",
+      "--concurrency=1",
+      "--max-runtime-ms=50"
+    ],
+    {
+      cwd: timeoutFixture,
+      env: {
+        ...process.env
+      }
+    }
+  );
+  assert.equal(timed.status, 1, timed.stderr);
+  assert.match(timed.stdout, /Checked 1 unique active web target\(s\)\./);
+  assert.match(timed.stderr, /Run timeout reached after 50ms\. Unchecked targets: 1\./);
 
   console.log("check-targets fixer tests ok");
 } finally {

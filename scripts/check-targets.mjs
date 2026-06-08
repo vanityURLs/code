@@ -8,8 +8,8 @@ import { normalizeReplacementUrl } from "./lib/target-normalizers.mjs";
 
 const args = parseArgs(process.argv.slice(2));
 const registryPath = args.registryPath;
-const timeoutMs = Number(process.env.V8S_TARGET_TIMEOUT_MS || 8000);
-const concurrency = Number(process.env.V8S_TARGET_CONCURRENCY || 8);
+const timeoutMs = args.timeoutMs;
+const concurrency = args.concurrency;
 const policy = loadBlocklistPolicy();
 const siteConfig = loadSiteConfig();
 const redirectableStates = new Set(["permanent", "ephemeral"]);
@@ -18,16 +18,19 @@ const userAgent = "Mozilla/5.0 (compatible; VanityURLs-LinkChecker/1.0; +https:/
 
 function usage() {
   console.error(
-    "Usage: node scripts/check-targets.mjs [build/v8s.json] [--fix] [--fix-broken-404] [--links-file=custom/v8s-links.txt]"
+    "Usage: node scripts/check-targets.mjs [build/v8s.json] [--fix] [--fix-broken-404] [--links-file=custom/v8s-links.txt] [--timeout-ms=8000] [--concurrency=8] [--max-runtime-ms=0]"
   );
   console.error("Checks targets from the generated runtime link registry.");
 }
 
 function parseArgs(argv) {
   const parsed = {
+    concurrency: positiveInteger(process.env.V8S_TARGET_CONCURRENCY, 8),
     fixBroken404: false,
     fixLongUrls: false,
     linksPath: "custom/v8s-links.txt",
+    maxRuntimeMs: nonNegativeInteger(process.env.V8S_TARGET_MAX_RUNTIME_MS, 0),
+    timeoutMs: positiveInteger(process.env.V8S_TARGET_TIMEOUT_MS, 8000),
     registryPath: "build/v8s.json"
   };
 
@@ -38,6 +41,12 @@ function parseArgs(argv) {
       parsed.fixBroken404 = true;
     } else if (arg.startsWith("--links-file=")) {
       parsed.linksPath = arg.slice("--links-file=".length);
+    } else if (arg.startsWith("--timeout-ms=")) {
+      parsed.timeoutMs = positiveInteger(arg.slice("--timeout-ms=".length), parsed.timeoutMs);
+    } else if (arg.startsWith("--concurrency=")) {
+      parsed.concurrency = positiveInteger(arg.slice("--concurrency=".length), parsed.concurrency);
+    } else if (arg.startsWith("--max-runtime-ms=")) {
+      parsed.maxRuntimeMs = nonNegativeInteger(arg.slice("--max-runtime-ms=".length), parsed.maxRuntimeMs);
     } else if (arg.startsWith("--")) {
       throw new Error(`Unknown option: ${arg}`);
     } else {
@@ -46,6 +55,18 @@ function parseArgs(argv) {
   }
 
   return parsed;
+}
+
+function positiveInteger(value, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 1) return fallback;
+  return Math.floor(number);
+}
+
+function nonNegativeInteger(value, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return fallback;
+  return Math.floor(number);
 }
 
 function loadSiteConfig() {
@@ -192,9 +213,20 @@ function longUrlSuggestion(target, finalUrl) {
 async function runPool(entries, onResult) {
   const results = [];
   let index = 0;
+  let timedOut = false;
+  const deadlineAt = args.maxRuntimeMs > 0 ? Date.now() + args.maxRuntimeMs : 0;
+
+  function hasRunTimedOut() {
+    return deadlineAt > 0 && Date.now() >= deadlineAt;
+  }
 
   async function worker() {
     while (index < entries.length) {
+      if (hasRunTimedOut()) {
+        timedOut = true;
+        return;
+      }
+
       const entry = entries[index];
       index += 1;
       const result = await checkTarget(entry);
@@ -205,7 +237,11 @@ async function runPool(entries, onResult) {
 
   await Promise.all(Array.from({ length: Math.min(concurrency, entries.length) }, () => worker()));
 
-  return results;
+  return {
+    results,
+    timedOut,
+    unchecked: Math.max(entries.length - index, 0)
+  };
 }
 
 function createLinksEditor(filePath) {
@@ -395,11 +431,12 @@ async function main() {
     longUrls: 0,
     skipped: new Map()
   };
-  const results = await runPool(entries, (result) => {
+  const pool = await runPool(entries, (result) => {
     if (args.fixLongUrls && result.ok && result.longUrlSuggestion?.kind === "good") {
       const applied = editor.applyLongUrlMigration(result);
       if (applied.changed) {
         fixSummary.longUrls += 1;
+        console.log(`[fix] migrated ${slugsForResult(result)}: ${result.target} -> ${result.longUrlSuggestion.url}`);
       } else {
         incrementSkipped(fixSummary.skipped, applied.reason);
       }
@@ -409,11 +446,13 @@ async function main() {
       const applied = editor.applyBroken404(result);
       if (applied.changed) {
         fixSummary.broken404 += 1;
+        console.log(`[fix] disabled 404 ${slugsForResult(result)}: ${result.target}`);
       } else {
         incrementSkipped(fixSummary.skipped, applied.reason);
       }
     }
   });
+  const results = pool.results;
   const broken = results.filter((result) => !result.ok).sort((a, b) => a.target.localeCompare(b.target));
   const suggestions = results
     .filter((result) => result.ok && result.longUrlSuggestion)
@@ -423,6 +462,9 @@ async function main() {
   const broken404 = broken.filter((result) => result.status === 404);
 
   console.log(`Checked ${results.length} unique active web target(s).`);
+  if (pool.timedOut) {
+    console.error(`Run timeout reached after ${args.maxRuntimeMs}ms. Unchecked targets: ${pool.unchecked}.`);
+  }
 
   if (goodSuggestions.length) {
     console.log(`Good long URL suggestions: ${goodSuggestions.length}`);
@@ -468,6 +510,7 @@ async function main() {
 
   if (!broken.length) {
     console.log("No broken targets found.");
+    if (pool.timedOut) process.exitCode = 1;
     return;
   }
 
