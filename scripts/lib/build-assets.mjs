@@ -58,6 +58,18 @@ export function mergeSiteConfig(base, custom) {
         ...(custom.links?.tag_random_slug_lengths || {})
       }
     },
+    targets: {
+      ...(base.targets || {}),
+      ...(custom.targets || {}),
+      normalizers: {
+        ...(base.targets?.normalizers || {}),
+        ...(custom.targets?.normalizers || {}),
+        amazon: {
+          ...(base.targets?.normalizers?.amazon || {}),
+          ...(custom.targets?.normalizers?.amazon || {})
+        }
+      }
+    },
     branding: {
       ...(base.branding || {}),
       ...(custom.branding || {}),

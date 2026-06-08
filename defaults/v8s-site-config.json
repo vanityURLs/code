@@ -12,6 +12,14 @@
       "debug": 2
     }
   },
+  "targets": {
+    "normalizers": {
+      "amazon": {
+        "preserve_affiliate_tag": false,
+        "allowed_tags": []
+      }
+    }
+  },
   "operator": {
     "legal_name": "",
     "short_domain": "",
