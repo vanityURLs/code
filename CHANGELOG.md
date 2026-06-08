@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/vanityURLs/code/compare/v3.4.1...v3.5.0) (2026-06-08)
+
+
+### ✨ Features
+
+* migrate safe long url targets ([1722f56](https://github.com/vanityURLs/code/commit/1722f5687ea6e3a3b2a0d7f9611e99e43bd0a7b2))
+
 ## [3.4.1](https://github.com/vanityURLs/code/compare/v3.4.0...v3.4.1) (2026-06-08)
 
 
