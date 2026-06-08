@@ -15,6 +15,9 @@ GitHub remote, while still being able to refresh product files from upstream.
 product README with `docs/README.md`, an operator-focused instance README, then removes `docs/` from the detached
 instance.
 
+Detached instances also remove product-only maintainer guidance and legacy helper wrappers such as `AGENTS.md`,
+`RELEASE.md`, `RELEASE_WORKFLOW.md`, and `scripts/v8s.zsh`.
+
 `npm run upgrade` refreshes product-owned paths from upstream while protecting instance-owned paths such as `custom/`,
 `wrangler.toml`, `.dev.vars`, and `README.md`.
 

@@ -11,11 +11,15 @@ const DETACH_PATHS = [
   ".github",
   ".all-contributorsrc",
   ".release-please-manifest.json",
+  "AGENTS.md",
   "CHANGELOG.txt",
   "CHANGELOG.md",
+  "RELEASE.md",
+  "RELEASE_WORKFLOW.md",
   "package-lock.json",
   "release-please-config.json",
-  "docs"
+  "docs",
+  "scripts/v8s.zsh"
 ];
 
 function hasExpectedPackage() {
