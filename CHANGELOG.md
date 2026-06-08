@@ -1,5 +1,39 @@
 # Changelog
 
+## [3.4.0](https://github.com/vanityURLs/code/compare/v3.3.1...v3.4.0) (2026-06-08)
+
+
+### ✨ Features
+
+* make runtime link registry tree-only ([1419b6a](https://github.com/vanityURLs/code/commit/1419b6a9718d442803f72b3686bf803b71c96700))
+* rename custom override settings ([a356b86](https://github.com/vanityURLs/code/commit/a356b86d581e2eeca750270258b872c51bb9f843))
+* suggest long URLs for short targets ([3689a87](https://github.com/vanityURLs/code/commit/3689a87c3338485c63e3b3fb13632b2cc36fff5d))
+
+
+### 🐛 Bug Fixes
+
+* allow intentional custom public doctor ignores ([0125209](https://github.com/vanityURLs/code/commit/0125209f5b2fe9cb40433a11bbea94ed4cff1ec4))
+* avoid build library gitignore collision ([e2b8fc1](https://github.com/vanityURLs/code/commit/e2b8fc1289f226d6e320d99a94aa9195e03ca68b))
+* bootstrap upgrade tool before sync ([d395ed1](https://github.com/vanityURLs/code/commit/d395ed13969400b33954066b32f68f391885ea55))
+* classify platform share domains separately ([41cab1b](https://github.com/vanityURLs/code/commit/41cab1b97fb95a6be111bd77a06ab3f533d3fe98))
+* default upgrades to latest release ([b13ee28](https://github.com/vanityURLs/code/commit/b13ee28d48a1175b184d5bbc6ef0fb6034237641))
+* isolate default policy registry tests ([42ecb9e](https://github.com/vanityURLs/code/commit/42ecb9e0a7c149628979e056dd56fa9662e33875))
+* keep custom policy and public files explicit ([e94e3a1](https://github.com/vanityURLs/code/commit/e94e3a14885d1bdc3d185cade40ec35593d7e3d2))
+* prefill lookup from slug query ([6b2bf45](https://github.com/vanityURLs/code/commit/6b2bf45128aeef313b063d3e2f8b2fe392b63f1f))
+* preserve custom policy defaults and exact aliases ([31dd888](https://github.com/vanityURLs/code/commit/31dd8886cd3479cd68fb54819ddcda26315eca78))
+* redirect legacy tests path ([06f0f4c](https://github.com/vanityURLs/code/commit/06f0f4c325444d4919011bfa4636cffcdd26c4e9))
+* remove product files during detach ([18e04d3](https://github.com/vanityURLs/code/commit/18e04d318abea41af6f671187b6d8ee4e983a735))
+* require custom overrides filename ([9202816](https://github.com/vanityURLs/code/commit/920281663c7e69a07166f7f386fe15c0e5e4acf4))
+* serve localized directory aliases ([70ee64c](https://github.com/vanityURLs/code/commit/70ee64c43e1c364c178734c518ad595a1c76a9a8))
+* show upgrade source in summary ([b658e64](https://github.com/vanityURLs/code/commit/b658e6444021d8e684e182ca7266ce357d000f24))
+* support localized tests routes ([266fd03](https://github.com/vanityURLs/code/commit/266fd0349606d439e7e73c5a63043fab47e357b5))
+
+
+### 📚 Documentation
+
+* clarify source and runtime link registries ([3bf44a8](https://github.com/vanityURLs/code/commit/3bf44a8ca091539d9164b90cf3285fbbf4e9c62a))
+* streamline readme ([d8fea3d](https://github.com/vanityURLs/code/commit/d8fea3d502a2cbbddbb1a2296530efe07afa261b))
+
 ## [3.3.1](https://github.com/vanityURLs/code/compare/v3.3.0...v3.3.1) (2026-06-05)
 
 
