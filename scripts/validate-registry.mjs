@@ -2,7 +2,9 @@
 
 import fs from "node:fs";
 import { checkTargetUrl, loadBlocklistPolicy } from "./blocklist-policy.mjs";
+import { mergeSiteConfig } from "./lib/build-assets.mjs";
 import { flattenRuntimeRegistry } from "./lib/runtime-registry.mjs";
+import { validateFirstPartyRouteReferences } from "./lib/first-party-links.mjs";
 import {
   DEFAULT_STATE,
   LINK_STATES,
@@ -61,6 +63,39 @@ function isValidSlugSegment(segment) {
 
 function isObject(value) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function readJsonFile(path) {
+  if (!fs.existsSync(path)) return {};
+  return JSON.parse(fs.readFileSync(path, "utf8"));
+}
+
+function loadSiteConfig() {
+  return mergeSiteConfig(readJsonFile("defaults/v8s-site-config.json"), readJsonFile("custom/v8s-site-config.json"));
+}
+
+function loadWranglerRouteDomains(path = "wrangler.toml") {
+  if (!fs.existsSync(path)) return [];
+
+  const text = fs.readFileSync(path, "utf8");
+  const domains = [];
+  const pattern = /^\s*(?:pattern|route)\s*=\s*"([^"]+)"/gm;
+  let match;
+
+  while ((match = pattern.exec(text))) {
+    const domain = wranglerPatternDomain(match[1]);
+    if (domain) domains.push(domain);
+  }
+
+  return [...new Set(domains)];
+}
+
+function wranglerPatternDomain(pattern) {
+  const withoutScheme = String(pattern || "")
+    .trim()
+    .replace(/^https?:\/\//i, "");
+  const hostname = withoutScheme.split("/")[0].replace(/^\*\./, "");
+  return hostname && !hostname.includes("*") ? hostname : "";
 }
 
 function validateRoute(route, path, errors) {
@@ -229,7 +264,10 @@ function validateTree(node, path, errors) {
 
 function main() {
   const errors = [];
+  const warnings = [];
   const blocklistPolicy = loadBlocklistPolicy();
+  const siteConfig = loadSiteConfig();
+  const firstPartyRouteDomains = loadWranglerRouteDomains();
   let registry;
 
   try {
@@ -279,12 +317,20 @@ function main() {
     validateLink(link, prefix, blocklistPolicy, errors, seen);
   }
 
+  const firstPartyValidation = validateFirstPartyRouteReferences(links, siteConfig, firstPartyRouteDomains);
+  errors.push(...firstPartyValidation.errors);
+  warnings.push(...firstPartyValidation.warnings);
+
   if (errors.length > 0) {
     for (const message of errors) {
       console.error(`::error::${message}`);
     }
     console.error(`Validation failed: ${errors.length} error(s)`);
     process.exit(1);
+  }
+
+  for (const message of warnings) {
+    console.warn(`::warning::${message}`);
   }
 
   console.log(`Valid runtime link registry: ${filePath}`);
