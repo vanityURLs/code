@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.6.0](https://github.com/vanityURLs/code/compare/v3.5.0...v3.6.0) (2026-06-15)
+
+
+### ✨ Features
+
+* **security:** sandbox custom public pages ([20ea447](https://github.com/vanityURLs/code/commit/20ea4479addccb5baa579f72db850425f3997f24))
+* validate first-party route references ([f7ff281](https://github.com/vanityURLs/code/commit/f7ff2818cde07633a752d9acf23014640661f544))
+
+
+### 🐛 Bug Fixes
+
+* add target check runtime controls ([1bf1a28](https://github.com/vanityURLs/code/commit/1bf1a289926ef1e16801112678388093b5d1346c))
+
+
+### 🧹 Chores
+
+* **deps-dev:** bump the npm-runtime group with 2 updates ([48e4439](https://github.com/vanityURLs/code/commit/48e4439748ede43519e81ae320ca22e749635842))
+* **deps-dev:** bump the npm-runtime group with 2 updates ([154e555](https://github.com/vanityURLs/code/commit/154e55557177e79d39e579d6b1c7adfcbffad081))
+
 ## [3.5.0](https://github.com/vanityURLs/code/compare/v3.4.1...v3.5.0) (2026-06-08)
 
 
