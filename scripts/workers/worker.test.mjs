@@ -137,10 +137,17 @@ const assets = {
     }
   }),
   "/custom-page.html": html("<main>custom page</main>"),
+  "/custom-default-csp.html": new Response("<main>custom default csp</main>", {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "content-security-policy":
+        "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    }
+  }),
   "/v8s.json": Response.json(registry),
   "/v8s-custom-assets.json": Response.json({
     schema_version: 1,
-    paths: ["/custom-page.html", "/v8s-style.css"]
+    paths: ["/custom-page.html", "/custom-default-csp.html", "/v8s-style.css"]
   }),
   "/v8s-blocklist.json": Response.json({
     blocked_keywords: [
@@ -443,6 +450,21 @@ await run("serves homepage from static assets", async () => {
   assert(!("data" in analyticsCalls[0].body.payload), "regular pageview has no event data");
 });
 
+await run("serves English when Accept-Language prefers English over another supported language", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(
+    request("/", {
+      headers: { "accept-language": "en-CA,en;q=0.9,fr;q=0.8" }
+    }),
+    env(),
+    ctx
+  );
+  assert(response.status === 200, "status");
+  assert((await response.text()).includes("home en"), "English localized home body");
+  assert(response.headers.get("content-language") === "en", "content language");
+  await ctx.flush();
+});
+
 await run("serves localized policy and lookup pages from Accept-Language", async () => {
   for (const [path, expected] of [
     ["/privacy", "confidentialite fr"],
@@ -569,6 +591,12 @@ await run("applies sandboxed CSP only to custom HTML assets", async () => {
   assert(csp.includes("sandbox allow-scripts"), "custom html sandbox");
   assert(csp.includes("'unsafe-inline'"), "custom html allows inline assets");
   assert(!custom.headers.has("x-v8s-asset-path"), "internal asset path stripped");
+
+  const customDefault = await worker.fetch(request("/custom-default-csp.html"), env(), mockCtx());
+  assert(
+    customDefault.headers.get("content-security-policy").includes("sandbox allow-scripts"),
+    "custom html overrides default static CSP"
+  );
 
   const css = await worker.fetch(request("/v8s-style.css"), env(), mockCtx());
   assert(!css.headers.get("content-security-policy").includes("sandbox"), "custom non-html keeps default csp");

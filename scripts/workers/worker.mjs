@@ -71,7 +71,7 @@ async function withSecurityHeaders(response, context) {
     if (!headers.has(name)) headers.set(name, value);
   }
 
-  if (!response.headers.has("content-security-policy") && (await isCustomHtmlAsset(assetPath, response, context))) {
+  if (await isCustomHtmlAsset(assetPath, response, context)) {
     headers.set("content-security-policy", CUSTOM_HTML_CONTENT_SECURITY_POLICY);
   }
 
@@ -971,7 +971,7 @@ function preferredContentLanguages(request) {
         quality: quality ? Number.parseFloat(quality.slice(2)) : 1
       };
     })
-    .filter((entry) => LOCALIZED_HTML_LANGUAGES.includes(entry.language) && entry.quality > 0)
+    .filter((entry) => ["en", ...LOCALIZED_HTML_LANGUAGES].includes(entry.language) && entry.quality > 0)
     .sort((a, b) => b.quality - a.quality)
     .map((entry) => entry.language);
 }
