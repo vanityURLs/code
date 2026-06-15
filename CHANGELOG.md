@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/vanityURLs/code/compare/v3.6.0...v3.6.1) (2026-06-15)
+
+
+### 🐛 Bug Fixes
+
+* apply custom html csp over static defaults ([c8a18d6](https://github.com/vanityURLs/code/commit/c8a18d6ba71449a8833a8e2c5b2151a4232ba183))
+
 ## [3.6.0](https://github.com/vanityURLs/code/compare/v3.5.0...v3.6.0) (2026-06-15)
 
 
