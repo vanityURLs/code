@@ -574,7 +574,7 @@ function buildTestsPage(siteConfig) {
   <title>VanityURLs QA Tests</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=20260601">
+  <link rel="stylesheet" href="/v8s-style.css?v=20260601">
 </head>
 <body>
   <main class="home-shell qa-shell">

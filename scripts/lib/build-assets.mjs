@@ -139,11 +139,13 @@ export function copyPublic({ defaultPublicDir, customPublicDir, buildDir, root, 
   copyDirectory(defaultPublicDir, buildDir);
   copyEnglishPublicRoot({ publicSource: defaultPublicDir, buildDir, root, log });
 
+  const customAssetPaths = new Set();
   const usingCustomPublic = hasCopyableFiles(customPublicDir);
   if (usingCustomPublic) {
     log("Overlaying custom/public/");
+    collectPublicAssetPaths(customPublicDir, customAssetPaths);
     copyDirectory(customPublicDir, buildDir);
-    copyEnglishPublicRoot({ publicSource: customPublicDir, buildDir, root, log });
+    copyEnglishPublicRoot({ publicSource: customPublicDir, buildDir, root, log, copiedPaths: customAssetPaths });
   } else {
     copyLocalizedBadgeFallbacks({ buildDir, siteConfig });
   }
@@ -154,6 +156,8 @@ export function copyPublic({ defaultPublicDir, customPublicDir, buildDir, root, 
     siteConfig,
     readJsonFile(path.join(defaultsDir, "v8s-language-metadata.json"))
   );
+
+  writeCustomAssetsManifest(buildDir, customAssetPaths);
 }
 
 export function pruneUnsupportedLanguageDirs(publicDir, siteConfig, languageMetadata = {}) {
@@ -172,12 +176,36 @@ export function writeSiteConfig(siteConfig, runtimeSiteConfigPath) {
   fs.writeFileSync(runtimeSiteConfigPath, `${JSON.stringify(siteConfig, null, 2)}\n`);
 }
 
-function copyEnglishPublicRoot({ publicSource, buildDir, root, log }) {
+function copyEnglishPublicRoot({ publicSource, buildDir, root, log, copiedPaths }) {
   const englishPublic = path.join(publicSource, "en");
   if (!hasCopyableFiles(englishPublic)) return;
 
   log(`Copying ${path.relative(root, englishPublic)}/ to public root`);
   copyDirectory(englishPublic, buildDir);
+  collectPublicAssetPaths(englishPublic, copiedPaths);
+}
+
+function collectPublicAssetPaths(directory, paths, baseDir = directory) {
+  if (!paths || !fs.existsSync(directory)) return;
+
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (entry.name === ".gitkeep") continue;
+
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      collectPublicAssetPaths(entryPath, paths, baseDir);
+    } else if (entry.isFile()) {
+      paths.add(`/${path.relative(baseDir, entryPath).split(path.sep).join("/")}`);
+    }
+  }
+}
+
+function writeCustomAssetsManifest(buildDir, customAssetPaths) {
+  const manifestPath = path.join(buildDir, "v8s-custom-assets.json");
+  const paths = [...customAssetPaths]
+    .filter((assetPath) => fs.existsSync(path.join(buildDir, assetPath.replace(/^\/+/, ""))))
+    .sort();
+  fs.writeFileSync(manifestPath, `${JSON.stringify({ schema_version: 1, paths }, null, 2)}\n`);
 }
 
 function copyLocalizedBadgeFallbacks({ buildDir, siteConfig }) {

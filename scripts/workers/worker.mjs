@@ -32,10 +32,20 @@ const accessJwksInflight = new Map();
 // Build rewrites this generated constant after copying scripts/workers/ into src/.
 const LOCALIZED_HTML_LANGUAGES = ["fr", "es", "it", "de"]; // build replaces this list from v8s-site-config.json
 
+const INTERNAL_ASSET_PATH_HEADER = "x-v8s-asset-path";
+
+const DEFAULT_CONTENT_SECURITY_POLICY =
+  "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; " +
+  "connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
+const CUSTOM_HTML_CONTENT_SECURITY_POLICY =
+  "sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads; " +
+  "default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https:; " +
+  "style-src 'self' 'unsafe-inline' https:; img-src 'self' https: data: blob:; connect-src 'self' https:; " +
+  "base-uri 'self'; form-action 'self' https:; frame-ancestors 'none'";
+
 const SECURITY_HEADERS = {
-  "content-security-policy":
-    "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; " +
-    "connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+  "content-security-policy": DEFAULT_CONTENT_SECURITY_POLICY,
   "permissions-policy": "camera=(), microphone=(), geolocation=()",
   "referrer-policy": "strict-origin-when-cross-origin",
   "strict-transport-security": "max-age=31536000",
@@ -43,17 +53,26 @@ const SECURITY_HEADERS = {
   "x-frame-options": "DENY"
 };
 
+let customAssetsPromise;
+
 export default {
   async fetch(request, env, ctx) {
-    return withSecurityHeaders(await handleRequest({ request, env, ctx }));
+    const response = await handleRequest({ request, env, ctx });
+    return withSecurityHeaders(response, { request, env });
   }
 };
 
-function withSecurityHeaders(response) {
+async function withSecurityHeaders(response, context) {
   const headers = new Headers(response.headers);
+  const assetPath = headers.get(INTERNAL_ASSET_PATH_HEADER) || "";
+  headers.delete(INTERNAL_ASSET_PATH_HEADER);
 
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
     if (!headers.has(name)) headers.set(name, value);
+  }
+
+  if (!response.headers.has("content-security-policy") && (await isCustomHtmlAsset(assetPath, response, context))) {
+    headers.set("content-security-policy", CUSTOM_HTML_CONTENT_SECURITY_POLICY);
   }
 
   return new Response(response.body, {
@@ -63,11 +82,52 @@ function withSecurityHeaders(response) {
   });
 }
 
+async function isCustomHtmlAsset(assetPath, response, { request, env }) {
+  if (!assetPath || !isHtmlResponse(response)) return false;
+
+  const customAssets = await loadCustomAssets(request, env);
+  return customAssets.has(assetPath);
+}
+
+function isHtmlResponse(response) {
+  const contentType = response.headers.get("content-type") || "";
+  return contentType.toLowerCase().startsWith("text/html");
+}
+
+async function loadCustomAssets(request, env) {
+  customAssetsPromise ||= (async () => {
+    const response = await fetchAsset(request, env, "/v8s-custom-assets.json");
+    if (!response.ok) return new Set();
+
+    const manifest = await response.json();
+    const paths = Array.isArray(manifest.paths) ? manifest.paths : [];
+    return new Set(paths.map((entry) => normalizeManifestAssetPath(entry)).filter(Boolean));
+  })();
+
+  try {
+    return await customAssetsPromise;
+  } catch {
+    customAssetsPromise = null;
+    return new Set();
+  }
+}
+
+function normalizeManifestAssetPath(value) {
+  const path = String(value || "").trim();
+  if (!path.startsWith("/")) return "";
+  if (path.includes("\\")) return "";
+  return path.replace(/\/{2,}/g, "/");
+}
+
 async function handleRequest(context) {
   const { request, env, ctx } = context;
   const url = new URL(request.url);
   const slug = normalizeSlug(url.pathname);
   const correlationId = crypto.randomUUID();
+
+  if (request.method === "OPTIONS" && isPublicCorsEndpoint(slug)) {
+    return publicCorsOptionsResponse(request);
+  }
 
   if (slug === "_analytics/lookup") {
     return handleLookupAnalytics(request, env, ctx, correlationId);
@@ -350,6 +410,10 @@ function localizedStatsApiEndpoint(slug) {
   return endpoint === "v8s.json" || endpoint === "redirects" ? endpoint : "";
 }
 
+function isPublicCorsEndpoint(slug) {
+  return slug === "lookup/resolve" || slug === "_analytics/lookup";
+}
+
 function statsPageLanguages() {
   return ["en", ...LOCALIZED_HTML_LANGUAGES];
 }
@@ -374,7 +438,12 @@ function testsPageAssetPath(slug) {
 }
 
 function isPrivateRuntimeAsset(slug) {
-  return slug === "v8s.json" || slug === "v8s-blocklist.json" || slug === "v8s-site-config.json";
+  return (
+    slug === "v8s.json" ||
+    slug === "v8s-blocklist.json" ||
+    slug === "v8s-site-config.json" ||
+    slug === "v8s-custom-assets.json"
+  );
 }
 
 async function loadRegistry(request, env) {
@@ -395,39 +464,42 @@ async function renderLookupResponse(request, env) {
   };
 
   if (request.method !== "POST") {
-    return new Response("Method not allowed", {
-      status: 405,
-      headers: {
-        allow: "POST",
-        "content-type": "text/plain; charset=utf-8",
-        "cache-control": "no-store",
-        "x-robots-tag": "noindex, nofollow"
-      }
-    });
+    return withPublicCorsHeaders(
+      new Response("Method not allowed", {
+        status: 405,
+        headers: {
+          allow: "POST",
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "no-store",
+          "x-robots-tag": "noindex, nofollow"
+        }
+      }),
+      request
+    );
   }
 
   const body = await readJsonBody(request);
   const slug = normalizeSlug(`/${String(body.slug || "")}`).slice(0, 99);
 
   if (!slug) {
-    return Response.json({ result: "miss", slug: "" }, { headers });
+    return withPublicCorsHeaders(Response.json({ result: "miss", slug: "" }, { headers }), request);
   }
 
   const registry = await loadRegistry(request, env);
   const resolved = resolveRegistryLink(registry, slug);
 
   if (!resolved) {
-    return Response.json({ result: "miss", slug }, { headers });
+    return withPublicCorsHeaders(Response.json({ result: "miss", slug }, { headers }), request);
   }
 
   const state = getEffectiveState(resolved.link, registry);
   const { target } = resolveTarget(registry.routing?.[state], resolved.link, request, resolved.splat, env);
 
   if (!target) {
-    return Response.json({ result: "not-redirecting", slug, state }, { headers });
+    return withPublicCorsHeaders(Response.json({ result: "not-redirecting", slug, state }, { headers }), request);
   }
 
-  return Response.json({ result: "resolved", slug, state, target }, { headers });
+  return withPublicCorsHeaders(Response.json({ result: "resolved", slug, state, target }, { headers }), request);
 }
 
 async function readJsonBody(request) {
@@ -844,7 +916,15 @@ async function fetchAsset(request, env, assetPath) {
     headers: request.headers
   });
 
-  return env.ASSETS.fetch(assetRequest);
+  const response = await env.ASSETS.fetch(assetRequest);
+  const headers = new Headers(response.headers);
+  headers.set(INTERNAL_ASSET_PATH_HEADER, assetPath);
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
 }
 
 async function fetchLocalizedAsset(request, env, assetPath) {
@@ -1046,6 +1126,51 @@ function optionsResponse() {
       "x-robots-tag": "noindex, nofollow"
     }
   });
+}
+
+function publicCorsOptionsResponse(request) {
+  return withPublicCorsHeaders(
+    new Response(null, {
+      status: 204,
+      headers: {
+        allow: "POST, OPTIONS",
+        "access-control-allow-methods": "POST, OPTIONS",
+        "access-control-allow-headers": "content-type",
+        "access-control-max-age": "600",
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow"
+      }
+    }),
+    request
+  );
+}
+
+function withPublicCorsHeaders(response, request) {
+  if (request.headers.get("origin") !== "null") return response;
+
+  const headers = new Headers(response.headers);
+  headers.set("access-control-allow-origin", "null");
+  appendVary(headers, "Origin");
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+function appendVary(headers, value) {
+  const current = headers.get("vary") || "";
+  const values = current
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  if (!values.some((entry) => entry.toLowerCase() === value.toLowerCase())) {
+    values.push(value);
+  }
+
+  if (values.length) headers.set("vary", values.join(", "));
 }
 
 async function verifyCloudflareAccessToken(token, teamDomain, expectedAud, env) {
@@ -1322,14 +1447,17 @@ function addRegistryTreeLink(link, parts, links) {
 
 async function handleLookupAnalytics(request, env, ctx, correlationId) {
   if (request.method !== "POST") {
-    return new Response("Method not allowed", {
-      status: 405,
-      headers: {
-        allow: "POST",
-        "content-type": "text/plain; charset=utf-8",
-        "cache-control": "no-store"
-      }
-    });
+    return withPublicCorsHeaders(
+      new Response("Method not allowed", {
+        status: 405,
+        headers: {
+          allow: "POST",
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "no-store"
+        }
+      }),
+      request
+    );
   }
 
   let body = {};
@@ -1356,13 +1484,16 @@ async function handleLookupAnalytics(request, env, ctx, correlationId) {
     })
   );
 
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "cache-control": "no-store",
-      "x-robots-tag": "noindex, nofollow"
-    }
-  });
+  return withPublicCorsHeaders(
+    new Response(null, {
+      status: 204,
+      headers: {
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex, nofollow"
+      }
+    }),
+    request
+  );
 }
 
 async function logAnalyticsEvent(env, request, data) {

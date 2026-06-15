@@ -14,7 +14,7 @@
 /index.html
   Cache-Control: no-store
 
-/style.css
+/v8s-style.css
   Cache-Control: no-store
 
 /llms.txt

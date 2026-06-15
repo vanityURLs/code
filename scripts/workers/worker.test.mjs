@@ -127,7 +127,7 @@ const assets = {
   "/.well-known/security.txt": new Response("Contact: mailto:security@example.com\n", {
     headers: { "content-type": "text/plain; charset=utf-8" }
   }),
-  "/style.css": new Response("body{}", {
+  "/v8s-style.css": new Response("body{}", {
     headers: { "content-type": "text/css" }
   }),
   "/custom-header.html": new Response("<main>custom header</main>", {
@@ -136,7 +136,12 @@ const assets = {
       "content-security-policy": "default-src 'none'"
     }
   }),
+  "/custom-page.html": html("<main>custom page</main>"),
   "/v8s.json": Response.json(registry),
+  "/v8s-custom-assets.json": Response.json({
+    schema_version: 1,
+    paths: ["/custom-page.html", "/v8s-style.css"]
+  }),
   "/v8s-blocklist.json": Response.json({
     blocked_keywords: [
       {
@@ -547,7 +552,7 @@ await run("applies security headers across response classes and preserves explic
     ["json api", await worker.fetch(jsonRequest("/lookup/resolve", { slug: "test" }), env(), mockCtx())],
     ["not found", await worker.fetch(request("/missing"), env(), mockCtx())],
     ["protected", await worker.fetch(request("/_tests"), env(), mockCtx())],
-    ["static asset", await worker.fetch(request("/style.css"), env(), mockCtx())]
+    ["static asset", await worker.fetch(request("/v8s-style.css"), env(), mockCtx())]
   ]) {
     assertSecurityHeaders(response);
     assert(response.headers.get("content-security-policy"), `${name} csp`);
@@ -556,6 +561,17 @@ await run("applies security headers across response classes and preserves explic
   const custom = await worker.fetch(request("/custom-header.html"), env(), mockCtx());
   assert(custom.headers.get("content-security-policy") === "default-src 'none'", "explicit csp preserved");
   assert(custom.headers.get("x-frame-options") === "DENY", "other security headers still added");
+});
+
+await run("applies sandboxed CSP only to custom HTML assets", async () => {
+  const custom = await worker.fetch(request("/custom-page.html"), env(), mockCtx());
+  const csp = custom.headers.get("content-security-policy") || "";
+  assert(csp.includes("sandbox allow-scripts"), "custom html sandbox");
+  assert(csp.includes("'unsafe-inline'"), "custom html allows inline assets");
+  assert(!custom.headers.has("x-v8s-asset-path"), "internal asset path stripped");
+
+  const css = await worker.fetch(request("/v8s-style.css"), env(), mockCtx());
+  assert(!css.headers.get("content-security-policy").includes("sandbox"), "custom non-html keeps default csp");
 });
 
 await run("blocks raw registry asset", async () => {
@@ -579,6 +595,13 @@ await run("blocks raw site config asset", async () => {
   assert(response.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
 });
 
+await run("blocks raw custom assets manifest", async () => {
+  const ctx = mockCtx();
+  const response = await worker.fetch(request("/v8s-custom-assets.json"), env(), ctx);
+  assert(response.status === 404, "status");
+  assert(response.headers.get("x-robots-tag") === "noindex, nofollow", "robots header");
+});
+
 await run("resolves public lookup API for exact and nested slugs", async () => {
   for (const [slug, expectedTarget] of [
     ["sab", "https://example.com/sab"],
@@ -594,6 +617,60 @@ await run("resolves public lookup API for exact and nested slugs", async () => {
     assert(body.slug === slug, `${slug} body slug`);
     assert(body.target === expectedTarget, `${slug} target`);
   }
+});
+
+await run("allows sandboxed custom pages to call public lookup endpoints with null origin", async () => {
+  const lookup = await worker.fetch(
+    jsonRequest("/lookup/resolve", { slug: "test" }, { headers: { origin: "null" } }),
+    env(),
+    mockCtx()
+  );
+  assert(lookup.status === 200, "lookup status");
+  assert(lookup.headers.get("access-control-allow-origin") === "null", "lookup cors origin");
+  assert((lookup.headers.get("vary") || "").includes("Origin"), "lookup vary");
+
+  const preflight = await worker.fetch(
+    request("/lookup/resolve", {
+      method: "OPTIONS",
+      headers: {
+        origin: "null",
+        "access-control-request-method": "POST"
+      }
+    }),
+    env(),
+    mockCtx()
+  );
+  assert(preflight.status === 204, "preflight status");
+  assert(preflight.headers.get("access-control-allow-origin") === "null", "preflight cors origin");
+  assert(preflight.headers.get("access-control-allow-methods") === "POST, OPTIONS", "preflight methods");
+
+  const analytics = await worker.fetch(
+    request("/_analytics/lookup", {
+      method: "POST",
+      headers: {
+        origin: "null",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ slug: "test", result: "resolved" })
+    }),
+    env(),
+    mockCtx()
+  );
+  assert(analytics.status === 204, "analytics status");
+  assert(analytics.headers.get("access-control-allow-origin") === "null", "analytics cors origin");
+
+  const protectedPreflight = await worker.fetch(
+    request("/en/_stats/api/v8s.json", {
+      method: "OPTIONS",
+      headers: {
+        origin: "null",
+        "access-control-request-method": "GET"
+      }
+    }),
+    env(),
+    mockCtx()
+  );
+  assert(!protectedPreflight.headers.has("access-control-allow-origin"), "protected endpoint has no cors origin");
 });
 
 await run("returns public lookup API miss and non-redirecting results", async () => {
@@ -1417,7 +1494,7 @@ await run("escapes custom 404 slug content", async () => {
 
 await run("passes static file extensions to assets", async () => {
   const ctx = mockCtx();
-  const response = await worker.fetch(request("/style.css"), env(), ctx);
+  const response = await worker.fetch(request("/v8s-style.css"), env(), ctx);
   assert(response.status === 200, "status");
   assert(response.headers.get("content-type") === "text/css", "content type");
 });

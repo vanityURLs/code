@@ -481,7 +481,7 @@ function normalizeHtmlHead(html) {
 }
 
 function normalizePublicAssetVersions(html) {
-  return html.replace(/(href=["']\/style\.css)(?:\?v=\d+)?(["'])/g, `$1?v=${PUBLIC_ASSET_VERSION}$2`);
+  return html.replace(/(href=["']\/v8s-style\.css)(?:\?v=\d+)?(["'])/g, `$1?v=${PUBLIC_ASSET_VERSION}$2`);
 }
 
 function insertBeforeHeadClose(html, insertion) {

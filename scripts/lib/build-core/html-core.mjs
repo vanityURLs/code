@@ -46,7 +46,7 @@ export function normalizeHtmlHead(html, options = {}) {
 }
 
 export function normalizePublicAssetVersions(html, assetVersion = DEFAULT_PUBLIC_ASSET_VERSION) {
-  return html.replace(/(href=["']\/style\.css)(?:\?v=\d+)?(["'])/g, `$1?v=${assetVersion}$2`);
+  return html.replace(/(href=["']\/v8s-style\.css)(?:\?v=\d+)?(["'])/g, `$1?v=${assetVersion}$2`);
 }
 
 export function insertBeforeHeadClose(html, insertion) {
