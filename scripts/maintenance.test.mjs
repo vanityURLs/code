@@ -64,17 +64,24 @@ function runCommand(cwd, args) {
   const missingAssetDoctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
   assert.equal(
     missingAssetDoctorJson.issues.some(
-      (issue) => issue.code === "shared-asset-stale" && issue.path === "custom/public/logo.svg"
+      (issue) => issue.code === "managed-asset-shadow" && issue.path === "custom/public/v8s-script.js"
     ),
     false
   );
 
   fs.writeFileSync(path.join(fixture, "custom", "public", "logo.svg"), "<svg><title>custom logo</title></svg>\n");
+  fs.writeFileSync(path.join(fixture, "custom", "public", "v8s-script.js"), "console.log('stale runtime asset');\n");
   const staleAssetDoctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
   assert(
     staleAssetDoctorJson.issues.some(
-      (issue) => issue.code === "shared-asset-stale" && issue.path === "custom/public/logo.svg"
+      (issue) => issue.code === "managed-asset-shadow" && issue.path === "custom/public/v8s-script.js"
     )
+  );
+  assert.equal(
+    staleAssetDoctorJson.issues.some(
+      (issue) => issue.code === "managed-asset-shadow" && issue.path === "custom/public/logo.svg"
+    ),
+    false
   );
 
   fs.writeFileSync(
@@ -85,9 +92,9 @@ function runCommand(cwd, args) {
         doctor: {
           ignore: [
             {
-              path: "custom/public/logo.svg",
-              codes: ["shared-asset-stale"],
-              reason: "Instance-owned logo."
+              path: "custom/public/v8s-script.js",
+              codes: ["managed-asset-shadow"],
+              reason: "Temporary local runtime patch."
             }
           ]
         }
@@ -99,7 +106,7 @@ function runCommand(cwd, args) {
   const ignoredAssetDoctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
   assert.equal(
     ignoredAssetDoctorJson.issues.some(
-      (issue) => issue.code === "shared-asset-stale" && issue.path === "custom/public/logo.svg"
+      (issue) => issue.code === "managed-asset-shadow" && issue.path === "custom/public/v8s-script.js"
     ),
     false
   );
@@ -189,22 +196,16 @@ function runCommand(cwd, args) {
   ]);
 
   const logoPath = path.join(fixture, "custom", "public", "logo.svg");
-  fs.writeFileSync(logoPath, "<svg><title>old logo</title></svg>\n");
-  const llmsPath = path.join(fixture, "custom", "public", "llms.txt");
-  fs.writeFileSync(llmsPath, "old llms context\n");
+  fs.writeFileSync(logoPath, "<svg><title>custom logo</title></svg>\n");
+  const scriptPath = path.join(fixture, "custom", "public", "v8s-script.js");
+  fs.writeFileSync(scriptPath, "console.log('stale runtime asset');\n");
 
   const doctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
-  assert(doctorJson.issues.some((issue) => issue.code === "shared-asset-stale" && issue.fix === "assets"));
+  assert(doctorJson.issues.some((issue) => issue.code === "managed-asset-shadow" && issue.fix === "assets"));
 
   runCommand(fixture, ["scripts/v8s-fix", "--assets"]);
-  assert.equal(
-    fs.readFileSync(logoPath, "utf8"),
-    fs.readFileSync(path.join(fixture, "defaults", "public", "logo.svg"), "utf8")
-  );
-  assert.equal(
-    fs.readFileSync(llmsPath, "utf8"),
-    fs.readFileSync(path.join(fixture, "defaults", "public", "llms.txt"), "utf8")
-  );
+  assert.equal(fs.existsSync(scriptPath), false);
+  assert.equal(fs.readFileSync(logoPath, "utf8"), "<svg><title>custom logo</title></svg>\n");
 }
 
 {

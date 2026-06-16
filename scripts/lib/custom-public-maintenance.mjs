@@ -112,8 +112,8 @@ export function reconcileCustomPublic(context, options = {}) {
     }
 
     if (options.assets) {
-      syncSharedAssets(context);
-      actions.push("synced shared CSS, script, logo, icon, font, and badge assets from defaults");
+      removeManagedAssetShadows(context);
+      actions.push("removed custom/public v8s-* asset shadows so defaults supply managed runtime assets");
     }
 
     if (options.productPages) {
@@ -196,22 +196,19 @@ function diagnoseHtmlHeadAssets(context) {
 }
 
 function diagnoseSharedAssets(context) {
-  const customPublicEnabled = isFullCustomMode(context.siteConfig.branding);
-
-  return listSharedDefaultAssets(context)
-    .filter((defaultPath) => {
-      const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
-      if (!fs.existsSync(customPath)) return customPublicEnabled;
-      return !sameFile(defaultPath, customPath);
-    })
+  return listManagedDefaultAssets(context)
+    .filter((defaultPath) =>
+      fs.existsSync(path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath)))
+    )
     .map((defaultPath) => {
       const customPath = path.join(context.customPublicDir, path.relative(context.defaultPublicDir, defaultPath));
       return {
-        code: "shared-asset-stale",
+        code: "managed-asset-shadow",
         severity: "warn",
         fix: "assets",
         path: relativePath(context, customPath),
-        message: "Shared public asset is missing or differs from defaults."
+        message:
+          "Managed v8s-* runtime asset shadows defaults. Remove it from custom/public so builds use the current default asset."
       };
     });
 }
@@ -321,12 +318,11 @@ function pruneUnsupportedLanguageDirs(context) {
   }
 }
 
-function syncSharedAssets(context) {
-  for (const defaultPath of listSharedDefaultAssets(context)) {
+function removeManagedAssetShadows(context) {
+  for (const defaultPath of listManagedDefaultAssets(context)) {
     const relative = path.relative(context.defaultPublicDir, defaultPath);
     const customPath = path.join(context.customPublicDir, relative);
-    fs.mkdirSync(path.dirname(customPath), { recursive: true });
-    fs.copyFileSync(defaultPath, customPath);
+    fs.rmSync(customPath, { force: true });
   }
 }
 
@@ -367,11 +363,8 @@ function listSharedDefaultAssets(context) {
   });
 }
 
-function sameFile(leftPath, rightPath) {
-  if (!fs.existsSync(leftPath) || !fs.existsSync(rightPath)) return false;
-  const left = fs.readFileSync(leftPath);
-  const right = fs.readFileSync(rightPath);
-  return left.length === right.length && left.equals(right);
+function listManagedDefaultAssets(context) {
+  return listSharedDefaultAssets(context).filter((filePath) => path.basename(filePath).startsWith("v8s-"));
 }
 
 function normalizeHtmlHead(html) {
