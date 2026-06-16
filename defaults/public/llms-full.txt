@@ -52,11 +52,13 @@ The localized `_stats` dashboard exposes routing inventory and should be protect
 
 The default policy rejects risky destinations such as credentialed URLs, non-HTTP(S) protocols, private IP ranges, known shortener chains, phishing lures, and high-risk executable downloads. Instance owners can replace that source policy with `custom/v8s-policies.json` and must not use the redirect engine for phishing, malware, undisclosed tracking, or other harmful activity.
 
+Public HTML responses use strict CSP and `Cache-Control: no-store, no-transform` so Cloudflare edge features do not rewrite or inject JavaScript into repository-owned pages. Keep challenge-style or page-rewriting dashboard controls disabled for public redirect, lookup, and status pages unless the instance deliberately accepts Cloudflare-owned script injection.
+
 ## Instance Maintenance
 
-Product defaults live in `defaults/`. Instance-owned files live in `custom/` and are not overwritten automatically during updates. The build copies defaults first, overlays `custom/public` only when copied public files exist, and then generates runtime files.
+Product defaults live in `defaults/`. Instance-owned files live in `custom/` and are not overwritten automatically during updates. The build copies defaults first, overlays `custom/public` only when copied public files exist, and then generates runtime files. Product-managed public runtime assets use `v8s-` filenames and should normally stay in `defaults/public/`; custom copies under `custom/public/` shadow the release asset.
 
-Use `npm run doctor` to detect stale copied public assets, stale copied product pages, unsupported copied language folders, stale branding, and missing shared head assets. Use `./scripts/v8s-fix --assets`, `--head-assets`, `--product-pages`, `--languages`, `--branding`, or `--all` to apply explicit maintenance fixes to copied public files.
+Use `npm run doctor` to detect managed `v8s-` asset shadows, stale copied product pages, unsupported copied language folders, stale branding, and missing shared head assets. Use `./scripts/v8s-fix --assets`, `--head-assets`, `--product-pages`, `--languages`, `--branding`, or `--all` to apply explicit maintenance fixes to copied public files. The `--assets` fix removes `custom/public/v8s-*` shadows so the build uses the release assets from `defaults/public/`.
 
 ## Useful Files
 

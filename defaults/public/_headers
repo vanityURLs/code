@@ -9,10 +9,10 @@
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 
 /
-  Cache-Control: no-store
+  Cache-Control: no-store, no-transform
 
 /index.html
-  Cache-Control: no-store
+  Cache-Control: no-store, no-transform
 
 /v8s-style.css
   Cache-Control: no-store
@@ -26,11 +26,11 @@
   Content-Type: text/markdown; charset=utf-8
 
 /lookup/*
-  Cache-Control: no-store
+  Cache-Control: no-store, no-transform
   X-Robots-Tag: noindex, nofollow
 
 /:lang/_stats/*
-  Cache-Control: no-store
+  Cache-Control: no-store, no-transform
   X-Robots-Tag: noindex, nofollow
   X-Content-Type-Options: nosniff
 

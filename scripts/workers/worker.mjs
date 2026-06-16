@@ -75,6 +75,10 @@ async function withSecurityHeaders(response, context) {
     headers.set("content-security-policy", CUSTOM_HTML_CONTENT_SECURITY_POLICY);
   }
 
+  if (isHtmlResponse(response)) {
+    appendCacheControlDirective(headers, "no-transform");
+  }
+
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
@@ -92,6 +96,20 @@ async function isCustomHtmlAsset(assetPath, response, { request, env }) {
 function isHtmlResponse(response) {
   const contentType = response.headers.get("content-type") || "";
   return contentType.toLowerCase().startsWith("text/html");
+}
+
+function appendCacheControlDirective(headers, directive) {
+  const current = headers.get("cache-control") || "";
+  const directives = current
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  if (!directives.some((entry) => entry.toLowerCase() === directive.toLowerCase())) {
+    directives.push(directive);
+  }
+
+  if (directives.length) headers.set("cache-control", directives.join(", "));
 }
 
 async function loadCustomAssets(request, env) {

@@ -583,6 +583,15 @@ await run("applies security headers across response classes and preserves explic
     assert(response.headers.get("content-security-policy"), `${name} csp`);
   }
 
+  const html = await worker.fetch(request("/"), env(), mockCtx());
+  assert(html.headers.get("cache-control").includes("no-transform"), "html opts out of edge transformation");
+
+  const css = await worker.fetch(request("/v8s-style.css"), env(), mockCtx());
+  assert(
+    !String(css.headers.get("cache-control") || "").includes("no-transform"),
+    "non-html cache control is unchanged"
+  );
+
   const custom = await worker.fetch(request("/custom-header.html"), env(), mockCtx());
   assert(custom.headers.get("content-security-policy") === "default-src 'none'", "explicit csp preserved");
   assert(custom.headers.get("x-frame-options") === "DENY", "other security headers still added");
