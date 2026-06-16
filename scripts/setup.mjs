@@ -473,7 +473,9 @@ function normalizeHtmlHead(html) {
     );
   }
 
-  if (!normalized.includes("data-v8s-theme-override")) {
+  normalized = replaceInlineThemeOverride(normalized);
+
+  if (!normalized.includes("/v8s-theme.js")) {
     normalized = insertBeforeFirstStylesheet(normalized, `${THEME_OVERRIDE_SCRIPT}\n`);
   }
 
@@ -496,31 +498,11 @@ function insertBeforeFirstStylesheet(html, insertion) {
   return insertBeforeHeadClose(html, insertion);
 }
 
-const THEME_OVERRIDE_SCRIPT = `    <script data-v8s-theme-override>
-      (() => {
-        const theme = new URLSearchParams(window.location.search).get("theme");
-        if (theme !== "light" && theme !== "dark") return;
+const THEME_OVERRIDE_SCRIPT = `    <script src="/v8s-theme.js?v=${PUBLIC_ASSET_VERSION}"></script>`;
 
-        document.documentElement.dataset.theme = theme;
-
-        const applyThemeImages = () => {
-          document.querySelectorAll('picture source[media*="prefers-color-scheme"][srcset]').forEach((source) => {
-            const image = source.parentElement?.querySelector("img");
-            const candidate =
-              theme === "dark"
-                ? source.getAttribute("srcset")?.split(",")[0]?.trim()?.split(/\\s+/)[0]
-                : image?.getAttribute("src");
-            if (image && candidate) image.src = candidate;
-          });
-        };
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", applyThemeImages, { once: true });
-        } else {
-          applyThemeImages();
-        }
-      })();
-    </script>`;
+function replaceInlineThemeOverride(html) {
+  return html.replace(/\s*<script data-v8s-theme-override>[\s\S]*?<\/script>\n?/, `\n${THEME_OVERRIDE_SCRIPT}\n`);
+}
 
 function languageForPublicFile(filePath) {
   const [language] = path.relative(CUSTOM_PUBLIC_DIR, filePath).split(path.sep);

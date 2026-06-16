@@ -138,7 +138,7 @@ function runCommand(cwd, args) {
   indexHtml = indexHtml
     .replace(/\s*<link rel="icon"[^>]+>\n/, "\n")
     .replace(/\s*<link rel="apple-touch-icon"[^>]+>\n/, "\n")
-    .replace(/\s*<script data-v8s-theme-override>[\s\S]*?<\/script>\n/, "\n");
+    .replace(/\s*<script src="\/v8s-theme\.js[^>]+><\/script>\n/, "\n");
   fs.writeFileSync(indexPath, indexHtml);
 
   const doctorJson = JSON.parse(run(fixture, ["scripts/doctor.mjs", "--json"]));
@@ -156,7 +156,8 @@ function runCommand(cwd, args) {
   const fixedHtml = fs.readFileSync(indexPath, "utf8");
   assert.match(fixedHtml, /rel="icon"/);
   assert.match(fixedHtml, /rel="apple-touch-icon"/);
-  assert.match(fixedHtml, /data-v8s-theme-override/);
+  assert.match(fixedHtml, /\/v8s-theme\.js/);
+  assert.doesNotMatch(fixedHtml, /data-v8s-theme-override/);
 }
 
 {

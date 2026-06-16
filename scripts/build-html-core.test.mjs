@@ -36,10 +36,11 @@ import {
   );
 
   assert(normalized.includes('href="/v8s-style.css?v=123"'));
+  assert(normalized.includes('src="/v8s-theme.js?v=123"'));
   assert(normalized.includes('rel="icon"'));
   assert(normalized.includes('rel="apple-touch-icon"'));
-  assert(normalized.includes("data-v8s-theme-override"));
-  assert(normalized.indexOf("data-v8s-theme-override") < normalized.indexOf('rel="stylesheet"'));
+  assert(!normalized.includes("data-v8s-theme-override"));
+  assert(normalized.indexOf("/v8s-theme.js") < normalized.indexOf('rel="stylesheet"'));
 }
 
 {
@@ -47,11 +48,12 @@ import {
     '<head><script data-v8s-theme-override></script><link rel="icon" href="/custom.svg"><link rel="apple-touch-icon" href="/custom.png"><link rel="stylesheet" href="/v8s-style.css"></head>';
   const normalized = normalizeHtmlHead(original, { assetVersion: "123" });
 
-  assert.equal((normalized.match(/data-v8s-theme-override/g) || []).length, 1);
+  assert.equal((normalized.match(/\/v8s-theme\.js/g) || []).length, 1);
+  assert(!normalized.includes("data-v8s-theme-override"));
   assert.equal((normalized.match(/rel="icon"/g) || []).length, 1);
   assert.equal((normalized.match(/rel="apple-touch-icon"/g) || []).length, 1);
 }
 
-assert(THEME_OVERRIDE_SCRIPT.includes("applyThemeImages"));
+assert(THEME_OVERRIDE_SCRIPT.includes("/v8s-theme.js"));
 
 console.log("build html core tests ok");
