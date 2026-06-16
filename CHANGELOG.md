@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://github.com/vanityURLs/code/compare/v3.6.3...v3.7.0) (2026-06-16)
+
+
+### ✨ Features
+
+* **setup:** detach from latest release ([a87788b](https://github.com/vanityURLs/code/commit/a87788b76f59e9fa5e0bc3856651d1ff4f0df19b))
+
 ## [3.6.3](https://github.com/vanityURLs/code/compare/v3.6.2...v3.6.3) (2026-06-16)
 
 
