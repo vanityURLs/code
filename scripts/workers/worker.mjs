@@ -920,11 +920,14 @@ async function fetchAsset(request, env, assetPath) {
   const headers = new Headers(response.headers);
   headers.set(INTERNAL_ASSET_PATH_HEADER, assetPath);
 
-  return new Response(response.body, {
+  const assetResponse = new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
     headers
   });
+
+  if (isPublicCorsAsset(assetPath)) return withPublicCorsHeaders(assetResponse, request);
+  return assetResponse;
 }
 
 async function fetchLocalizedAsset(request, env, assetPath) {
@@ -1157,6 +1160,10 @@ function withPublicCorsHeaders(response, request) {
     statusText: response.statusText,
     headers
   });
+}
+
+function isPublicCorsAsset(assetPath) {
+  return /^\/fonts\/[^/]+\.(?:woff2?|ttf|otf)$/i.test(assetPath);
 }
 
 function appendVary(headers, value) {

@@ -127,6 +127,9 @@ const assets = {
   "/.well-known/security.txt": new Response("Contact: mailto:security@example.com\n", {
     headers: { "content-type": "text/plain; charset=utf-8" }
   }),
+  "/fonts/intervariable.woff2": new Response("font", {
+    headers: { "content-type": "font/woff2" }
+  }),
   "/v8s-style.css": new Response("body{}", {
     headers: { "content-type": "text/css" }
   }),
@@ -686,6 +689,18 @@ await run("allows sandboxed custom pages to call public lookup endpoints with nu
   );
   assert(analytics.status === 204, "analytics status");
   assert(analytics.headers.get("access-control-allow-origin") === "null", "analytics cors origin");
+
+  const font = await worker.fetch(
+    request("/fonts/intervariable.woff2", { headers: { origin: "null" } }),
+    env(),
+    mockCtx()
+  );
+  assert(font.status === 200, "font status");
+  assert(font.headers.get("access-control-allow-origin") === "null", "font cors origin");
+  assert((font.headers.get("vary") || "").includes("Origin"), "font vary");
+
+  const css = await worker.fetch(request("/v8s-style.css", { headers: { origin: "null" } }), env(), mockCtx());
+  assert(!css.headers.has("access-control-allow-origin"), "non-font static asset has no cors origin");
 
   const protectedPreflight = await worker.fetch(
     request("/en/_stats/api/v8s.json", {
