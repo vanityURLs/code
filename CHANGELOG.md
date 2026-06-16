@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.6.3](https://github.com/vanityURLs/code/compare/v3.6.2...v3.6.3) (2026-06-16)
+
+
+### 🐛 Bug Fixes
+
+* opt out of edge html transformation ([16d580e](https://github.com/vanityURLs/code/commit/16d580e1482b6bb5d760edf640d351a56df92de3))
+* remove managed asset shadows from custom public ([89964f7](https://github.com/vanityURLs/code/commit/89964f7c102e18def7eaf07f6ee8a290a9a2a563))
+
 ## [3.6.2](https://github.com/vanityURLs/code/compare/v3.6.1...v3.6.2) (2026-06-16)
 
 
