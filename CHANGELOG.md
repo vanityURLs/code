@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.6.2](https://github.com/vanityURLs/code/compare/v3.6.1...v3.6.2) (2026-06-16)
+
+
+### 🐛 Bug Fixes
+
+* allow sandboxed pages to load fonts ([0fee1c0](https://github.com/vanityURLs/code/commit/0fee1c03658d6a0afae5f5a2c8d3a637a7f62f15))
+* move theme override out of inline scripts ([bfa709c](https://github.com/vanityURLs/code/commit/bfa709c815f7b19aebc2cd94f06791fd7e4cd6a6))
+
 ## [3.6.1](https://github.com/vanityURLs/code/compare/v3.6.0...v3.6.1) (2026-06-15)
 
 
