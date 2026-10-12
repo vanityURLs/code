@@ -19,6 +19,14 @@ a text editor. The short domain must use Cloudflare as its authoritative DNS pro
 
 Follow the [documentation](https://vanityurls.link/en/docs/quickstart) to spin your vanityURLs' instance.
 
+## Remote link submission (optional)
+
+GitLab-hosted instances can add short links from a browser at `/add`, without a local checkout: submitting a URL there
+picks a collision-free random slug (or a self-chosen one), returns it immediately, and triggers a GitLab pipeline that
+runs `v8s-lnk` to append the link, commit, and push. It's opt-in (`links.remote_submission.enabled` in site config, off
+by default) and the page should be placed behind its own Cloudflare Access Application, since it grants write access to
+the repository. See `defaults/gitlab/.gitlab-ci.yml` for the required secrets and CI/CD variables.
+
 ## Contributions
 
 [Contributions](.github/CONTRIBUTING.md) are welcome! We recognize

@@ -1,4 +1,11 @@
 import { detectBot } from "./lib/analytics-policy.mjs";
+import {
+  DEFAULT_RANDOM_SLUG_ALPHABET,
+  DEFAULT_RANDOM_SLUG_LENGTH,
+  normalizeRandomSlugAlphabet,
+  normalizeRandomSlugLength,
+  randomSlug
+} from "./lib/slug.mjs";
 
 const ASSET_EXT_RE = /\.(html|css|js|mjs|map|json|png|svg|ico|webmanifest|txt|xml|woff2?|ttf|otf|eot)$/i;
 
@@ -21,6 +28,7 @@ const WEEKDAY_ALIASES = {
 
 // Cached per Worker isolate; reset on failed reads so a later request can recover after a fixed deployment.
 let runtimeBlocklistPromise;
+let siteConfigPromise;
 // JWKS is cached per isolate with a TTL so Access signing-key rotation is picked
 // up without waiting for isolate recycling. Successful fetches are cached;
 // failures are not, so transient cert endpoint errors can recover on retry.
@@ -55,6 +63,14 @@ const SECURITY_HEADERS = {
 
 let customAssetsPromise;
 
+// Test-only: forces the next request to refetch per-isolate caches instead of reusing whatever
+// was cached by an earlier request in the same test process.
+export function __resetWorkerCachesForTests() {
+  runtimeBlocklistPromise = null;
+  siteConfigPromise = null;
+  customAssetsPromise = null;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const response = await handleRequest({ request, env, ctx });
@@ -88,9 +104,18 @@ async function withSecurityHeaders(response, context) {
 
 async function isCustomHtmlAsset(assetPath, response, { request, env }) {
   if (!assetPath || !isHtmlResponse(response)) return false;
+  // The submit page's fetch() to /add/submit must run same-origin so the browser sends the
+  // Cloudflare Access session cookie with it. A sandboxed (opaque-origin) CSP would turn that
+  // same-host fetch into a cross-origin one, whose preflight Access always rejects (preflight
+  // requests never carry cookies), breaking submission entirely.
+  if (isAddPageAssetPath(assetPath)) return false;
 
   const customAssets = await loadCustomAssets(request, env);
   return customAssets.has(assetPath);
+}
+
+function isAddPageAssetPath(assetPath) {
+  return assetPath === "/add/index.html" || /^\/[a-z]{2}\/add\/index\.html$/.test(assetPath);
 }
 
 function isHtmlResponse(response) {
@@ -173,7 +198,7 @@ async function handleRequest(context) {
   }
 
   if (isProtectedPath(slug)) {
-    const accessResponse = await requireCloudflareAccess(request, env);
+    const accessResponse = await requireCloudflareAccess(request, env, accessAudFor(slug, env));
     if (accessResponse) return accessResponse;
   }
 
@@ -183,6 +208,10 @@ async function handleRequest(context) {
 
   if (slug === "lookup/resolve") {
     return renderLookupResponse(request, env);
+  }
+
+  if (slug === "add/submit") {
+    return handleLinkSubmission(request, env);
   }
 
   if (request.method !== "GET" && request.method !== "HEAD") {
@@ -205,6 +234,10 @@ async function handleRequest(context) {
   const statsAssetPath = statsPageAssetPath(slug);
   if (statsAssetPath) {
     return renderAsset(request, env, statsAssetPath, 200, ctx);
+  }
+
+  if (slug === "add") {
+    return renderSubmitPage(request, env, ctx, correlationId);
   }
 
   const scannerProbe = await findScannerProbe(request, env);
@@ -441,7 +474,21 @@ function isSecurityTxtPath(slug) {
 }
 
 function isProtectedPath(slug) {
-  return Boolean(statsPageAssetPath(slug)) || Boolean(localizedStatsApiEndpoint(slug)) || isTestsPath(slug);
+  return (
+    Boolean(statsPageAssetPath(slug)) ||
+    Boolean(localizedStatsApiEndpoint(slug)) ||
+    isTestsPath(slug) ||
+    isSubmitPath(slug)
+  );
+}
+
+function isSubmitPath(slug) {
+  return slug === "add" || slug === "add/submit";
+}
+
+function accessAudFor(slug, env) {
+  if (isSubmitPath(slug)) return env.CF_ACCESS_SUBMIT_AUD || env.CF_ACCESS_AUD;
+  return env.CF_ACCESS_AUD;
 }
 
 function isTestsPath(slug) {
@@ -528,6 +575,189 @@ async function readJsonBody(request) {
   }
 }
 
+async function renderSubmitPage(request, env, ctx, correlationId) {
+  const config = await loadSiteConfig(request, env);
+  if (!config.links?.remote_submission?.enabled) {
+    return render404(request, env, { slug: "add", correlationId });
+  }
+
+  return renderAsset(request, env, "/add/index.html", 200, ctx);
+}
+
+async function handleLinkSubmission(request, env) {
+  const headers = {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+    "x-robots-tag": "noindex, nofollow"
+  };
+
+  if (request.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+  }
+
+  const config = await loadSiteConfig(request, env);
+  const remoteSubmission = config.links?.remote_submission;
+
+  if (!remoteSubmission?.enabled) {
+    return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers });
+  }
+
+  if (!env.GITLAB_READ_TOKEN || !env.GITLAB_TRIGGER_TOKEN || !remoteSubmission.gitlab_project) {
+    return new Response(JSON.stringify({ error: "Remote submission is not fully configured" }), {
+      status: 503,
+      headers
+    });
+  }
+
+  const body = await readJsonBody(request);
+  const targetUrl = String(body.url || "").trim();
+  const requestedSlug = String(body.slug || "").trim();
+
+  if (!isSafeSubmissionUrl(targetUrl)) {
+    return new Response(JSON.stringify({ error: "Enter a valid http(s) URL" }), { status: 400, headers });
+  }
+
+  let slug;
+  try {
+    slug = requestedSlug
+      ? await reserveCustomSlug(env, remoteSubmission, requestedSlug)
+      : await pickUnusedSlug(env, config, remoteSubmission);
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: error.status || 502, headers });
+  }
+
+  let pipeline;
+  try {
+    pipeline = await triggerGitLabPipeline(env, remoteSubmission, { url: targetUrl, slug });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 502, headers });
+  }
+
+  return new Response(
+    JSON.stringify({
+      slug,
+      pipelineUrl: pipeline.web_url || null,
+      etaMinutes: remoteSubmission.eta_minutes || 2
+    }),
+    { status: 200, headers }
+  );
+}
+
+function isSafeSubmissionUrl(value) {
+  try {
+    const parsed = new URL(value);
+    return SAFE_REDIRECT_PROTOCOLS.has(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+// Reserved so a self-service submission can never shadow one of the site's own functional
+// routes (the link would just become unreachable behind the route, not a security issue, but
+// confusing). Kept in sync with the slugs isProtectedPath/isPublicCorsEndpoint/isSecurityTxtPath
+// treat specially.
+const RESERVED_SUBMIT_SLUG_SEGMENTS = new Set(["add", "lookup", "_stats", "_tests", "_analytics", ".well-known"]);
+
+async function reserveCustomSlug(env, remoteSubmission, rawSlug) {
+  const slug = normalizeSubmittedSlug(rawSlug);
+
+  if (!isValidSubmittedSlug(slug)) {
+    throw submissionError("Use only letters, numbers, and - . _ ~ (no leading/trailing slash)", 400);
+  }
+
+  if (RESERVED_SUBMIT_SLUG_SEGMENTS.has(slug.split("/")[0])) {
+    throw submissionError("This short link is reserved, please choose another one", 400);
+  }
+
+  const existingSlugs = await loadGitLabLinkSlugs(env, remoteSubmission);
+  if (existingSlugs.has(slug)) {
+    throw submissionError("This short link is already taken", 409);
+  }
+
+  return slug;
+}
+
+function normalizeSubmittedSlug(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+}
+
+function isValidSubmittedSlug(slug) {
+  if (!slug || slug.includes("//") || slug.includes("?") || slug.includes("#") || slug.includes("|")) return false;
+  return slug.split("/").every((part) => /^[A-Za-z0-9][A-Za-z0-9._~-]*$/.test(part));
+}
+
+function submissionError(message, status) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+async function pickUnusedSlug(env, config, remoteSubmission) {
+  const existingSlugs = await loadGitLabLinkSlugs(env, remoteSubmission);
+  const length = normalizeRandomSlugLength(config.links?.random_slug_length || DEFAULT_RANDOM_SLUG_LENGTH);
+  const alphabet = normalizeRandomSlugAlphabet(config.links?.random_slug_alphabet || DEFAULT_RANDOM_SLUG_ALPHABET);
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = randomSlug(length, alphabet);
+    if (!existingSlugs.has(candidate)) return candidate;
+  }
+
+  throw new Error("Could not find an unused short code, please try again");
+}
+
+async function loadGitLabLinkSlugs(env, remoteSubmission) {
+  const projectPath = encodeURIComponent(remoteSubmission.gitlab_project);
+  const filePath = encodeURIComponent("custom/v8s-links.txt");
+  const ref = encodeURIComponent(remoteSubmission.gitlab_ref || "main");
+  const apiUrl = `${remoteSubmission.gitlab_api_base}/projects/${projectPath}/repository/files/${filePath}/raw?ref=${ref}`;
+
+  const response = await fetch(apiUrl, {
+    headers: { "PRIVATE-TOKEN": env.GITLAB_READ_TOKEN }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Unable to read the current links file (GitLab responded ${response.status})`);
+  }
+
+  const text = await response.text();
+  const slugs = new Set();
+
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const [slug] = trimmed.split("|");
+    if (slug) slugs.add(slug);
+  }
+
+  return slugs;
+}
+
+async function triggerGitLabPipeline(env, remoteSubmission, { url, slug }) {
+  const projectPath = encodeURIComponent(remoteSubmission.gitlab_project);
+  const apiUrl = `${remoteSubmission.gitlab_api_base}/projects/${projectPath}/trigger/pipeline`;
+
+  const form = new URLSearchParams();
+  form.set("token", env.GITLAB_TRIGGER_TOKEN);
+  form.set("ref", remoteSubmission.gitlab_ref || "main");
+  form.set("variables[SUBMIT_URL]", url);
+  form.set("variables[SUBMIT_SLUG]", slug);
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: form.toString()
+  });
+
+  if (!response.ok) {
+    throw new Error(`Unable to start the publish pipeline (GitLab responded ${response.status})`);
+  }
+
+  return response.json();
+}
+
 async function findScannerProbe(request, env) {
   const policy = await loadRuntimeBlocklist(request, env);
   const keywords = scannerKeywords(policy);
@@ -550,6 +780,21 @@ async function loadRuntimeBlocklist(request, env) {
     return await runtimeBlocklistPromise;
   } catch {
     runtimeBlocklistPromise = null;
+    return {};
+  }
+}
+
+async function loadSiteConfig(request, env) {
+  siteConfigPromise ||= (async () => {
+    const response = await fetchAsset(request, env, "/v8s-site-config.json");
+    if (!response.ok) return {};
+    return response.json();
+  })();
+
+  try {
+    return await siteConfigPromise;
+  } catch {
+    siteConfigPromise = null;
     return {};
   }
 }
@@ -1092,9 +1337,8 @@ async function renderTestsPage(request, env, ctx) {
   return renderAsset(request, env, assetPath || "/_tests/index.html", 200, ctx);
 }
 
-async function requireCloudflareAccess(request, env) {
+async function requireCloudflareAccess(request, env, expectedAud = env.CF_ACCESS_AUD) {
   const teamDomain = normalizeAccessTeamDomain(env.CF_ACCESS_TEAM_DOMAIN);
-  const expectedAud = env.CF_ACCESS_AUD;
 
   if (!teamDomain || !expectedAud) {
     return protectedPathResponse("Cloudflare Access is not configured", 503);

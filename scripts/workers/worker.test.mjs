@@ -1,4 +1,4 @@
-import worker from "./worker.mjs";
+import worker, { __resetWorkerCachesForTests } from "./worker.mjs";
 
 let analyticsCalls = [];
 const originalFetch = globalThis.fetch;
@@ -122,6 +122,7 @@ const assets = {
   "/fr/maintenance.html": html("<main>maintenance fr</main>"),
   "/fr/404.html": html("<main>fr {{SLUG_MESSAGE}}{{REFERENCE_LINE}}</main>"),
   "/_tests/index.html": html("<main>tests</main>"),
+  "/add/index.html": html("<main>add a link</main>"),
   "/en/_stats/index.html": html("<main>stats en</main>"),
   "/fr/_stats/index.html": html("<main>stats fr</main>"),
   "/.well-known/security.txt": new Response("Contact: mailto:security@example.com\n", {
@@ -150,7 +151,7 @@ const assets = {
   "/v8s.json": Response.json(registry),
   "/v8s-custom-assets.json": Response.json({
     schema_version: 1,
-    paths: ["/custom-page.html", "/custom-default-csp.html", "/v8s-style.css"]
+    paths: ["/custom-page.html", "/custom-default-csp.html", "/v8s-style.css", "/add/index.html"]
   }),
   "/v8s-blocklist.json": Response.json({
     blocked_keywords: [
@@ -1736,6 +1737,316 @@ await run("throttles repeated unknown-kid refresh attempts", async () => {
       assert(state.certCalls === 1, "throttle suppressed repeated unknown-kid refetches");
     }
   );
+});
+
+function remoteSubmissionSiteConfig(overrides = {}) {
+  return {
+    links: {
+      random_slug_length: 1,
+      random_slug_alphabet: "b",
+      remote_submission: {
+        enabled: true,
+        gitlab_project: "felleg/f-l.ca3",
+        gitlab_ref: "main",
+        gitlab_api_base: "https://gitlab.example/api/v4",
+        eta_minutes: 2,
+        ...overrides
+      }
+    }
+  };
+}
+
+async function withSiteConfigAsset(config, fn) {
+  const previous = assets["/v8s-site-config.json"];
+  assets["/v8s-site-config.json"] = config ? Response.json(config) : undefined;
+  __resetWorkerCachesForTests();
+
+  try {
+    return await fn();
+  } finally {
+    assets["/v8s-site-config.json"] = previous;
+    __resetWorkerCachesForTests();
+  }
+}
+
+async function withGitLabFetch(
+  {
+    linksFileText = "",
+    readStatus = 200,
+    triggerStatus = 201,
+    triggerResponse = { id: 42, web_url: "https://gitlab.example/pipelines/42" }
+  } = {},
+  fn
+) {
+  const previousFetch = globalThis.fetch;
+  const calls = [];
+
+  globalThis.fetch = async (url, init) => {
+    const href = typeof url === "string" ? url : url.toString();
+    calls.push({ url: href, init });
+
+    if (href.includes("/repository/files/")) {
+      return new Response(linksFileText, { status: readStatus });
+    }
+
+    if (href.includes("/trigger/pipeline")) {
+      return new Response(JSON.stringify(triggerResponse), {
+        status: triggerStatus,
+        headers: { "content-type": "application/json" }
+      });
+    }
+
+    return previousFetch(url, init);
+  };
+
+  try {
+    return await fn(calls);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+}
+
+await run("returns 404 for GET /add when remote submission is not configured", async () => {
+  await withSiteConfigAsset(undefined, async () => {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      request("/add", { headers: { ...(await accessHeaders()) } }),
+      await accessEnv(),
+      ctx
+    );
+    assert(response.status === 404, "status");
+  });
+});
+
+await run("returns a 404 JSON error for POST /add/submit when remote submission is not configured", async () => {
+  await withSiteConfigAsset(undefined, async () => {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      jsonRequest("/add/submit", { url: "https://example.com/new" }, { headers: { ...(await accessHeaders()) } }),
+      await accessEnv(),
+      ctx
+    );
+    assert(response.status === 404, "status");
+    const body = await response.json();
+    assert(body.error, "error message present");
+  });
+});
+
+await run("protects /add with a dedicated Cloudflare Access audience when configured", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    const ctx = mockCtx();
+    const generalAudienceResponse = await worker.fetch(
+      request("/add", { headers: { ...(await accessHeaders()) } }),
+      await accessEnv({ CF_ACCESS_SUBMIT_AUD: "submit-aud-xyz" }),
+      ctx
+    );
+    assert(generalAudienceResponse.status === 403, "general-audience token is rejected");
+
+    const submitAudienceResponse = await worker.fetch(
+      request("/add", { headers: { ...(await accessHeaders({ aud: ["submit-aud-xyz"] })) } }),
+      await accessEnv({ CF_ACCESS_SUBMIT_AUD: "submit-aud-xyz" }),
+      mockCtx()
+    );
+    assert(submitAudienceResponse.status === 200, "dedicated-audience token is accepted");
+  });
+});
+
+await run("falls back to the general Cloudflare Access audience when no dedicated one is configured", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    const response = await worker.fetch(
+      request("/add", { headers: { ...(await accessHeaders()) } }),
+      await accessEnv(),
+      mockCtx()
+    );
+    assert(response.status === 200, "status");
+  });
+});
+
+await run("never sandboxes the /add page, even when served as a custom HTML asset", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    const response = await worker.fetch(
+      request("/add", { headers: { ...(await accessHeaders()) } }),
+      await accessEnv(),
+      mockCtx()
+    );
+    assert(response.status === 200, "status");
+    const csp = response.headers.get("content-security-policy") || "";
+    assert(!csp.includes("sandbox"), "add page CSP is not sandboxed");
+    // A sandboxed (opaque-origin) /add page would make its own fetch("/add/submit") cross-origin,
+    // whose CORS preflight Access always rejects (preflight never carries cookies), breaking
+    // submission entirely — see isAddPageAssetPath in worker.mjs.
+  });
+});
+
+await run("creates a short link via /add/submit and triggers the GitLab pipeline", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    await withGitLabFetch(
+      { linksFileText: "a|https://example.com/existing|permanent||||felleg||\n" },
+      async (calls) => {
+        const ctx = mockCtx();
+        const response = await worker.fetch(
+          jsonRequest("/add/submit", { url: "https://example.com/new" }, { headers: { ...(await accessHeaders()) } }),
+          await accessEnv({ GITLAB_READ_TOKEN: "read-token-value", GITLAB_TRIGGER_TOKEN: "trigger-token-value" }),
+          ctx
+        );
+
+        assert(response.status === 200, "status");
+        const body = await response.json();
+        assert(body.slug === "b", "slug is the only unused code in the configured alphabet");
+        assert(body.pipelineUrl === "https://gitlab.example/pipelines/42", "pipeline url returned");
+        assert(body.etaMinutes === 2, "eta minutes returned");
+
+        const readCall = calls.find((call) => call.url.includes("/repository/files/"));
+        assert(readCall, "links file was read");
+        assert(readCall.init.headers["PRIVATE-TOKEN"] === "read-token-value", "read token header sent");
+
+        const triggerCall = calls.find((call) => call.url.includes("/trigger/pipeline"));
+        assert(triggerCall, "pipeline trigger was called");
+        const form = new URLSearchParams(triggerCall.init.body);
+        assert(form.get("token") === "trigger-token-value", "trigger token sent");
+        assert(form.get("variables[SUBMIT_URL]") === "https://example.com/new", "submit url variable sent");
+        assert(form.get("variables[SUBMIT_SLUG]") === "b", "submit slug variable sent");
+      }
+    );
+  });
+});
+
+await run("fails clearly when every candidate short code is already taken", async () => {
+  const exhaustedSlugConfig = remoteSubmissionSiteConfig();
+  exhaustedSlugConfig.links.random_slug_alphabet = "a";
+
+  await withSiteConfigAsset(exhaustedSlugConfig, async () => {
+    await withGitLabFetch({ linksFileText: "a|https://example.com/existing|permanent||||felleg||\n" }, async () => {
+      const ctx = mockCtx();
+      const response = await worker.fetch(
+        jsonRequest("/add/submit", { url: "https://example.com/new" }, { headers: { ...(await accessHeaders()) } }),
+        await accessEnv({ GITLAB_READ_TOKEN: "read-token-value", GITLAB_TRIGGER_TOKEN: "trigger-token-value" }),
+        ctx
+      );
+
+      assert(response.status === 502, "status");
+      const body = await response.json();
+      assert(/unused short code/.test(body.error), "clear error message");
+    });
+  });
+});
+
+await run("rejects a non-http(s) submitted URL", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      jsonRequest("/add/submit", { url: "javascript:alert(1)" }, { headers: { ...(await accessHeaders()) } }),
+      await accessEnv({ GITLAB_READ_TOKEN: "read-token-value", GITLAB_TRIGGER_TOKEN: "trigger-token-value" }),
+      ctx
+    );
+    assert(response.status === 400, "status");
+  });
+});
+
+await run("uses a requested custom slug instead of generating a random one", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    await withGitLabFetch(
+      { linksFileText: "existing|https://example.com/existing|permanent||||felleg||\n" },
+      async (calls) => {
+        const ctx = mockCtx();
+        const response = await worker.fetch(
+          jsonRequest(
+            "/add/submit",
+            { url: "https://example.com/new", slug: "my-custom-link" },
+            { headers: { ...(await accessHeaders()) } }
+          ),
+          await accessEnv({ GITLAB_READ_TOKEN: "read-token-value", GITLAB_TRIGGER_TOKEN: "trigger-token-value" }),
+          ctx
+        );
+
+        assert(response.status === 200, "status");
+        const body = await response.json();
+        assert(body.slug === "my-custom-link", "requested slug is used as-is");
+
+        const triggerCall = calls.find((call) => call.url.includes("/trigger/pipeline"));
+        const form = new URLSearchParams(triggerCall.init.body);
+        assert(form.get("variables[SUBMIT_SLUG]") === "my-custom-link", "custom slug variable sent");
+      }
+    );
+  });
+});
+
+await run("rejects a custom slug with invalid characters", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      jsonRequest(
+        "/add/submit",
+        { url: "https://example.com/new", slug: "bad slug?" },
+        { headers: { ...(await accessHeaders()) } }
+      ),
+      await accessEnv({ GITLAB_READ_TOKEN: "read-token-value", GITLAB_TRIGGER_TOKEN: "trigger-token-value" }),
+      ctx
+    );
+    assert(response.status === 400, "status");
+    const body = await response.json();
+    assert(body.error, "error message present");
+  });
+});
+
+await run("rejects a custom slug that would shadow a reserved route", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      jsonRequest(
+        "/add/submit",
+        { url: "https://example.com/new", slug: "add" },
+        { headers: { ...(await accessHeaders()) } }
+      ),
+      await accessEnv({ GITLAB_READ_TOKEN: "read-token-value", GITLAB_TRIGGER_TOKEN: "trigger-token-value" }),
+      ctx
+    );
+    assert(response.status === 400, "status");
+  });
+});
+
+await run("rejects a custom slug that is already taken", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    await withGitLabFetch({ linksFileText: "taken|https://example.com/existing|permanent||||felleg||\n" }, async () => {
+      const ctx = mockCtx();
+      const response = await worker.fetch(
+        jsonRequest(
+          "/add/submit",
+          { url: "https://example.com/new", slug: "taken" },
+          { headers: { ...(await accessHeaders()) } }
+        ),
+        await accessEnv({ GITLAB_READ_TOKEN: "read-token-value", GITLAB_TRIGGER_TOKEN: "trigger-token-value" }),
+        ctx
+      );
+      assert(response.status === 409, "status");
+    });
+  });
+});
+
+await run("returns a clear error when GitLab fails to serve the links file", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    await withGitLabFetch({ readStatus: 500 }, async () => {
+      const ctx = mockCtx();
+      const response = await worker.fetch(
+        jsonRequest("/add/submit", { url: "https://example.com/new" }, { headers: { ...(await accessHeaders()) } }),
+        await accessEnv({ GITLAB_READ_TOKEN: "read-token-value", GITLAB_TRIGGER_TOKEN: "trigger-token-value" }),
+        ctx
+      );
+      assert(response.status === 502, "status");
+    });
+  });
+});
+
+await run("returns a configuration error when GitLab credentials are missing", async () => {
+  await withSiteConfigAsset(remoteSubmissionSiteConfig(), async () => {
+    const ctx = mockCtx();
+    const response = await worker.fetch(
+      jsonRequest("/add/submit", { url: "https://example.com/new" }, { headers: { ...(await accessHeaders()) } }),
+      await accessEnv(),
+      ctx
+    );
+    assert(response.status === 503, "status");
+  });
 });
 
 globalThis.fetch = originalFetch;

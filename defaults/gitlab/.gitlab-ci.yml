@@ -1,0 +1,37 @@
+# vanityURLs remote link submission (/add)
+#
+# This job is only ever started by the Worker's /add/submit handler via the GitLab
+# Pipeline Trigger API, which passes SUBMIT_URL and SUBMIT_SLUG as trigger variables.
+# The workflow rule below stops a pipeline from being created at all for an ordinary
+# push — including the push this job itself makes — since without it GitLab still spins
+# up an empty pipeline for that commit (a job-level `rules:` only skips the job, not the
+# pipeline shell).
+#
+# Setup:
+#   - A Pipeline Trigger Token, stored as the Cloudflare Worker secret GITLAB_TRIGGER_TOKEN.
+#   - A Project Access Token with `write_repository` scope, allowed to push to the default
+#     branch, stored as a masked CI/CD variable named GIT_PUSH_TOKEN. Only mark it "protected"
+#     too if the default branch is itself a protected branch — otherwise a protected variable
+#     is withheld from pipelines running on it and the push step fails with an empty token.
+#   - Optionally, a V8S_LINKS_OWNER CI/CD variable to attribute these commits to your usual
+#     owner tag (defaults to "bhd" otherwise, same as running v8s-lnk locally without it set).
+workflow:
+  rules:
+    - if: "$SUBMIT_URL && $SUBMIT_SLUG"
+
+add-link:
+  image: node:24
+  rules:
+    - if: "$SUBMIT_URL && $SUBMIT_SLUG"
+  script:
+    - npm ci
+    - git config user.email "vanityurls-bot@${CI_SERVER_HOST}"
+    - git config user.name "vanityURLs bot"
+    - git remote set-url origin "https://oauth2:${GIT_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    # GitLab Runner checks out a detached commit, not a branch. v8s-lnk's own `git push` (run
+    # below) expects a normal tracked branch, so set that up first: `push.default current` lets
+    # a plain `git push` push the current branch to a same-named remote branch with no upstream
+    # tracking metadata required.
+    - git checkout -B "$CI_COMMIT_REF_NAME"
+    - git config push.default current
+    - node scripts/v8s-lnk "$SUBMIT_URL" "$SUBMIT_SLUG"

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Add a short link | VanityURLs</title>
+    <meta name="description" content="Submit a URL to create a new VanityURLs short link" />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/v8s-style.css?v=20260601" />
+    <link rel="stylesheet" href="/v8s-submit.css?v=20260601" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="search-home" aria-labelledby="brand-title">
+        <a class="wordmark" href="/" aria-label="VanityURLs">
+          <h1 id="brand-title"><span>Vanity</span><span>URLs</span></h1>
+        </a>
+
+        <form class="redirect-form" id="submitForm">
+          <label class="sr-only" for="submitUrl">URL to shorten</label>
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M10.6 13.4a3.5 3.5 0 0 0 5 0l3.3-3.3a3.5 3.5 0 0 0-5-5l-1.6 1.6" />
+              <path d="M13.4 10.6a3.5 3.5 0 0 0-5 0l-3.3 3.3a3.5 3.5 0 0 0 5 5l1.6-1.6" />
+            </svg>
+            <input
+              id="submitUrl"
+              name="url"
+              type="url"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              inputmode="url"
+              placeholder="Paste a long URL to shorten"
+              required
+            />
+            <button type="submit" aria-label="Create short link">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M5 12h12M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+
+          <label class="sr-only" for="submitSlug">Custom short code (optional)</label>
+          <div class="search-box search-box--slug">
+            <span class="search-box-prefix" aria-hidden="true">/</span>
+            <input
+              id="submitSlug"
+              name="slug"
+              type="text"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              maxlength="80"
+              placeholder="custom short code (optional)"
+            />
+          </div>
+        </form>
+
+        <div class="submit-result" id="submitResult" aria-live="polite"></div>
+      </section>
+    </main>
+    <script src="/v8s-submit.js?v=20260601" defer></script>
+  </body>
+</html>

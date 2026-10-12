@@ -10,6 +10,13 @@
     "tag_random_slug_lengths": {
       "training": 4,
       "debug": 2
+    },
+    "remote_submission": {
+      "enabled": false,
+      "gitlab_project": "",
+      "gitlab_ref": "main",
+      "gitlab_api_base": "https://gitlab.com/api/v4",
+      "eta_minutes": 2
     }
   },
   "targets": {

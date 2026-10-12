@@ -11,6 +11,7 @@ const allowedStates = new Set(["permanent", "ephemeral", "expired", "disabled", 
 const targetRedirectStates = new Set(["permanent", "ephemeral"]);
 const reservedTopLevel = new Set([
   "_stats",
+  "add",
   "assets",
   "lookup",
   "404",
